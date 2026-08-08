@@ -1,0 +1,65 @@
+---
+---
+<form id="contact-form" class="reveal grid gap-3 max-w-lg">
+  <input
+    type="text"
+    name="name"
+    placeholder="你的名字"
+    required
+    maxlength="40"
+    class="border-2 border-ink bg-cream px-4 py-2.5 text-ink placeholder:text-ink-light/70 focus:outline-none focus:bg-sage-light"
+  />
+  <input
+    type="email"
+    name="email"
+    placeholder="你的 Email，方便我回覆你"
+    required
+    class="border-2 border-ink bg-cream px-4 py-2.5 text-ink placeholder:text-ink-light/70 focus:outline-none focus:bg-sage-light"
+  />
+  <textarea
+    name="message"
+    placeholder="想跟我說的事..."
+    required
+    maxlength="1000"
+    rows="4"
+    class="border-2 border-ink bg-cream px-4 py-2.5 text-ink placeholder:text-ink-light/70 focus:outline-none focus:bg-sage-light resize-none"
+  ></textarea>
+  <button
+    type="submit"
+    data-magnetic
+    class="justify-self-start px-6 py-2.5 bg-clay text-cream text-sm font-semibold hover:bg-ink transition-colors disabled:opacity-50"
+  >
+    送出訊息
+  </button>
+  <p id="contact-status" class="text-sm min-h-5"></p>
+</form>
+
+<script>
+  import { supabase } from '../lib/supabase';
+
+  const form = document.getElementById('contact-form') as HTMLFormElement | null;
+  const status = document.getElementById('contact-status');
+
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement | null;
+    const formData = new FormData(form);
+    const name = String(formData.get('name') ?? '').trim();
+    const email = String(formData.get('email') ?? '').trim();
+    const message = String(formData.get('message') ?? '').trim();
+    if (!name || !email || !message) return;
+
+    if (submitBtn) submitBtn.disabled = true;
+    if (status) status.textContent = '送出中...';
+
+    const { error } = await supabase.from('contact_submissions').insert({ name, email, message });
+
+    if (error) {
+      if (status) status.textContent = '送出失敗，請稍後再試一次，或直接寄 Email 給我。';
+    } else {
+      if (status) status.textContent = '已收到你的訊息，我會盡快回覆！';
+      form.reset();
+    }
+    if (submitBtn) submitBtn.disabled = false;
+  });
+</script>

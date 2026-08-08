@@ -1,0 +1,448 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="寫文章" description="站長專用管理頁" noindex>
+  <section class="max-w-3xl mx-auto px-6 pt-16 pb-24">
+    <div id="login-view">
+      <p class="inline-block bg-ink text-cream text-sm font-medium px-3 py-1 mb-6">寫文章</p>
+      <h1 class="font-display text-3xl text-ink mb-6">登入管理後台</h1>
+      <form id="login-form" class="grid gap-3 max-w-sm">
+        <input
+          type="email"
+          id="login-email"
+          required
+          placeholder="yayalin322@gmail.com"
+          class="border-2 border-ink bg-cream px-4 py-2.5 text-ink placeholder:text-ink-light/70 focus:outline-none focus:bg-sage-light"
+        />
+        <button type="submit" class="px-6 py-2.5 bg-clay text-cream text-sm font-semibold hover:bg-ink transition-colors">
+          寄送登入連結
+        </button>
+        <p id="login-status" class="text-sm min-h-5 text-ink-light"></p>
+      </form>
+    </div>
+
+    <div id="admin-view" class="hidden">
+      <div class="flex items-center justify-between mb-8">
+        <h1 class="font-display text-3xl text-ink">管理後台</h1>
+        <button id="logout-btn" class="px-4 py-1.5 border-2 border-ink text-sm font-semibold hover:bg-ink hover:text-cream transition-colors">
+          登出
+        </button>
+      </div>
+
+      <div class="flex flex-wrap gap-2 mb-8">
+        <button data-tab="posts" class="tab-btn px-4 py-1.5 text-sm font-semibold border-2 border-ink bg-ink text-cream">文章</button>
+        <button data-tab="timeline" class="tab-btn px-4 py-1.5 text-sm font-semibold border-2 border-ink bg-cream text-ink">時間軸</button>
+        <button data-tab="quotes" class="tab-btn px-4 py-1.5 text-sm font-semibold border-2 border-ink bg-cream text-ink">今日小語</button>
+        <button data-tab="guestbook" class="tab-btn px-4 py-1.5 text-sm font-semibold border-2 border-ink bg-cream text-ink">留言審核</button>
+        <button data-tab="contact" class="tab-btn px-4 py-1.5 text-sm font-semibold border-2 border-ink bg-cream text-ink">聯絡訊息</button>
+      </div>
+
+      <!-- 文章 -->
+      <section data-panel="posts">
+        <form id="post-form" class="grid gap-3 mb-10 bg-sage-light border-2 border-ink p-6">
+          <input type="hidden" id="post-id" />
+          <input type="text" id="post-title" required placeholder="標題" class="border-2 border-ink bg-cream px-4 py-2 focus:outline-none" />
+          <div class="grid grid-cols-2 gap-3">
+            <input type="date" id="post-date" required class="border-2 border-ink bg-cream px-4 py-2 focus:outline-none" />
+            <select id="post-category" class="border-2 border-ink bg-cream px-4 py-2 focus:outline-none">
+              <option>生活隨筆</option>
+              <option>兒少議題</option>
+              <option>興趣分享</option>
+            </select>
+          </div>
+          <textarea id="post-excerpt" required placeholder="摘要" rows="2" class="border-2 border-ink bg-cream px-4 py-2 focus:outline-none resize-none"></textarea>
+          <textarea id="post-body" required placeholder="內容（可以用 Markdown，例如 **粗體**、- 條列）" rows="10" class="border-2 border-ink bg-cream px-4 py-2 focus:outline-none"></textarea>
+          <div class="flex gap-3">
+            <button type="submit" class="px-6 py-2.5 bg-clay text-cream text-sm font-semibold hover:bg-ink transition-colors">儲存文章</button>
+            <button type="button" id="post-cancel" class="hidden px-6 py-2.5 border-2 border-ink text-sm font-semibold hover:bg-ink hover:text-cream transition-colors">取消編輯</button>
+          </div>
+          <p id="post-status" class="text-sm min-h-5"></p>
+        </form>
+        <ul id="post-list" class="grid gap-3"></ul>
+      </section>
+
+      <!-- 時間軸 -->
+      <section data-panel="timeline" class="hidden">
+        <form id="timeline-form" class="grid gap-3 mb-10 bg-clay-light border-2 border-ink p-6">
+          <input type="hidden" id="timeline-id" />
+          <input type="date" id="timeline-date" required class="border-2 border-ink bg-cream px-4 py-2 focus:outline-none" />
+          <input type="text" id="timeline-title" required placeholder="標題" class="border-2 border-ink bg-cream px-4 py-2 focus:outline-none" />
+          <textarea id="timeline-description" required placeholder="說明" rows="3" class="border-2 border-ink bg-cream px-4 py-2 focus:outline-none resize-none"></textarea>
+          <div class="flex gap-3">
+            <button type="submit" class="px-6 py-2.5 bg-clay text-cream text-sm font-semibold hover:bg-ink transition-colors">儲存項目</button>
+            <button type="button" id="timeline-cancel" class="hidden px-6 py-2.5 border-2 border-ink text-sm font-semibold hover:bg-ink hover:text-cream transition-colors">取消編輯</button>
+          </div>
+          <p id="timeline-status" class="text-sm min-h-5"></p>
+        </form>
+        <ul id="timeline-list" class="grid gap-3"></ul>
+      </section>
+
+      <!-- 今日小語 -->
+      <section data-panel="quotes" class="hidden">
+        <form id="quote-form" class="grid gap-3 mb-10 bg-butter-light border-2 border-ink p-6">
+          <input type="hidden" id="quote-id" />
+          <input type="text" id="quote-text" required placeholder="一句話" class="border-2 border-ink bg-cream px-4 py-2 focus:outline-none" />
+          <div class="flex gap-3">
+            <button type="submit" class="px-6 py-2.5 bg-clay text-cream text-sm font-semibold hover:bg-ink transition-colors">儲存小語</button>
+            <button type="button" id="quote-cancel" class="hidden px-6 py-2.5 border-2 border-ink text-sm font-semibold hover:bg-ink hover:text-cream transition-colors">取消編輯</button>
+          </div>
+          <p id="quote-status" class="text-sm min-h-5"></p>
+        </form>
+        <ul id="quote-list" class="grid gap-3"></ul>
+      </section>
+
+      <!-- 留言審核 -->
+      <section data-panel="guestbook" class="hidden">
+        <ul id="guestbook-admin-list" class="grid gap-3"></ul>
+      </section>
+
+      <!-- 聯絡訊息 -->
+      <section data-panel="contact" class="hidden">
+        <ul id="contact-list" class="grid gap-3"></ul>
+      </section>
+    </div>
+  </section>
+</BaseLayout>
+
+<script>
+  import { supabase } from '../lib/supabase';
+
+  const ADMIN_EMAIL = 'yayalin322@gmail.com';
+
+  const loginView = document.getElementById('login-view')!;
+  const adminView = document.getElementById('admin-view')!;
+  const loginForm = document.getElementById('login-form') as HTMLFormElement;
+  const loginEmail = document.getElementById('login-email') as HTMLInputElement;
+  const loginStatus = document.getElementById('login-status')!;
+  const logoutBtn = document.getElementById('logout-btn')!;
+
+  loginForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    loginStatus.textContent = '寄送中...';
+    const { error } = await supabase.auth.signInWithOtp({
+      email: loginEmail.value.trim(),
+      options: { shouldCreateUser: false, emailRedirectTo: window.location.origin + '/write' },
+    });
+    loginStatus.textContent = error
+      ? '寄送失敗，請確認 Email 是否正確。'
+      : '登入連結已寄出，請到信箱點連結（可能在垃圾信件夾）。';
+  });
+
+  logoutBtn.addEventListener('click', async () => {
+    await supabase.auth.signOut();
+  });
+
+  async function renderForSession() {
+    const { data } = await supabase.auth.getSession();
+    const email = data.session?.user.email;
+    if (email === ADMIN_EMAIL) {
+      loginView.classList.add('hidden');
+      adminView.classList.remove('hidden');
+      loadAll();
+    } else {
+      loginView.classList.remove('hidden');
+      adminView.classList.add('hidden');
+    }
+  }
+
+  supabase.auth.onAuthStateChange(() => renderForSession());
+  renderForSession();
+
+  // ---------- tabs ----------
+  const tabButtons = document.querySelectorAll<HTMLButtonElement>('.tab-btn');
+  const panels = document.querySelectorAll<HTMLElement>('[data-panel]');
+  tabButtons.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      tabButtons.forEach((b) => {
+        const active = b === btn;
+        b.classList.toggle('bg-ink', active);
+        b.classList.toggle('text-cream', active);
+        b.classList.toggle('bg-cream', !active);
+        b.classList.toggle('text-ink', !active);
+      });
+      panels.forEach((p) => p.classList.toggle('hidden', p.dataset.panel !== btn.dataset.tab));
+    });
+  });
+
+  function loadAll() {
+    loadPosts();
+    loadTimeline();
+    loadQuotes();
+    loadGuestbook();
+    loadContact();
+  }
+
+  const fmtDate = (d: string) => new Date(d).toLocaleDateString('zh-Hant-TW');
+
+  function esc(value: string) {
+    const div = document.createElement('div');
+    div.textContent = value ?? '';
+    return div.innerHTML;
+  }
+
+  // ---------- 文章 ----------
+  const postForm = document.getElementById('post-form') as HTMLFormElement;
+  const postId = document.getElementById('post-id') as HTMLInputElement;
+  const postTitle = document.getElementById('post-title') as HTMLInputElement;
+  const postDate = document.getElementById('post-date') as HTMLInputElement;
+  const postCategory = document.getElementById('post-category') as HTMLSelectElement;
+  const postExcerpt = document.getElementById('post-excerpt') as HTMLTextAreaElement;
+  const postBody = document.getElementById('post-body') as HTMLTextAreaElement;
+  const postCancel = document.getElementById('post-cancel')!;
+  const postStatus = document.getElementById('post-status')!;
+  const postList = document.getElementById('post-list')!;
+
+  function resetPostForm() {
+    postForm.reset();
+    postId.value = '';
+    postCancel.classList.add('hidden');
+  }
+
+  postCancel.addEventListener('click', resetPostForm);
+
+  postForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const payload = {
+      title: postTitle.value.trim(),
+      date: postDate.value,
+      category: postCategory.value,
+      excerpt: postExcerpt.value.trim(),
+      body: postBody.value.trim(),
+    };
+    postStatus.textContent = '儲存中...';
+    const { error } = postId.value
+      ? await supabase.from('blog_posts').update(payload).eq('id', postId.value)
+      : await supabase.from('blog_posts').insert(payload);
+    postStatus.textContent = error ? `儲存失敗：${error.message}` : '已儲存！';
+    if (!error) {
+      resetPostForm();
+      loadPosts();
+    }
+  });
+
+  async function loadPosts() {
+    const { data } = await supabase.from('blog_posts').select('*').order('date', { ascending: false });
+    postList.innerHTML = '';
+    (data ?? []).forEach((post) => {
+      const li = document.createElement('li');
+      li.className = 'border-2 border-ink bg-cream p-4 flex items-start justify-between gap-4';
+      li.innerHTML = `
+        <div>
+          <p class="text-xs text-ink-light mb-1">${fmtDate(post.date)} · ${esc(post.category)}</p>
+          <p class="font-semibold text-ink">${esc(post.title)}</p>
+        </div>
+        <div class="flex gap-2 shrink-0">
+          <button data-edit class="px-3 py-1 text-xs font-semibold border-2 border-ink hover:bg-ink hover:text-cream transition-colors">編輯</button>
+          <button data-delete class="px-3 py-1 text-xs font-semibold border-2 border-clay text-clay hover:bg-clay hover:text-cream transition-colors">刪除</button>
+        </div>
+      `;
+      li.querySelector('[data-edit]')?.addEventListener('click', () => {
+        postId.value = post.id;
+        postTitle.value = post.title;
+        postDate.value = post.date.slice(0, 10);
+        postCategory.value = post.category;
+        postExcerpt.value = post.excerpt;
+        postBody.value = post.body;
+        postCancel.classList.remove('hidden');
+        postForm.scrollIntoView({ behavior: 'smooth' });
+      });
+      li.querySelector('[data-delete]')?.addEventListener('click', async () => {
+        if (!confirm(`確定要刪除「${post.title}」嗎？`)) return;
+        await supabase.from('blog_posts').delete().eq('id', post.id);
+        loadPosts();
+      });
+      postList.appendChild(li);
+    });
+  }
+
+  // ---------- 時間軸 ----------
+  const timelineForm = document.getElementById('timeline-form') as HTMLFormElement;
+  const timelineId = document.getElementById('timeline-id') as HTMLInputElement;
+  const timelineDate = document.getElementById('timeline-date') as HTMLInputElement;
+  const timelineTitle = document.getElementById('timeline-title') as HTMLInputElement;
+  const timelineDescription = document.getElementById('timeline-description') as HTMLTextAreaElement;
+  const timelineCancel = document.getElementById('timeline-cancel')!;
+  const timelineStatus = document.getElementById('timeline-status')!;
+  const timelineList = document.getElementById('timeline-list')!;
+
+  function resetTimelineForm() {
+    timelineForm.reset();
+    timelineId.value = '';
+    timelineCancel.classList.add('hidden');
+  }
+
+  timelineCancel.addEventListener('click', resetTimelineForm);
+
+  timelineForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const payload = {
+      date: timelineDate.value,
+      title: timelineTitle.value.trim(),
+      description: timelineDescription.value.trim(),
+    };
+    timelineStatus.textContent = '儲存中...';
+    const { error } = timelineId.value
+      ? await supabase.from('timeline_entries').update(payload).eq('id', timelineId.value)
+      : await supabase.from('timeline_entries').insert(payload);
+    timelineStatus.textContent = error ? `儲存失敗：${error.message}` : '已儲存！';
+    if (!error) {
+      resetTimelineForm();
+      loadTimeline();
+    }
+  });
+
+  async function loadTimeline() {
+    const { data } = await supabase.from('timeline_entries').select('*').order('date', { ascending: false });
+    timelineList.innerHTML = '';
+    (data ?? []).forEach((entry) => {
+      const li = document.createElement('li');
+      li.className = 'border-2 border-ink bg-cream p-4 flex items-start justify-between gap-4';
+      li.innerHTML = `
+        <div>
+          <p class="text-xs text-ink-light mb-1">${fmtDate(entry.date)}</p>
+          <p class="font-semibold text-ink">${esc(entry.title)}</p>
+        </div>
+        <div class="flex gap-2 shrink-0">
+          <button data-edit class="px-3 py-1 text-xs font-semibold border-2 border-ink hover:bg-ink hover:text-cream transition-colors">編輯</button>
+          <button data-delete class="px-3 py-1 text-xs font-semibold border-2 border-clay text-clay hover:bg-clay hover:text-cream transition-colors">刪除</button>
+        </div>
+      `;
+      li.querySelector('[data-edit]')?.addEventListener('click', () => {
+        timelineId.value = entry.id;
+        timelineDate.value = entry.date.slice(0, 10);
+        timelineTitle.value = entry.title;
+        timelineDescription.value = entry.description;
+        timelineCancel.classList.remove('hidden');
+        timelineForm.scrollIntoView({ behavior: 'smooth' });
+      });
+      li.querySelector('[data-delete]')?.addEventListener('click', async () => {
+        if (!confirm(`確定要刪除「${entry.title}」嗎？`)) return;
+        await supabase.from('timeline_entries').delete().eq('id', entry.id);
+        loadTimeline();
+      });
+      timelineList.appendChild(li);
+    });
+  }
+
+  // ---------- 今日小語 ----------
+  const quoteForm = document.getElementById('quote-form') as HTMLFormElement;
+  const quoteId = document.getElementById('quote-id') as HTMLInputElement;
+  const quoteText = document.getElementById('quote-text') as HTMLInputElement;
+  const quoteCancel = document.getElementById('quote-cancel')!;
+  const quoteStatus = document.getElementById('quote-status')!;
+  const quoteList = document.getElementById('quote-list')!;
+
+  function resetQuoteForm() {
+    quoteForm.reset();
+    quoteId.value = '';
+    quoteCancel.classList.add('hidden');
+  }
+
+  quoteCancel.addEventListener('click', resetQuoteForm);
+
+  quoteForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const payload = { text: quoteText.value.trim() };
+    quoteStatus.textContent = '儲存中...';
+    const { error } = quoteId.value
+      ? await supabase.from('quotes').update(payload).eq('id', quoteId.value)
+      : await supabase.from('quotes').insert(payload);
+    quoteStatus.textContent = error ? `儲存失敗：${error.message}` : '已儲存！';
+    if (!error) {
+      resetQuoteForm();
+      loadQuotes();
+    }
+  });
+
+  async function loadQuotes() {
+    const { data } = await supabase.from('quotes').select('*').order('created_at', { ascending: false });
+    quoteList.innerHTML = '';
+    (data ?? []).forEach((q) => {
+      const li = document.createElement('li');
+      li.className = 'border-2 border-ink bg-cream p-4 flex items-start justify-between gap-4';
+      li.innerHTML = `
+        <p class="font-semibold text-ink">${esc(q.text)}</p>
+        <div class="flex gap-2 shrink-0">
+          <button data-edit class="px-3 py-1 text-xs font-semibold border-2 border-ink hover:bg-ink hover:text-cream transition-colors">編輯</button>
+          <button data-delete class="px-3 py-1 text-xs font-semibold border-2 border-clay text-clay hover:bg-clay hover:text-cream transition-colors">刪除</button>
+        </div>
+      `;
+      li.querySelector('[data-edit]')?.addEventListener('click', () => {
+        quoteId.value = q.id;
+        quoteText.value = q.text;
+        quoteCancel.classList.remove('hidden');
+        quoteForm.scrollIntoView({ behavior: 'smooth' });
+      });
+      li.querySelector('[data-delete]')?.addEventListener('click', async () => {
+        if (!confirm('確定要刪除這句小語嗎？')) return;
+        await supabase.from('quotes').delete().eq('id', q.id);
+        loadQuotes();
+      });
+      quoteList.appendChild(li);
+    });
+  }
+
+  // ---------- 留言審核 ----------
+  const guestbookAdminList = document.getElementById('guestbook-admin-list')!;
+
+  async function loadGuestbook() {
+    const { data } = await supabase
+      .from('guestbook_messages')
+      .select('*')
+      .order('created_at', { ascending: false });
+    guestbookAdminList.innerHTML = '';
+    (data ?? []).forEach((m) => {
+      const li = document.createElement('li');
+      li.className = `border-2 p-4 flex items-start justify-between gap-4 ${m.is_approved ? 'border-sage bg-sage-light' : 'border-ink bg-cream'}`;
+      li.innerHTML = `
+        <div>
+          <p class="text-xs text-ink-light mb-1">${fmtDate(m.created_at)} · ${esc(m.name)} ${m.is_approved ? '（已公開）' : '（待審核）'}</p>
+          <p class="text-ink whitespace-pre-wrap">${esc(m.message)}</p>
+        </div>
+        <div class="flex gap-2 shrink-0">
+          ${m.is_approved ? '' : '<button data-approve class="px-3 py-1 text-xs font-semibold border-2 border-sage-dark text-sage-dark hover:bg-sage-dark hover:text-cream transition-colors">核准</button>'}
+          <button data-delete class="px-3 py-1 text-xs font-semibold border-2 border-clay text-clay hover:bg-clay hover:text-cream transition-colors">刪除</button>
+        </div>
+      `;
+      li.querySelector('[data-approve]')?.addEventListener('click', async () => {
+        await supabase.from('guestbook_messages').update({ is_approved: true }).eq('id', m.id);
+        loadGuestbook();
+      });
+      li.querySelector('[data-delete]')?.addEventListener('click', async () => {
+        if (!confirm('確定要刪除這則留言嗎？')) return;
+        await supabase.from('guestbook_messages').delete().eq('id', m.id);
+        loadGuestbook();
+      });
+      guestbookAdminList.appendChild(li);
+    });
+  }
+
+  // ---------- 聯絡訊息 ----------
+  const contactList = document.getElementById('contact-list')!;
+
+  async function loadContact() {
+    const { data } = await supabase
+      .from('contact_submissions')
+      .select('*')
+      .order('created_at', { ascending: false });
+    contactList.innerHTML = '';
+    (data ?? []).forEach((c) => {
+      const li = document.createElement('li');
+      li.className = 'border-2 border-ink bg-cream p-4 flex items-start justify-between gap-4';
+      li.innerHTML = `
+        <div>
+          <p class="text-xs text-ink-light mb-1">${fmtDate(c.created_at)} · ${esc(c.name)} · ${esc(c.email)}</p>
+          <p class="text-ink whitespace-pre-wrap">${esc(c.message)}</p>
+        </div>
+        <button data-delete class="px-3 py-1 text-xs font-semibold border-2 border-clay text-clay hover:bg-clay hover:text-cream transition-colors shrink-0">刪除</button>
+      `;
+      li.querySelector('[data-delete]')?.addEventListener('click', async () => {
+        if (!confirm('確定要刪除這則訊息嗎？')) return;
+        await supabase.from('contact_submissions').delete().eq('id', c.id);
+        loadContact();
+      });
+      contactList.appendChild(li);
+    });
+  }
+</script>

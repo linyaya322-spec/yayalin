@@ -7,9 +7,14 @@ import '../styles/global.css';
 interface Props {
   title: string;
   description?: string;
+  noindex?: boolean;
 }
 
-const { title, description = '新竹縣兒少委員 Yaya 的個人網站，記錄生活、公共參與與興趣分享。' } = Astro.props;
+const {
+  title,
+  description = '新竹縣兒少委員 Yaya 的個人網站，記錄生活、公共參與與興趣分享。',
+  noindex = false,
+} = Astro.props;
 ---
 
 <!doctype html>
@@ -19,6 +24,7 @@ const { title, description = '新竹縣兒少委員 Yaya 的個人網站，記�
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="description" content={description} />
+    {noindex && <meta name="robots" content="noindex, nofollow" />}
     <title>{title} · Yaya 林</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />

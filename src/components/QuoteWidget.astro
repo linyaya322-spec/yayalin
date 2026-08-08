@@ -1,8 +1,8 @@
 ---
-import { getCollection } from 'astro:content';
+import { supabase } from '../lib/supabase';
 
-const quotes = await getCollection('quotes');
-const quoteTexts = quotes.map((q) => q.data.text);
+const { data: quotes } = await supabase.from('quotes').select('text');
+const quoteTexts = (quotes ?? []).map((q) => q.text);
 ---
 
 <div class="reveal bg-sage-light border-2 border-ink p-8 sm:p-10 text-center max-w-lg mx-auto relative overflow-hidden">

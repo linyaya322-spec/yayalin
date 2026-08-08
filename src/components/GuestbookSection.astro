@@ -1,0 +1,89 @@
+---
+import { supabase } from '../lib/supabase';
+
+const { data: messages } = await supabase
+  .from('guestbook_messages')
+  .select('name, message, created_at')
+  .eq('is_approved', true)
+  .order('created_at', { ascending: false });
+
+const formatDate = (date: string) =>
+  new Date(date).toLocaleDateString('zh-Hant-TW', { year: 'numeric', month: 'long', day: 'numeric' });
+---
+
+<div class="reveal">
+  <p class="inline-block bg-ink text-cream text-sm font-medium px-3 py-1 mb-6">留言板</p>
+  <h2 class="font-display text-3xl text-ink mb-4">留句話給我</h2>
+  <p class="text-ink-light mb-8">留言送出後會先經過審核，通過後才會顯示在下面，請耐心等一下。</p>
+
+  <form id="guestbook-form" class="grid gap-3 mb-4 max-w-lg">
+    <input
+      type="text"
+      name="name"
+      placeholder="怎麼稱呼你？"
+      required
+      maxlength="40"
+      class="border-2 border-ink bg-cream px-4 py-2.5 text-ink placeholder:text-ink-light/70 focus:outline-none focus:bg-sage-light"
+    />
+    <textarea
+      name="message"
+      placeholder="想說的話..."
+      required
+      maxlength="500"
+      rows="3"
+      class="border-2 border-ink bg-cream px-4 py-2.5 text-ink placeholder:text-ink-light/70 focus:outline-none focus:bg-sage-light resize-none"
+    ></textarea>
+    <button
+      type="submit"
+      data-magnetic
+      class="justify-self-start px-6 py-2.5 bg-clay text-cream text-sm font-semibold hover:bg-ink transition-colors disabled:opacity-50"
+    >
+      送出留言
+    </button>
+    <p id="guestbook-status" class="text-sm min-h-5"></p>
+  </form>
+
+  <ul id="guestbook-list" class="grid gap-4 max-w-lg mt-8">
+    {(messages ?? []).map((m) => (
+      <li class="border-2 border-ink bg-cream p-4">
+        <div class="flex items-center justify-between mb-1">
+          <p class="font-semibold text-ink">{m.name}</p>
+          <time class="text-xs text-ink-light">{formatDate(m.created_at)}</time>
+        </div>
+        <p class="text-ink-light leading-relaxed whitespace-pre-wrap">{m.message}</p>
+      </li>
+    ))}
+  </ul>
+  {(!messages || messages.length === 0) && (
+    <p class="text-ink-light mt-6">目前還沒有公開的留言，第一句話留給你。</p>
+  )}
+</div>
+
+<script>
+  import { supabase } from '../lib/supabase';
+
+  const form = document.getElementById('guestbook-form') as HTMLFormElement | null;
+  const status = document.getElementById('guestbook-status');
+
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement | null;
+    const formData = new FormData(form);
+    const name = String(formData.get('name') ?? '').trim();
+    const message = String(formData.get('message') ?? '').trim();
+    if (!name || !message) return;
+
+    if (submitBtn) submitBtn.disabled = true;
+    if (status) status.textContent = '送出中...';
+
+    const { error } = await supabase.from('guestbook_messages').insert({ name, message });
+
+    if (error) {
+      if (status) status.textContent = '送出失敗，請稍後再試一次。';
+    } else {
+      if (status) status.textContent = '已送出，審核後會出現在下面，謝謝你！';
+      form.reset();
+    }
+    if (submitBtn) submitBtn.disabled = false;
+  });
+</script>

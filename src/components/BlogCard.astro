@@ -1,8 +1,8 @@
 ---
-import type { CollectionEntry } from 'astro:content';
+import type { BlogPost } from '../lib/supabase';
 
 interface Props {
-  post: CollectionEntry<'blog'>;
+  post: BlogPost;
   index?: number;
 }
 
@@ -14,8 +14,8 @@ const categoryColor: Record<string, string> = {
   興趣分享: 'bg-butter',
 };
 
-const formatDate = (date: Date) =>
-  date.toLocaleDateString('zh-Hant-TW', { year: 'numeric', month: 'long', day: 'numeric' });
+const formatDate = (date: string) =>
+  new Date(date).toLocaleDateString('zh-Hant-TW', { year: 'numeric', month: 'long', day: 'numeric' });
 ---
 
 <a
@@ -23,19 +23,19 @@ const formatDate = (date: Date) =>
   data-tilt
   class="reveal group block bg-cream border-2 border-ink"
   style={`animation-delay: ${index * 0.08}s`}
-  data-category={post.data.category}
+  data-category={post.category}
 >
-  <div class={`h-2 ${categoryColor[post.data.category] ?? 'bg-ink'}`}></div>
+  <div class={`h-2 ${categoryColor[post.category] ?? 'bg-ink'}`}></div>
   <div class="p-6">
     <div class="flex items-center justify-between mb-3">
       <span class="text-xs font-semibold uppercase tracking-wide text-ink-light">
-        {post.data.category}
+        {post.category}
       </span>
-      <time class="text-xs text-ink-light">{formatDate(post.data.date)}</time>
+      <time class="text-xs text-ink-light">{formatDate(post.date)}</time>
     </div>
     <h3 class="font-display text-xl text-ink mb-2 group-hover:text-clay transition-colors">
-      {post.data.title}
+      {post.title}
     </h3>
-    <p class="text-sm text-ink-light leading-relaxed line-clamp-3">{post.data.excerpt}</p>
+    <p class="text-sm text-ink-light leading-relaxed line-clamp-3">{post.excerpt}</p>
   </div>
 </a>
