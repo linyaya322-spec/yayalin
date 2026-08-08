@@ -106,3 +106,12 @@ export interface SurveyResponse {
   answers: Record<string, string | string[]>;
   submitted_at: string;
 }
+
+export interface SurveyProgress {
+  id: string;
+  survey_id: string;
+  furthest_position: number;
+  status: 'in_progress' | 'submitted' | 'closed';
+  started_at: string;
+  updated_at: string;
+}

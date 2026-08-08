@@ -89,6 +89,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
             <button id="copy-link-btn" class="px-4 py-1.5 border-2 border-ink text-sm font-semibold hover:bg-ink hover:text-cream transition-colors">複製問卷連結</button>
             <button id="export-csv-btn" class="px-4 py-1.5 border-2 border-ink text-sm font-semibold hover:bg-ink hover:text-cream transition-colors">匯出 CSV</button>
             <button id="print-btn" class="px-4 py-1.5 border-2 border-ink text-sm font-semibold hover:bg-ink hover:text-cream transition-colors">列印 / 存成 PDF</button>
+            <button id="compare-btn" class="px-4 py-1.5 border-2 border-clay text-clay text-sm font-semibold hover:bg-clay hover:text-cream transition-colors">跟另一份問卷比較</button>
           </div>
         </div>
         <p id="copy-link-status" class="text-sm text-ink-light mb-4 no-print"></p>
@@ -96,8 +97,44 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
         <div id="stats-report">
           <h2 id="stats-report-title" class="font-display text-2xl text-ink mb-1 print-only"></h2>
           <p id="stats-count" class="text-ink-light mb-6"></p>
+
+          <!-- 完成率 -->
+          <div id="completion-summary" class="grid sm:grid-cols-3 gap-3 mb-6"></div>
+
+          <!-- 回覆趨勢 -->
+          <div id="trend-chart" class="mb-8"></div>
+
+          <!-- 交叉分析篩選 -->
+          <div id="crosstab-controls" class="hidden flex flex-wrap items-center gap-2 mb-6 no-print bg-butter-light border-2 border-ink p-4">
+            <label class="text-sm font-semibold text-ink">交叉分析：</label>
+            <select id="crosstab-question" class="border-2 border-ink bg-cream px-3 py-1.5 text-sm focus:outline-none">
+              <option value="">不篩選</option>
+            </select>
+            <select id="crosstab-option" class="hidden border-2 border-ink bg-cream px-3 py-1.5 text-sm focus:outline-none">
+              <option value="">全部</option>
+            </select>
+            <span id="crosstab-summary" class="text-sm text-ink-light"></span>
+          </div>
+
           <div id="stats-content" class="grid gap-5"></div>
         </div>
+      </div>
+
+      <!-- 問卷比較 -->
+      <div id="survey-compare-view" class="hidden">
+        <button id="compare-back-btn" data-magnetic class="mb-6 text-sm font-semibold text-clay hover:text-ink transition-colors">← 回問卷列表</button>
+        <div class="flex flex-wrap gap-3 mb-6 bg-cream border-2 border-ink p-4">
+          <label class="flex items-center gap-2 text-sm">
+            A：
+            <select id="compare-survey-a" class="border-2 border-ink bg-cream px-3 py-1.5 focus:outline-none"></select>
+          </label>
+          <label class="flex items-center gap-2 text-sm">
+            B：
+            <select id="compare-survey-b" class="border-2 border-ink bg-cream px-3 py-1.5 focus:outline-none"></select>
+          </label>
+        </div>
+        <p class="text-xs text-ink-light mb-4">比較是依「題目順序」對齊，適合用在結構相同的兩份問卷（例如學生版跟家長版）。</p>
+        <div id="compare-content" class="grid gap-6"></div>
       </div>
     </div>
   </section>
@@ -180,15 +217,18 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
   const listView = document.getElementById('survey-list-view')!;
   const editView = document.getElementById('survey-edit-view')!;
   const statsView = document.getElementById('survey-stats-view')!;
+  const compareView = document.getElementById('survey-compare-view')!;
 
-  function showView(view: 'list' | 'edit' | 'stats') {
+  function showView(view: 'list' | 'edit' | 'stats' | 'compare') {
     listView.classList.toggle('hidden', view !== 'list');
     editView.classList.toggle('hidden', view !== 'edit');
     statsView.classList.toggle('hidden', view !== 'stats');
+    compareView.classList.toggle('hidden', view !== 'compare');
   }
 
   document.getElementById('edit-back-btn')?.addEventListener('click', () => showView('list'));
   document.getElementById('stats-back-btn')?.addEventListener('click', () => showView('list'));
+  document.getElementById('compare-back-btn')?.addEventListener('click', () => showView('list'));
 
   // ---------- 問卷列表 ----------
   const surveyList = document.getElementById('survey-list')!;
@@ -513,37 +553,21 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 
   let currentStatsSurvey: Survey | null = null;
   let currentStatsQuestions: SurveyQuestion[] = [];
-  let currentStatsResponses: { id: string; answers: Record<string, string | string[]> }[] = [];
+  let currentStatsResponses: { id: string; answers: Record<string, string | string[]>; submitted_at: string }[] = [];
+  let currentStatsProgress: { furthest_position: number; status: string }[] = [];
 
-  async function openStatsView(survey: Survey) {
-    currentStatsSurvey = survey;
-    statsTitle.textContent = survey.title;
-    statsReportTitle.textContent = `${survey.title}｜問卷統計報告`;
-    statsContent.innerHTML = '';
-    copyLinkStatus.textContent = '';
-
-    const { data: questions } = await supabase
-      .from('survey_questions')
-      .select('*')
-      .eq('survey_id', survey.id)
-      .order('position', { ascending: true });
-    currentStatsQuestions = (questions ?? []) as SurveyQuestion[];
-
-    const { data: responses } = await supabase
-      .from('survey_responses')
-      .select('*')
-      .eq('survey_id', survey.id)
-      .order('submitted_at', { ascending: false });
-    currentStatsResponses = (responses ?? []) as { id: string; answers: Record<string, string | string[]> }[];
-
-    statsCount.textContent = `共 ${currentStatsResponses.length} 筆回覆`;
-
-    currentStatsQuestions.forEach((q, i) => {
+  function renderQuestionStats(
+    questions: SurveyQuestion[],
+    responses: { answers: Record<string, string | string[]> }[],
+    container: HTMLElement
+  ) {
+    container.innerHTML = '';
+    questions.forEach((q, i) => {
       const block = document.createElement('div');
       block.className = 'border-2 border-ink bg-cream p-5';
 
       if (q.type === 'text') {
-        const texts = currentStatsResponses
+        const texts = responses
           .map((r) => r.answers[q.id])
           .filter((v): v is string => typeof v === 'string' && v.trim() !== '');
         block.innerHTML = `
@@ -553,7 +577,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
           </ul>
         `;
       } else {
-        const total = currentStatsResponses.filter((r) => r.answers[q.id] !== undefined).length;
+        const total = responses.filter((r) => r.answers[q.id] !== undefined).length;
         const correctIds = new Set(q.options.filter((o) => o.correct).map((o) => o.id));
         const hasCorrectAnswer = correctIds.size > 0;
         const otherOption = q.options.find((o) => o.isOther);
@@ -571,7 +595,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
           return v;
         };
 
-        currentStatsResponses.forEach((r) => {
+        responses.forEach((r) => {
           const value = r.answers[q.id];
           if (value === undefined) return;
           const selected = (Array.isArray(value) ? value : [value]).map(normalize);
@@ -613,11 +637,255 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
         `;
       }
 
-      statsContent.appendChild(block);
+      container.appendChild(block);
     });
+  }
+
+  function renderCompletionSummary() {
+    const container = document.getElementById('completion-summary')!;
+    const started = currentStatsProgress.length;
+    const submitted = currentStatsProgress.filter((p) => p.status === 'submitted').length;
+    const closed = currentStatsProgress.filter((p) => p.status === 'closed').length;
+    const abandoned = started - submitted - closed;
+    const rate = started ? Math.round((submitted / started) * 100) : 0;
+
+    const cards = [
+      { label: '開始填寫', value: started },
+      { label: '完成送出', value: `${submitted}（${rate}%）` },
+      { label: '中途離開／未送出', value: Math.max(abandoned, 0) },
+    ];
+    container.innerHTML = cards
+      .map(
+        (c) => `
+        <div class="bg-sage-light border-2 border-ink p-4 text-center">
+          <p class="font-display text-2xl text-ink">${c.value}</p>
+          <p class="text-xs text-ink-light mt-1">${c.label}</p>
+        </div>
+      `
+      )
+      .join('');
+  }
+
+  function renderTrendChart() {
+    const container = document.getElementById('trend-chart')!;
+    if (currentStatsResponses.length === 0) {
+      container.innerHTML = '';
+      return;
+    }
+    const countsByDay: Record<string, number> = {};
+    currentStatsResponses.forEach((r) => {
+      const day = new Date(r.submitted_at).toLocaleDateString('zh-Hant-TW', { month: 'numeric', day: 'numeric' });
+      countsByDay[day] = (countsByDay[day] ?? 0) + 1;
+    });
+    const days = Object.keys(countsByDay);
+    const max = Math.max(...Object.values(countsByDay));
+    container.innerHTML = `
+      <p class="text-xs font-semibold text-ink-light mb-2">回覆趨勢</p>
+      <div class="flex items-end gap-2 h-24 border-b-2 border-ink px-1">
+        ${days
+          .map((d) => {
+            const h = Math.max(4, Math.round((countsByDay[d] / max) * 88));
+            return `<div class="flex-1 flex flex-col items-center gap-1" title="${d}：${countsByDay[d]} 筆">
+              <span class="text-xs text-ink-light">${countsByDay[d]}</span>
+              <div class="w-full bg-clay" style="height:${h}px"></div>
+            </div>`;
+          })
+          .join('')}
+      </div>
+      <div class="flex gap-2 px-1 mt-1">
+        ${days.map((d) => `<span class="flex-1 text-center text-xs text-ink-light">${d}</span>`).join('')}
+      </div>
+    `;
+  }
+
+  function setupCrosstabControls() {
+    const controls = document.getElementById('crosstab-controls')!;
+    const questionSelect = document.getElementById('crosstab-question') as HTMLSelectElement;
+    const optionSelect = document.getElementById('crosstab-option') as HTMLSelectElement;
+    const summary = document.getElementById('crosstab-summary')!;
+
+    const choiceQuestions = currentStatsQuestions.filter((q) => q.type !== 'text');
+    if (choiceQuestions.length === 0) {
+      controls.classList.add('hidden');
+      return;
+    }
+    controls.classList.remove('hidden');
+    questionSelect.innerHTML =
+      '<option value="">不篩選</option>' +
+      choiceQuestions.map((q) => `<option value="${q.id}">${esc(q.question_text)}</option>`).join('');
+
+    function applyFilter() {
+      const qid = questionSelect.value;
+      const oid = optionSelect.value;
+      if (!qid || !oid) {
+        renderQuestionStats(currentStatsQuestions, currentStatsResponses, statsContent);
+        summary.textContent = '';
+        return;
+      }
+      const filtered = currentStatsResponses.filter((r) => {
+        const value = r.answers[qid];
+        if (value === undefined) return false;
+        return Array.isArray(value) ? value.includes(oid) : value === oid;
+      });
+      renderQuestionStats(currentStatsQuestions, filtered, statsContent);
+      summary.textContent = `符合條件：${filtered.length} / ${currentStatsResponses.length} 筆`;
+    }
+
+    questionSelect.onchange = () => {
+      const q = choiceQuestions.find((q) => q.id === questionSelect.value);
+      if (!q) {
+        optionSelect.classList.add('hidden');
+        applyFilter();
+        return;
+      }
+      optionSelect.classList.remove('hidden');
+      optionSelect.innerHTML =
+        '<option value="">全部</option>' + q.options.map((o) => `<option value="${o.id}">${esc(o.text)}</option>`).join('');
+      applyFilter();
+    };
+    optionSelect.onchange = applyFilter;
+  }
+
+  async function openStatsView(survey: Survey) {
+    currentStatsSurvey = survey;
+    statsTitle.textContent = survey.title;
+    statsReportTitle.textContent = `${survey.title}｜問卷統計報告`;
+    statsContent.innerHTML = '';
+    copyLinkStatus.textContent = '';
+
+    const { data: questions } = await supabase
+      .from('survey_questions')
+      .select('*')
+      .eq('survey_id', survey.id)
+      .order('position', { ascending: true });
+    currentStatsQuestions = (questions ?? []) as SurveyQuestion[];
+
+    const { data: responses } = await supabase
+      .from('survey_responses')
+      .select('*')
+      .eq('survey_id', survey.id)
+      .order('submitted_at', { ascending: false });
+    currentStatsResponses = (responses ?? []) as { id: string; answers: Record<string, string | string[]>; submitted_at: string }[];
+
+    const { data: progress } = await supabase
+      .from('survey_progress')
+      .select('furthest_position, status')
+      .eq('survey_id', survey.id);
+    currentStatsProgress = progress ?? [];
+
+    statsCount.textContent = `共 ${currentStatsResponses.length} 筆回覆`;
+
+    renderCompletionSummary();
+    renderTrendChart();
+    setupCrosstabControls();
+    renderQuestionStats(currentStatsQuestions, currentStatsResponses, statsContent);
 
     showView('stats');
   }
+
+  // ---------- 問卷比較 ----------
+  const compareBtn = document.getElementById('compare-btn')!;
+  const compareSurveyASelect = document.getElementById('compare-survey-a') as HTMLSelectElement;
+  const compareSurveyBSelect = document.getElementById('compare-survey-b') as HTMLSelectElement;
+  const compareContent = document.getElementById('compare-content')!;
+
+  async function loadCompareData(surveyId: string) {
+    const { data: questions } = await supabase
+      .from('survey_questions')
+      .select('*')
+      .eq('survey_id', surveyId)
+      .order('position', { ascending: true });
+    const { data: responses } = await supabase.from('survey_responses').select('*').eq('survey_id', surveyId);
+    return { questions: (questions ?? []) as SurveyQuestion[], responses: responses ?? [] };
+  }
+
+  function miniBars(q: SurveyQuestion, responses: { answers: Record<string, string | string[]> }[]) {
+    if (q.type === 'text') {
+      const count = responses.filter((r) => typeof r.answers[q.id] === 'string' && (r.answers[q.id] as string).trim()).length;
+      return `<p class="text-sm text-ink-light">簡答題，共 ${count} 筆回覆</p>`;
+    }
+    const total = responses.filter((r) => r.answers[q.id] !== undefined).length;
+    const counts: Record<string, number> = {};
+    q.options.forEach((o) => (counts[o.id] = 0));
+    responses.forEach((r) => {
+      const value = r.answers[q.id];
+      if (value === undefined) return;
+      const selected = Array.isArray(value) ? value : [value];
+      selected.forEach((v) => {
+        const normalized = v.startsWith('other:') ? q.options.find((o) => o.isOther)?.id : v;
+        if (normalized && counts[normalized] !== undefined) counts[normalized]++;
+      });
+    });
+    return `
+      <p class="text-xs text-ink-light mb-2">共 ${total} 筆回覆</p>
+      <div class="grid gap-2">
+        ${q.options
+          .map((o) => {
+            const count = counts[o.id] ?? 0;
+            const pct = total ? Math.round((count / total) * 100) : 0;
+            return `
+              <div>
+                <div class="flex items-center justify-between text-xs mb-0.5">
+                  <span class="text-ink">${esc(o.text)}</span>
+                  <span class="text-ink-light">${count}・${pct}%</span>
+                </div>
+                <div class="h-1.5 bg-cream-dark"><div class="h-1.5 bg-clay" style="width:${pct}%"></div></div>
+              </div>
+            `;
+          })
+          .join('')}
+      </div>
+    `;
+  }
+
+  async function renderCompare() {
+    const idA = compareSurveyASelect.value;
+    const idB = compareSurveyBSelect.value;
+    if (!idA || !idB) return;
+    compareContent.innerHTML = '<p class="text-ink-light">載入中...</p>';
+    const [a, b] = await Promise.all([loadCompareData(idA), loadCompareData(idB)]);
+    const maxLen = Math.max(a.questions.length, b.questions.length);
+    const blocks: string[] = [];
+    for (let i = 0; i < maxLen; i++) {
+      const qa = a.questions[i];
+      const qb = b.questions[i];
+      blocks.push(`
+        <div class="border-2 border-ink bg-cream p-5">
+          <p class="font-semibold text-ink mb-4">第 ${i + 1} 題</p>
+          <div class="grid sm:grid-cols-2 gap-5">
+            <div>
+              <p class="text-xs font-semibold text-clay mb-2">A：${qa ? esc(qa.question_text) : '（此問卷沒有這一題）'}</p>
+              ${qa ? miniBars(qa, a.responses) : ''}
+            </div>
+            <div>
+              <p class="text-xs font-semibold text-sage-dark mb-2">B：${qb ? esc(qb.question_text) : '（此問卷沒有這一題）'}</p>
+              ${qb ? miniBars(qb, b.responses) : ''}
+            </div>
+          </div>
+        </div>
+      `);
+    }
+    compareContent.innerHTML = blocks.join('');
+  }
+
+  compareBtn.addEventListener('click', async () => {
+    const { data: allSurveys } = await supabase.from('surveys').select('*').order('created_at', { ascending: false });
+    const options = (allSurveys ?? [])
+      .map((s) => `<option value="${s.id}">${esc(s.title)}</option>`)
+      .join('');
+    compareSurveyASelect.innerHTML = options;
+    compareSurveyBSelect.innerHTML = options;
+    if (currentStatsSurvey) {
+      compareSurveyASelect.value = currentStatsSurvey.id;
+      const other = (allSurveys ?? []).find((s) => s.id !== currentStatsSurvey!.id);
+      if (other) compareSurveyBSelect.value = other.id;
+    }
+    showView('compare');
+    renderCompare();
+  });
+
+  compareSurveyASelect.addEventListener('change', renderCompare);
+  compareSurveyBSelect.addEventListener('change', renderCompare);
 
   copyLinkBtn.addEventListener('click', async () => {
     if (!currentStatsSurvey) return;

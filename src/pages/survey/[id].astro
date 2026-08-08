@@ -217,6 +217,29 @@ const { survey, questions } = Astro.props;
   const nextBtn = document.getElementById('survey-next-btn') as HTMLButtonElement | null;
 
   const questionEls = Array.from(document.querySelectorAll<HTMLElement>('.survey-question'));
+  let progressRowId: string | null = null;
+
+  async function trackStart(surveyIdForTracking: string) {
+    const { data } = await supabase
+      .from('survey_progress')
+      .insert({ survey_id: surveyIdForTracking, furthest_position: 0 })
+      .select()
+      .single();
+    progressRowId = data?.id ?? null;
+  }
+
+  function trackAdvance(position: number) {
+    if (!progressRowId) return;
+    void supabase
+      .from('survey_progress')
+      .update({ furthest_position: position, updated_at: new Date().toISOString() })
+      .eq('id', progressRowId);
+  }
+
+  function trackFinish(finalStatus: 'submitted' | 'closed') {
+    if (!progressRowId) return;
+    void supabase.from('survey_progress').update({ status: finalStatus }).eq('id', progressRowId);
+  }
   const surveyId = window.location.pathname.split('/').filter(Boolean).pop();
 
   if (questionEls.length && nextBtn) {
@@ -331,12 +354,14 @@ const { survey, questions } = Astro.props;
         if (status) status.textContent = `送出失敗：${error.message}`;
         if (nextBtn) nextBtn.disabled = false;
       } else {
+        trackFinish('submitted');
         wrapper?.classList.add('hidden');
         done?.classList.remove('hidden');
       }
     }
 
     function closeSurvey() {
+      trackFinish('closed');
       wrapper?.classList.add('hidden');
       document.getElementById('survey-closed')?.classList.remove('hidden');
     }
@@ -366,6 +391,7 @@ const { survey, questions } = Astro.props;
       history.push(currentId);
       currentId = target;
       showQuestion(currentId);
+      trackAdvance(getQuestionEl(currentId).dataset.index ? Number(getQuestionEl(currentId).dataset.index) : 0);
     });
 
     prevBtn?.addEventListener('click', () => {
@@ -385,10 +411,11 @@ const { survey, questions } = Astro.props;
       if (startBtn) startBtn.disabled = !consentCheckbox.checked;
     });
 
-    startBtn?.addEventListener('click', () => {
+    startBtn?.addEventListener('click', async () => {
       consentBlock?.classList.add('hidden');
       quizBody?.classList.remove('hidden');
       showQuestion(currentId);
+      await trackStart(surveyId!);
     });
   }
 </script>
