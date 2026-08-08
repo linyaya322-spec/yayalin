@@ -9,7 +9,7 @@ export interface BlogPost {
   id: string;
   title: string;
   date: string;
-  category: '生活隨筆' | '兒少議題' | '興趣分享';
+  category: '生活隨筆' | '兒少議題' | '興趣分享' | '茶葉蛋';
   excerpt: string;
   body: string;
   cover_image: string | null;

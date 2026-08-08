@@ -7,7 +7,7 @@ interface Props {
 
 const { posts } = Astro.props;
 
-const categories = ['全部', '生活隨筆', '兒少議題', '興趣分享'];
+const categories = ['全部', '生活隨筆', '兒少議題', '興趣分享', '茶葉蛋'];
 
 const allTags = Array.from(new Set(posts.flatMap((p) => p.tags ?? []))).sort((a, b) =>
   a.localeCompare(b, 'zh-Hant')

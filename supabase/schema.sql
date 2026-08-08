@@ -8,7 +8,7 @@ create table if not exists blog_posts (
   id uuid primary key default gen_random_uuid(),
   title text not null,
   date timestamptz not null default now(),
-  category text not null check (category in ('生活隨筆', '兒少議題', '興趣分享')),
+  category text not null check (category in ('生活隨筆', '兒少議題', '興趣分享', '茶葉蛋')),
   excerpt text not null,
   body text not null,
   cover_image text,
