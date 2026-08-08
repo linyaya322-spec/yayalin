@@ -64,6 +64,30 @@ const { survey, questions } = Astro.props;
       <p class="text-ink-light">這份問卷還沒有題目。</p>
     ) : (
       <div id="survey-form-wrapper">
+        <div id="survey-consent" class="bg-cream border-2 border-ink p-6 sm:p-8">
+          <p class="font-semibold text-ink mb-3">填寫前請先確認</p>
+          <p class="text-ink-light leading-relaxed mb-4">
+            送出問卷前，請詳閱並同意
+            <a href="/privacy" target="_blank" rel="noopener noreferrer" class="text-clay underline font-semibold">隱私權政策</a>
+            與
+            <a href="/terms" target="_blank" rel="noopener noreferrer" class="text-clay underline font-semibold">服務條款</a>。
+          </p>
+          <label class="flex items-start gap-2 cursor-pointer mb-5">
+            <input type="checkbox" id="survey-consent-checkbox" class="w-4 h-4 mt-0.5" />
+            <span class="text-ink">我已閱讀並同意隱私權政策與服務條款</span>
+          </label>
+          <button
+            type="button"
+            id="survey-start-btn"
+            data-magnetic
+            disabled
+            class="px-7 py-3 bg-clay text-cream text-sm font-semibold hover:bg-ink transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            開始填寫
+          </button>
+        </div>
+
+        <div id="survey-quiz-body" class="hidden">
         <p id="survey-progress" class="text-sm text-ink-light mb-3"></p>
         <div class="grid gap-1 mb-6 h-1.5 bg-cream-dark">
           <div id="survey-progress-bar" class="h-1.5 bg-clay transition-all duration-300" style="width: 0%"></div>
@@ -164,12 +188,18 @@ const { survey, questions } = Astro.props;
           </button>
         </div>
         <p id="survey-status" class="text-sm min-h-5 mt-2"></p>
+        </div>
       </div>
     )}
 
     <div id="survey-done" class="hidden reveal bg-sage-light border-2 border-ink p-10 text-center">
       <p class="font-display text-2xl text-ink mb-2">謝謝你的填寫！</p>
       <p class="text-ink-light">你的回覆已經送出了。</p>
+    </div>
+
+    <div id="survey-closed" class="hidden reveal bg-cream-dark border-2 border-ink p-10 text-center">
+      <p class="font-display text-2xl text-ink mb-2">問卷到此結束</p>
+      <p class="text-ink-light">謝謝你的作答，這次的回答不會被記錄。</p>
     </div>
   </section>
 </BaseLayout>
@@ -223,8 +253,11 @@ const { survey, questions } = Astro.props;
     }
 
     function updateNextButtonLabel() {
-      const isLast = getNextTarget(currentId) === '__end__';
-      if (nextBtn) nextBtn.textContent = isLast ? '送出問卷' : '下一題';
+      if (!nextBtn) return;
+      const target = getNextTarget(currentId);
+      if (target === '__end__') nextBtn.textContent = '送出問卷';
+      else if (target === '__close__') nextBtn.textContent = '結束填答';
+      else nextBtn.textContent = '下一題';
     }
 
     function showQuestion(id: string) {
@@ -282,6 +315,7 @@ const { survey, questions } = Astro.props;
         const checked = q.querySelector<HTMLInputElement>('[data-answer-option]:checked');
         const goto = checked?.dataset.goto;
         if (goto === '__submit__') return '__end__';
+        if (goto === '__close__') return '__close__';
         if (goto) return goto;
       }
       const index = questionEls.indexOf(q);
@@ -302,6 +336,11 @@ const { survey, questions } = Astro.props;
       }
     }
 
+    function closeSurvey() {
+      wrapper?.classList.add('hidden');
+      document.getElementById('survey-closed')?.classList.remove('hidden');
+    }
+
     nextBtn.addEventListener('click', async () => {
       const currentQ = getQuestionEl(currentId);
       const result = collectAnswer(currentQ);
@@ -320,6 +359,10 @@ const { survey, questions } = Astro.props;
         await submitSurvey();
         return;
       }
+      if (target === '__close__') {
+        closeSurvey();
+        return;
+      }
       history.push(currentId);
       currentId = target;
       showQuestion(currentId);
@@ -333,6 +376,19 @@ const { survey, questions } = Astro.props;
       }
     });
 
-    showQuestion(currentId);
+    const consentBlock = document.getElementById('survey-consent');
+    const quizBody = document.getElementById('survey-quiz-body');
+    const consentCheckbox = document.getElementById('survey-consent-checkbox') as HTMLInputElement | null;
+    const startBtn = document.getElementById('survey-start-btn') as HTMLButtonElement | null;
+
+    consentCheckbox?.addEventListener('change', () => {
+      if (startBtn) startBtn.disabled = !consentCheckbox.checked;
+    });
+
+    startBtn?.addEventListener('click', () => {
+      consentBlock?.classList.add('hidden');
+      quizBody?.classList.remove('hidden');
+      showQuestion(currentId);
+    });
   }
 </script>

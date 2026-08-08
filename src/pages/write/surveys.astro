@@ -317,6 +317,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
             .filter((_, i) => i !== index)
             .map((b) => `<option value="${b.dataset.questionId}">跳到第 ${positionById.get(b.dataset.questionId)} 題</option>`),
           '<option value="__submit__">直接送出問卷</option>',
+          '<option value="__close__">結束問卷（不記錄這次填答）</option>',
         ].join('');
         sel.innerHTML = optionsHtml;
         if ([...sel.options].some((o) => o.value === pending)) sel.value = pending;
