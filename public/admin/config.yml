@@ -1,0 +1,54 @@
+backend:
+  name: git-gateway
+  branch: main
+
+local_backend: true
+
+media_folder: "public/uploads"
+public_folder: "/uploads"
+
+site_url: https://yayalin.netlify.app
+display_url: https://yayalin.netlify.app
+logo_url: /favicon.svg
+
+collections:
+  - name: "blog"
+    label: "部落格文章"
+    folder: "src/content/blog"
+    create: true
+    slug: "{{slug}}"
+    identifier_field: title
+    fields:
+      - { label: "標題", name: "title", widget: "string" }
+      - { label: "日期", name: "date", widget: "datetime" }
+      - label: "分類"
+        name: "category"
+        widget: "select"
+        options: ["生活隨筆", "兒少議題", "興趣分享"]
+      - { label: "摘要", name: "excerpt", widget: "text" }
+      - { label: "內容", name: "body", widget: "markdown" }
+
+  - name: "timeline"
+    label: "兒少委員時間軸"
+    folder: "src/content/timeline"
+    create: true
+    slug: "{{year}}-{{month}}-{{slug}}"
+    identifier_field: title
+    fields:
+      - { label: "日期", name: "date", widget: "datetime" }
+      - { label: "標題", name: "title", widget: "string" }
+      - { label: "說明", name: "description", widget: "text" }
+
+  - name: "quotes"
+    label: "今日小語"
+    files:
+      - name: "quotes"
+        label: "小語清單"
+        file: "src/content/quotes/quotes.json"
+        fields:
+          - name: "quotes"
+            label: "小語"
+            widget: "list"
+            fields:
+              - { label: "編號", name: "id", widget: "string" }
+              - { label: "文字", name: "text", widget: "string" }

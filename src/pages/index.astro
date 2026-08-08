@@ -1,0 +1,31 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Hero from '../components/Hero.astro';
+import QuoteWidget from '../components/QuoteWidget.astro';
+import BlogCard from '../components/BlogCard.astro';
+import { getCollection } from 'astro:content';
+
+const posts = (await getCollection('blog'))
+  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf())
+  .slice(0, 3);
+---
+
+<BaseLayout title="首頁">
+  <Hero />
+
+  <section class="max-w-4xl mx-auto px-6 pb-20">
+    <QuoteWidget />
+  </section>
+
+  <section class="max-w-4xl mx-auto px-6 pb-24">
+    <div class="reveal flex items-end justify-between mb-6">
+      <h2 class="font-display text-2xl text-ink">最新文章</h2>
+      <a href="/blog" class="text-sm text-sage-dark hover:underline">看全部 →</a>
+    </div>
+    <div class="grid sm:grid-cols-2 md:grid-cols-3 gap-5">
+      {posts.map((post, i) => (
+        <BlogCard post={post} index={i} />
+      ))}
+    </div>
+  </section>
+</BaseLayout>

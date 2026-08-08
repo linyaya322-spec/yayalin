@@ -1,0 +1,46 @@
+---
+import { getCollection } from 'astro:content';
+
+const quotes = await getCollection('quotes');
+const quoteTexts = quotes.map((q) => q.data.text);
+---
+
+<div class="reveal bg-white/60 border border-sage-light rounded-3xl p-8 sm:p-10 text-center max-w-lg mx-auto shadow-sm">
+  <p class="text-sm text-sage-dark font-medium mb-4">今日小語</p>
+  <p id="quote-text" class="font-display text-xl sm:text-2xl text-ink leading-relaxed min-h-16 flex items-center justify-center">
+    點按鈕，抽一句話給今天的自己
+  </p>
+  <button
+    id="quote-btn"
+    class="mt-6 px-6 py-2.5 rounded-full bg-clay text-white text-sm font-medium hover:bg-clay/90 active:scale-95 transition-all"
+  >
+    抽一句話
+  </button>
+</div>
+
+<script define:vars={{ quoteTexts }}>
+  const btn = document.getElementById('quote-btn');
+  const text = document.getElementById('quote-text');
+  let lastIndex = -1;
+
+  btn?.addEventListener('click', () => {
+    if (!quoteTexts.length || !text) return;
+    let index = Math.floor(Math.random() * quoteTexts.length);
+    if (quoteTexts.length > 1 && index === lastIndex) {
+      index = (index + 1) % quoteTexts.length;
+    }
+    lastIndex = index;
+
+    text.style.opacity = '0';
+    setTimeout(() => {
+      text.textContent = quoteTexts[index];
+      text.style.opacity = '1';
+    }, 200);
+  });
+</script>
+
+<style>
+  #quote-text {
+    transition: opacity 0.2s ease;
+  }
+</style>

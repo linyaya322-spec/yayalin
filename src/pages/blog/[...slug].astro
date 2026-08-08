@@ -1,0 +1,70 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getCollection, render } from 'astro:content';
+
+export async function getStaticPaths() {
+  const posts = await getCollection('blog');
+  return posts.map((post) => ({
+    params: { slug: post.id },
+    props: { post },
+  }));
+}
+
+const { post } = Astro.props;
+const { Content } = await render(post);
+
+const categoryStyles: Record<string, string> = {
+  生活隨筆: 'bg-sage-light text-sage-dark',
+  兒少議題: 'bg-clay-light text-clay',
+  興趣分享: 'bg-cream-dark text-ink-light',
+};
+
+const formatDate = (date: Date) =>
+  date.toLocaleDateString('zh-Hant-TW', { year: 'numeric', month: 'long', day: 'numeric' });
+---
+
+<BaseLayout title={post.data.title} description={post.data.excerpt}>
+  <article class="max-w-2xl mx-auto px-6 pt-16 pb-24">
+    <a href="/blog" class="reveal text-sm text-sage-dark hover:underline">← 回部落格列表</a>
+
+    <div class="reveal flex items-center gap-3 mt-6 mb-4" style="animation-delay: 0.05s;">
+      <span class={`text-xs font-medium px-3 py-1 rounded-full ${categoryStyles[post.data.category] ?? 'bg-cream-dark text-ink-light'}`}>
+        {post.data.category}
+      </span>
+      <time class="text-sm text-ink-light">{formatDate(post.data.date)}</time>
+    </div>
+
+    <h1 class="reveal font-display text-3xl sm:text-4xl text-ink mb-8" style="animation-delay: 0.1s;">
+      {post.data.title}
+    </h1>
+
+    <div class="reveal prose-blog" style="animation-delay: 0.2s;">
+      <Content />
+    </div>
+  </article>
+</BaseLayout>
+
+<style>
+  .prose-blog :global(p) {
+    color: var(--color-ink-light);
+    line-height: 1.9;
+    margin-bottom: 1.25em;
+    font-size: 1.05rem;
+  }
+  .prose-blog :global(ul) {
+    list-style: disc;
+    padding-left: 1.5em;
+    color: var(--color-ink-light);
+    margin-bottom: 1.25em;
+  }
+  .prose-blog :global(li) {
+    margin-bottom: 0.5em;
+  }
+  .prose-blog :global(strong) {
+    color: var(--color-ink);
+  }
+  .prose-blog :global(a) {
+    color: var(--color-sage-dark);
+    text-decoration: underline;
+  }
+</style>

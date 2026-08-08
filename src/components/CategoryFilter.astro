@@ -1,0 +1,50 @@
+---
+const categories = ['全部', '生活隨筆', '兒少議題', '興趣分享'];
+---
+
+<div id="category-filter" class="flex flex-wrap gap-2 mb-10">
+  {categories.map((cat, i) => (
+    <button
+      type="button"
+      class:list={[
+        'filter-btn px-4 py-1.5 rounded-full text-sm border transition-colors',
+        i === 0
+          ? 'bg-sage text-white border-sage'
+          : 'bg-transparent text-ink-light border-sage-light hover:border-sage',
+      ]}
+      data-category={cat}
+    >
+      {cat}
+    </button>
+  ))}
+</div>
+
+<script>
+  const buttons = document.querySelectorAll<HTMLButtonElement>('.filter-btn');
+  const cards = document.querySelectorAll<HTMLElement>('[data-category]:not(.filter-btn)');
+
+  function selectCategory(selected: string) {
+    buttons.forEach((b) => {
+      const isMatch = b.dataset.category === selected;
+      b.classList.toggle('bg-sage', isMatch);
+      b.classList.toggle('text-white', isMatch);
+      b.classList.toggle('border-sage', isMatch);
+      b.classList.toggle('bg-transparent', !isMatch);
+      b.classList.toggle('text-ink-light', !isMatch);
+      b.classList.toggle('border-sage-light', !isMatch);
+    });
+    cards.forEach((card) => {
+      const show = selected === '全部' || card.dataset.category === selected;
+      card.style.display = show ? '' : 'none';
+    });
+  }
+
+  buttons.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      if (btn.dataset.category) selectCategory(btn.dataset.category);
+    });
+  });
+
+  const urlCategory = new URLSearchParams(window.location.search).get('category');
+  if (urlCategory) selectCategory(urlCategory);
+</script>

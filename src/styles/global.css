@@ -1,0 +1,59 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Fraunces", "Noto Serif TC", serif;
+
+  --color-cream: #faf7f1;
+  --color-cream-dark: #f2ecdf;
+  --color-sage: #a8c3a0;
+  --color-sage-light: #d7e5d2;
+  --color-sage-dark: #7a9a72;
+  --color-clay: #e8b08a;
+  --color-clay-light: #f4d9c3;
+  --color-ink: #3a3a38;
+  --color-ink-light: #6b6a63;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--color-cream);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+
+::selection {
+  background-color: var(--color-sage-light);
+  color: var(--color-ink);
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.reveal {
+  opacity: 0;
+}
+
+.reveal.is-visible {
+  animation: fade-up 0.7s ease-out forwards;
+}
+
+@keyframes float-slow {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-14px) rotate(3deg); }
+}
+
+.float-slow {
+  animation: float-slow 7s ease-in-out infinite;
+}

@@ -1,0 +1,37 @@
+---
+import type { CollectionEntry } from 'astro:content';
+
+interface Props {
+  post: CollectionEntry<'blog'>;
+  index?: number;
+}
+
+const { post, index = 0 } = Astro.props;
+
+const categoryStyles: Record<string, string> = {
+  生活隨筆: 'bg-sage-light text-sage-dark',
+  兒少議題: 'bg-clay-light text-clay',
+  興趣分享: 'bg-cream-dark text-ink-light',
+};
+
+const formatDate = (date: Date) =>
+  date.toLocaleDateString('zh-Hant-TW', { year: 'numeric', month: 'long', day: 'numeric' });
+---
+
+<a
+  href={`/blog/${post.id}`}
+  class="reveal group block bg-white/70 border border-sage-light rounded-2xl p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-sage-light/50"
+  style={`animation-delay: ${index * 0.08}s`}
+  data-category={post.data.category}
+>
+  <div class="flex items-center justify-between mb-3">
+    <span class={`text-xs font-medium px-3 py-1 rounded-full ${categoryStyles[post.data.category] ?? 'bg-cream-dark text-ink-light'}`}>
+      {post.data.category}
+    </span>
+    <time class="text-xs text-ink-light">{formatDate(post.data.date)}</time>
+  </div>
+  <h3 class="font-display text-xl text-ink mb-2 group-hover:text-sage-dark transition-colors">
+    {post.data.title}
+  </h3>
+  <p class="text-sm text-ink-light leading-relaxed line-clamp-3">{post.data.excerpt}</p>
+</a>
