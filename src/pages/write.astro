@@ -36,6 +36,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         <button data-tab="quotes" class="tab-btn px-4 py-1.5 text-sm font-semibold border-2 border-ink bg-cream text-ink">今日小語</button>
         <button data-tab="guestbook" class="tab-btn px-4 py-1.5 text-sm font-semibold border-2 border-ink bg-cream text-ink">留言審核</button>
         <button data-tab="contact" class="tab-btn px-4 py-1.5 text-sm font-semibold border-2 border-ink bg-cream text-ink">聯絡訊息</button>
+        <button data-tab="pages" class="tab-btn px-4 py-1.5 text-sm font-semibold border-2 border-ink bg-cream text-ink">頁面內容</button>
       </div>
 
       <!-- 文章 -->
@@ -133,6 +134,21 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       <section data-panel="contact" class="hidden">
         <ul id="contact-list" class="grid gap-3"></ul>
       </section>
+
+      <!-- 頁面內容 -->
+      <section data-panel="pages" class="hidden">
+        <div class="flex flex-wrap gap-2 mb-6">
+          <button data-page-slug="about" class="page-tab-btn px-4 py-1.5 text-sm font-semibold border-2 border-ink bg-ink text-cream">關於我</button>
+          <button data-page-slug="privacy" class="page-tab-btn px-4 py-1.5 text-sm font-semibold border-2 border-ink bg-cream text-ink">隱私權政策</button>
+          <button data-page-slug="terms" class="page-tab-btn px-4 py-1.5 text-sm font-semibold border-2 border-ink bg-cream text-ink">服務條款</button>
+        </div>
+        <form id="page-form" class="grid gap-3 bg-butter-light border-2 border-ink p-6">
+          <input type="text" id="page-title" required placeholder="頁面標題" class="border-2 border-ink bg-cream px-4 py-2 focus:outline-none" />
+          <textarea id="page-content" required placeholder="內容（可以用 Markdown）" rows="14" class="border-2 border-ink bg-cream px-4 py-2 focus:outline-none"></textarea>
+          <button type="submit" class="justify-self-start px-6 py-2.5 bg-clay text-cream text-sm font-semibold hover:bg-ink transition-colors">儲存頁面</button>
+          <p id="page-status" class="text-sm min-h-5"></p>
+        </form>
+      </section>
     </div>
   </section>
 </BaseLayout>
@@ -203,6 +219,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     loadQuotes();
     loadGuestbook();
     loadContact();
+    loadPages();
   }
 
   const fmtDate = (d: string) => new Date(d).toLocaleDateString('zh-Hant-TW');
@@ -604,5 +621,56 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       });
       contactList.appendChild(li);
     });
+  }
+
+  // ---------- 頁面內容 ----------
+  const pageForm = document.getElementById('page-form') as HTMLFormElement;
+  const pageTitle = document.getElementById('page-title') as HTMLInputElement;
+  const pageContent = document.getElementById('page-content') as HTMLTextAreaElement;
+  const pageStatus = document.getElementById('page-status')!;
+  const pageTabButtons = document.querySelectorAll<HTMLButtonElement>('.page-tab-btn');
+  let pagesData: Record<string, { title: string; content: string }> = {};
+  let currentPageSlug = 'about';
+
+  function selectPageSlug(slug: string) {
+    currentPageSlug = slug;
+    pageTabButtons.forEach((b) => {
+      const active = b.dataset.pageSlug === slug;
+      b.classList.toggle('bg-ink', active);
+      b.classList.toggle('text-cream', active);
+      b.classList.toggle('bg-cream', !active);
+      b.classList.toggle('text-ink', !active);
+    });
+    const page = pagesData[slug];
+    pageTitle.value = page?.title ?? '';
+    pageContent.value = page?.content ?? '';
+  }
+
+  pageTabButtons.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      if (btn.dataset.pageSlug) selectPageSlug(btn.dataset.pageSlug);
+    });
+  });
+
+  pageForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    pageStatus.textContent = '儲存中...';
+    const { error } = await supabase.from('site_pages').upsert({
+      slug: currentPageSlug,
+      title: pageTitle.value.trim(),
+      content: pageContent.value.trim(),
+      updated_at: new Date().toISOString(),
+    });
+    pageStatus.textContent = error ? `儲存失敗：${error.message}` : '已儲存！';
+    if (!error) loadPages();
+  });
+
+  async function loadPages() {
+    const { data } = await supabase.from('site_pages').select('*');
+    pagesData = {};
+    (data ?? []).forEach((p) => {
+      pagesData[p.slug] = { title: p.title, content: p.content };
+    });
+    selectPageSlug(currentPageSlug);
   }
 </script>

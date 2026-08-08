@@ -1,25 +1,22 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import { supabase } from '../lib/supabase';
+import { marked } from 'marked';
+
+const { data: page } = await supabase.from('site_pages').select('*').eq('slug', 'about').maybeSingle();
+
+const title = page?.title ?? '嗨，我是 Yaya 林';
+const bodyHtml = page ? await marked.parse(page.content) : '';
 ---
 
 <BaseLayout title="關於我" description="關於 Yaya，學生、新竹縣兒少委員的自我介紹。">
   <section class="max-w-3xl mx-auto px-6 pt-16 pb-24">
     <p class="reveal inline-block bg-ink text-cream text-sm font-medium px-3 py-1 mb-6">關於我</p>
     <h1 class="font-display text-4xl sm:text-5xl text-ink mb-8">
-      <span data-text-reveal>嗨，我是 Yaya 林</span>
+      <span data-text-reveal>{title}</span>
     </h1>
 
-    <div class="reveal space-y-5 text-ink-light leading-relaxed text-lg" style="animation-delay: 0.2s;">
-      <p>
-        目前是一名學生，同時也是新竹縣兒少委員，希望能把同齡人的想法帶進公共討論裡，也讓更多人知道青少年其實很願意參與、很願意被聽見。
-      </p>
-      <p>
-        平常喜歡觀察生活裡的小細節，拍照、手寫筆記、沒有目的地的散步，都是我讓自己慢下來的方式。這個網站是我紀錄這些事情的地方——有正經的公共議題，也有很日常的碎碎念。
-      </p>
-      <p>
-        如果你也關心青少年參與、或只是想跟我聊聊天，歡迎透過<a href="/contact" data-magnetic class="text-clay font-semibold underline hover:text-ink">聯絡頁面</a>找我。
-      </p>
-    </div>
+    <div class="reveal prose-about" style="animation-delay: 0.2s;" set:html={bodyHtml} />
 
     <div class="reveal grid sm:grid-cols-3 gap-4 mt-12" style="animation-delay: 0.3s;">
       <div data-tilt class="bg-sage-light border-2 border-ink p-6 text-center">
@@ -37,3 +34,17 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     </div>
   </section>
 </BaseLayout>
+
+<style>
+  .prose-about :global(p) {
+    color: var(--color-ink-light);
+    line-height: 1.9;
+    margin-bottom: 1.25em;
+    font-size: 1.125rem;
+  }
+  .prose-about :global(a) {
+    color: var(--color-clay);
+    font-weight: 600;
+    text-decoration: underline;
+  }
+</style>

@@ -40,6 +40,13 @@ export interface GuestbookMessage {
   created_at: string;
 }
 
+export interface SitePage {
+  slug: string;
+  title: string;
+  content: string;
+  updated_at: string;
+}
+
 export interface ContactSubmission {
   id: string;
   name: string;
