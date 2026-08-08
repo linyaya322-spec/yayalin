@@ -11,6 +11,7 @@ create table if not exists blog_posts (
   category text not null check (category in ('生活隨筆', '兒少議題', '興趣分享')),
   excerpt text not null,
   body text not null,
+  cover_image text,
   created_at timestamptz not null default now()
 );
 
@@ -166,3 +167,17 @@ insert into quotes (text) values
 ('每一次舉手發言，都是一次練習。'),
 ('累的時候，休息也是一種前進。'),
 ('小小的行動，也能推動一點點改變。');
+
+-- ---------- 文章圖片（儲存桶 post-images 需另外用 Storage API/介面建立，公開讀取） ----------
+
+create policy "public can view post-images"
+  on storage.objects for select
+  using (bucket_id = 'post-images');
+
+create policy "only admin can upload to post-images"
+  on storage.objects for insert
+  with check (bucket_id = 'post-images' and auth.jwt() ->> 'email' = 'yayalin322@gmail.com');
+
+create policy "only admin can delete from post-images"
+  on storage.objects for delete
+  using (bucket_id = 'post-images' and auth.jwt() ->> 'email' = 'yayalin322@gmail.com');

@@ -12,6 +12,7 @@ export interface BlogPost {
   category: '生活隨筆' | '兒少議題' | '興趣分享';
   excerpt: string;
   body: string;
+  cover_image: string | null;
   created_at: string;
 }
 

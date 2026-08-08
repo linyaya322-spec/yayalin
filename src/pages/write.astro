@@ -52,6 +52,24 @@ import BaseLayout from '../layouts/BaseLayout.astro';
             </select>
           </div>
           <textarea id="post-excerpt" required placeholder="摘要" rows="2" class="border-2 border-ink bg-cream px-4 py-2 focus:outline-none resize-none"></textarea>
+
+          <div class="grid gap-2 bg-cream border-2 border-ink p-3">
+            <label class="text-xs font-semibold text-ink-light">封面圖片（顯示在文章卡片與內頁最上方，選填）</label>
+            <input type="hidden" id="post-cover-image" />
+            <img id="post-cover-preview" class="hidden max-h-32 object-cover border-2 border-ink" alt="封面預覽" />
+            <div class="flex items-center gap-3">
+              <input type="file" id="post-cover-input" accept="image/png,image/jpeg,image/webp,image/gif" class="text-sm" />
+              <button type="button" id="post-cover-remove" class="hidden text-xs font-semibold text-clay underline">移除封面</button>
+            </div>
+            <p id="post-cover-status" class="text-xs text-ink-light min-h-4"></p>
+          </div>
+
+          <div class="grid gap-2 bg-cream border-2 border-ink p-3">
+            <label class="text-xs font-semibold text-ink-light">插入圖片到內容（上傳後會把圖片網址加到下面內容欄位游標位置）</label>
+            <input type="file" id="post-inline-image-input" accept="image/png,image/jpeg,image/webp,image/gif" class="text-sm" />
+            <p id="post-inline-image-status" class="text-xs text-ink-light min-h-4"></p>
+          </div>
+
           <textarea id="post-body" required placeholder="內容（可以用 Markdown，例如 **粗體**、- 條列）" rows="10" class="border-2 border-ink bg-cream px-4 py-2 focus:outline-none"></textarea>
           <div class="flex gap-3">
             <button type="submit" class="px-6 py-2.5 bg-clay text-cream text-sm font-semibold hover:bg-ink transition-colors">儲存文章</button>
@@ -181,6 +199,25 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     return div.innerHTML;
   }
 
+  // ---------- 圖片上傳 ----------
+  const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+
+  async function uploadImage(file: File): Promise<string | null> {
+    if (file.size > MAX_IMAGE_BYTES) {
+      alert('圖片太大了，請上傳 5MB 以下的圖片。');
+      return null;
+    }
+    const ext = file.name.split('.').pop() ?? 'jpg';
+    const path = `${crypto.randomUUID()}.${ext}`;
+    const { error } = await supabase.storage.from('post-images').upload(path, file);
+    if (error) {
+      alert(`圖片上傳失敗：${error.message}`);
+      return null;
+    }
+    const { data } = supabase.storage.from('post-images').getPublicUrl(path);
+    return data.publicUrl;
+  }
+
   // ---------- 文章 ----------
   const postForm = document.getElementById('post-form') as HTMLFormElement;
   const postId = document.getElementById('post-id') as HTMLInputElement;
@@ -189,14 +226,64 @@ import BaseLayout from '../layouts/BaseLayout.astro';
   const postCategory = document.getElementById('post-category') as HTMLSelectElement;
   const postExcerpt = document.getElementById('post-excerpt') as HTMLTextAreaElement;
   const postBody = document.getElementById('post-body') as HTMLTextAreaElement;
+  const postCoverImage = document.getElementById('post-cover-image') as HTMLInputElement;
+  const postCoverPreview = document.getElementById('post-cover-preview') as HTMLImageElement;
+  const postCoverInput = document.getElementById('post-cover-input') as HTMLInputElement;
+  const postCoverRemove = document.getElementById('post-cover-remove')!;
+  const postCoverStatus = document.getElementById('post-cover-status')!;
+  const postInlineImageInput = document.getElementById('post-inline-image-input') as HTMLInputElement;
+  const postInlineImageStatus = document.getElementById('post-inline-image-status')!;
   const postCancel = document.getElementById('post-cancel')!;
   const postStatus = document.getElementById('post-status')!;
   const postList = document.getElementById('post-list')!;
+
+  function setCoverImage(url: string) {
+    postCoverImage.value = url;
+    postCoverPreview.src = url;
+    postCoverPreview.classList.remove('hidden');
+    postCoverRemove.classList.remove('hidden');
+  }
+
+  function clearCoverImage() {
+    postCoverImage.value = '';
+    postCoverPreview.src = '';
+    postCoverPreview.classList.add('hidden');
+    postCoverRemove.classList.add('hidden');
+    postCoverInput.value = '';
+  }
+
+  postCoverInput.addEventListener('change', async () => {
+    const file = postCoverInput.files?.[0];
+    if (!file) return;
+    postCoverStatus.textContent = '上傳中...';
+    const url = await uploadImage(file);
+    postCoverStatus.textContent = url ? '上傳完成！' : '';
+    if (url) setCoverImage(url);
+  });
+
+  postCoverRemove.addEventListener('click', clearCoverImage);
+
+  postInlineImageInput.addEventListener('change', async () => {
+    const file = postInlineImageInput.files?.[0];
+    if (!file) return;
+    postInlineImageStatus.textContent = '上傳中...';
+    const url = await uploadImage(file);
+    postInlineImageStatus.textContent = url ? '已插入到內容裡！' : '';
+    if (url) {
+      const markdown = `![](${url})`;
+      const start = postBody.selectionStart ?? postBody.value.length;
+      const end = postBody.selectionEnd ?? postBody.value.length;
+      postBody.value = postBody.value.slice(0, start) + markdown + postBody.value.slice(end);
+      postBody.focus();
+      postInlineImageInput.value = '';
+    }
+  });
 
   function resetPostForm() {
     postForm.reset();
     postId.value = '';
     postCancel.classList.add('hidden');
+    clearCoverImage();
   }
 
   postCancel.addEventListener('click', resetPostForm);
@@ -209,6 +296,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       category: postCategory.value,
       excerpt: postExcerpt.value.trim(),
       body: postBody.value.trim(),
+      cover_image: postCoverImage.value || null,
     };
     postStatus.textContent = '儲存中...';
     const { error } = postId.value
@@ -244,6 +332,11 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         postCategory.value = post.category;
         postExcerpt.value = post.excerpt;
         postBody.value = post.body;
+        if (post.cover_image) {
+          setCoverImage(post.cover_image);
+        } else {
+          clearCoverImage();
+        }
         postCancel.classList.remove('hidden');
         postForm.scrollIntoView({ behavior: 'smooth' });
       });

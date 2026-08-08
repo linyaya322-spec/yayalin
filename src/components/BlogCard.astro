@@ -25,7 +25,11 @@ const formatDate = (date: string) =>
   style={`animation-delay: ${index * 0.08}s`}
   data-category={post.category}
 >
-  <div class={`h-2 ${categoryColor[post.category] ?? 'bg-ink'}`}></div>
+  {post.cover_image ? (
+    <img src={post.cover_image} alt="" class="w-full h-40 object-cover border-b-2 border-ink" loading="lazy" />
+  ) : (
+    <div class={`h-2 ${categoryColor[post.category] ?? 'bg-ink'}`}></div>
+  )}
   <div class="p-6">
     <div class="flex items-center justify-between mb-3">
       <span class="text-xs font-semibold uppercase tracking-wide text-ink-light">

@@ -41,6 +41,10 @@ const bodyHtml = await marked.parse(post.body);
       <span data-text-reveal>{post.title}</span>
     </h1>
 
+    {post.cover_image && (
+      <img src={post.cover_image} alt="" class="reveal w-full max-h-96 object-cover border-2 border-ink mb-8" style="animation-delay: 0.15s;" />
+    )}
+
     <div class="reveal prose-blog" style="animation-delay: 0.2s;" set:html={bodyHtml} />
   </article>
 </BaseLayout>
@@ -68,5 +72,11 @@ const bodyHtml = await marked.parse(post.body);
     color: var(--color-clay);
     font-weight: 600;
     text-decoration: underline;
+  }
+  .prose-blog :global(img) {
+    max-width: 100%;
+    height: auto;
+    border: 2px solid var(--color-ink);
+    margin: 1.5em 0;
   }
 </style>
