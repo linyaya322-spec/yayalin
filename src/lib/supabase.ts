@@ -70,3 +70,37 @@ export interface AppSetting {
   key: string;
   value: string;
 }
+
+export interface SurveyOption {
+  id: string;
+  text: string;
+  correct: boolean;
+}
+
+export interface Survey {
+  id: string;
+  title: string;
+  description: string;
+  is_active: boolean;
+  link_url: string | null;
+  pdf_url: string | null;
+  created_at: string;
+}
+
+export interface SurveyQuestion {
+  id: string;
+  survey_id: string;
+  position: number;
+  question_text: string;
+  type: 'text' | 'single' | 'multiple';
+  required: boolean;
+  options: SurveyOption[];
+  created_at: string;
+}
+
+export interface SurveyResponse {
+  id: string;
+  survey_id: string;
+  answers: Record<string, string | string[]>;
+  submitted_at: string;
+}

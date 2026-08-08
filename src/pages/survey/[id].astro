@@ -1,0 +1,167 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { supabase } from '../../lib/supabase';
+import type { Survey, SurveyQuestion } from '../../lib/supabase';
+
+export async function getStaticPaths() {
+  const { data: surveys } = await supabase.from('surveys').select('*');
+  const paths = [];
+  for (const survey of surveys ?? []) {
+    const { data: questions } = await supabase
+      .from('survey_questions')
+      .select('*')
+      .eq('survey_id', survey.id)
+      .order('position', { ascending: true });
+    paths.push({
+      params: { id: survey.id },
+      props: { survey: survey as Survey, questions: (questions ?? []) as SurveyQuestion[] },
+    });
+  }
+  return paths;
+}
+
+const { survey, questions } = Astro.props;
+---
+
+<BaseLayout title={survey.title} description={survey.description || `填寫問卷：${survey.title}`}>
+  <section class="max-w-2xl mx-auto px-6 pt-16 pb-24">
+    <p class="reveal inline-block bg-ink text-cream text-sm font-medium px-3 py-1 mb-6">問卷</p>
+    <h1 class="font-display text-3xl sm:text-4xl text-ink mb-4">
+      <span data-text-reveal>{survey.title}</span>
+    </h1>
+    {survey.description && (
+      <p class="reveal text-ink-light leading-relaxed text-lg mb-4" style="animation-delay: 0.2s;">{survey.description}</p>
+    )}
+
+    {(survey.pdf_url || survey.link_url) && (
+      <div class="reveal flex flex-wrap gap-3 mb-8" style="animation-delay: 0.25s;">
+        {survey.pdf_url && (
+          <a
+            href={survey.pdf_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            data-magnetic
+            class="inline-flex items-center gap-1.5 px-3 py-1.5 border-2 border-ink text-sm font-semibold text-ink hover:bg-ink hover:text-cream transition-colors"
+          >
+            📄 相關文件 PDF
+          </a>
+        )}
+        {survey.link_url && (
+          <a
+            href={survey.link_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            data-magnetic
+            class="inline-flex items-center gap-1.5 px-3 py-1.5 border-2 border-ink text-sm font-semibold text-ink hover:bg-ink hover:text-cream transition-colors"
+          >
+            🔗 相關連結
+          </a>
+        )}
+      </div>
+    )}
+
+    <div id="survey-form-wrapper">
+      <form id="survey-form" class="grid gap-6" data-survey-id={survey.id}>
+        {questions.map((q, i) => (
+          <div class="bg-cream border-2 border-ink p-6" data-question-id={q.id} data-question-type={q.type} data-required={q.required ? 'true' : 'false'}>
+            <p class="font-semibold text-ink mb-3">
+              {i + 1}. {q.question_text}
+              {q.required && <span class="text-clay ml-1">*</span>}
+            </p>
+            {q.type === 'text' && (
+              <textarea
+                name={q.id}
+                required={q.required}
+                rows="3"
+                class="w-full border-2 border-ink bg-cream px-4 py-2 focus:outline-none focus:bg-sage-light resize-none"
+              ></textarea>
+            )}
+            {q.type === 'single' && (
+              <div class="grid gap-2">
+                {q.options.map((opt) => (
+                  <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="radio" name={q.id} value={opt.id} required={q.required} class="w-4 h-4" />
+                    <span class="text-ink-light">{opt.text}</span>
+                  </label>
+                ))}
+              </div>
+            )}
+            {q.type === 'multiple' && (
+              <div class="grid gap-2">
+                {q.options.map((opt) => (
+                  <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" name={q.id} value={opt.id} class="w-4 h-4" />
+                    <span class="text-ink-light">{opt.text}</span>
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
+
+        <button
+          type="submit"
+          data-magnetic
+          class="justify-self-start px-7 py-3 bg-clay text-cream text-sm font-semibold hover:bg-ink transition-colors disabled:opacity-50"
+        >
+          送出問卷
+        </button>
+        <p id="survey-status" class="text-sm min-h-5"></p>
+      </form>
+    </div>
+
+    <div id="survey-done" class="hidden reveal bg-sage-light border-2 border-ink p-10 text-center">
+      <p class="font-display text-2xl text-ink mb-2">謝謝你的填寫！</p>
+      <p class="text-ink-light">你的回覆已經送出了。</p>
+    </div>
+  </section>
+</BaseLayout>
+
+<script>
+  import { supabase } from '../../lib/supabase';
+
+  const form = document.getElementById('survey-form') as HTMLFormElement | null;
+  const wrapper = document.getElementById('survey-form-wrapper');
+  const done = document.getElementById('survey-done');
+  const status = document.getElementById('survey-status');
+
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const surveyId = form.dataset.surveyId;
+    const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement | null;
+    const formData = new FormData(form);
+
+    const answers: Record<string, string | string[]> = {};
+    let missingRequired = false;
+    form.querySelectorAll<HTMLElement>('[data-question-id]').forEach((el) => {
+      const id = el.dataset.questionId!;
+      const type = el.dataset.questionType;
+      if (type === 'multiple') {
+        const values = formData.getAll(id).map(String);
+        if (values.length) answers[id] = values;
+        if (values.length === 0 && el.dataset.required === 'true') missingRequired = true;
+      } else {
+        const value = formData.get(id);
+        if (value) answers[id] = String(value);
+      }
+    });
+
+    if (missingRequired) {
+      if (status) status.textContent = '請完成所有必填題目（複選題至少選一個）。';
+      return;
+    }
+
+    if (submitBtn) submitBtn.disabled = true;
+    if (status) status.textContent = '送出中...';
+
+    const { error } = await supabase.from('survey_responses').insert({ survey_id: surveyId, answers });
+
+    if (error) {
+      if (status) status.textContent = `送出失敗：${error.message}`;
+      if (submitBtn) submitBtn.disabled = false;
+    } else {
+      wrapper?.classList.add('hidden');
+      done?.classList.remove('hidden');
+    }
+  });
+</script>

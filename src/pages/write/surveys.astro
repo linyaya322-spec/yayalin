@@ -1,0 +1,595 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="問卷管理" description="站長專用問卷管理頁" noindex>
+  <section class="max-w-3xl mx-auto px-6 pt-16 pb-24">
+    <div id="login-view">
+      <p class="inline-block bg-ink text-cream text-sm font-medium px-3 py-1 mb-6">問卷管理</p>
+      <h1 class="font-display text-3xl text-ink mb-6">登入管理後台</h1>
+      <form id="login-form" class="grid gap-3 max-w-sm">
+        <input
+          type="email"
+          id="login-email"
+          required
+          placeholder="yayalin322@gmail.com"
+          class="border-2 border-ink bg-cream px-4 py-2.5 text-ink placeholder:text-ink-light/70 focus:outline-none focus:bg-sage-light"
+        />
+        <button type="submit" class="px-6 py-2.5 bg-clay text-cream text-sm font-semibold hover:bg-ink transition-colors">
+          寄送登入連結
+        </button>
+        <p id="login-status" class="text-sm min-h-5 text-ink-light"></p>
+      </form>
+    </div>
+
+    <div id="admin-view" class="hidden">
+      <div class="flex items-center justify-between mb-8 no-print">
+        <div>
+          <a href="/write" data-magnetic class="text-sm font-semibold text-clay hover:text-ink transition-colors">← 回主控台</a>
+          <h1 class="font-display text-3xl text-ink mt-2">問卷管理</h1>
+        </div>
+        <button id="logout-btn" class="px-4 py-1.5 border-2 border-ink text-sm font-semibold hover:bg-ink hover:text-cream transition-colors">
+          登出
+        </button>
+      </div>
+
+      <!-- 問卷列表 -->
+      <div id="survey-list-view">
+        <button id="new-survey-btn" data-magnetic class="mb-6 px-6 py-2.5 bg-clay text-cream text-sm font-semibold hover:bg-ink transition-colors">
+          + 新增問卷
+        </button>
+        <ul id="survey-list" class="grid gap-3"></ul>
+      </div>
+
+      <!-- 編輯問卷 -->
+      <div id="survey-edit-view" class="hidden">
+        <button id="edit-back-btn" data-magnetic class="mb-6 text-sm font-semibold text-clay hover:text-ink transition-colors">← 回問卷列表</button>
+
+        <form id="survey-form" class="grid gap-3 mb-8 bg-sage-light border-2 border-ink p-6">
+          <input type="hidden" id="survey-id" />
+          <input type="text" id="survey-title" required placeholder="問卷標題" class="border-2 border-ink bg-cream px-4 py-2 focus:outline-none" />
+          <textarea id="survey-description" placeholder="問卷說明（選填）" rows="2" class="border-2 border-ink bg-cream px-4 py-2 focus:outline-none resize-none"></textarea>
+          <label class="flex items-center gap-2">
+            <input type="checkbox" id="survey-active" checked class="w-4 h-4" />
+            <span class="text-sm text-ink">啟用（顯示在首頁與可公開填寫）</span>
+          </label>
+          <input type="text" id="survey-link" placeholder="相關連結網址（選填）" class="border-2 border-ink bg-cream px-4 py-2 focus:outline-none" />
+
+          <div class="grid gap-2 bg-cream border-2 border-ink p-3">
+            <label class="text-xs font-semibold text-ink-light">相關 PDF 檔案（選填）</label>
+            <input type="hidden" id="survey-pdf" />
+            <a id="survey-pdf-preview" class="hidden text-sm font-semibold text-clay underline" target="_blank" rel="noopener noreferrer">目前的 PDF</a>
+            <div class="flex flex-wrap items-center gap-3">
+              <input type="file" id="survey-pdf-input" accept="application/pdf" class="text-sm max-w-full" />
+              <button type="button" id="survey-pdf-remove" class="hidden text-xs font-semibold text-clay underline">移除 PDF</button>
+            </div>
+            <p id="survey-pdf-status" class="text-xs text-ink-light min-h-4"></p>
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <p class="font-semibold text-ink">題目</p>
+              <button type="button" id="add-question-btn" class="px-4 py-1.5 border-2 border-ink text-sm font-semibold hover:bg-ink hover:text-cream transition-colors">+ 新增題目</button>
+            </div>
+            <div id="question-list" class="grid gap-4"></div>
+          </div>
+
+          <button type="submit" class="justify-self-start px-6 py-2.5 bg-clay text-cream text-sm font-semibold hover:bg-ink transition-colors">儲存問卷</button>
+          <p id="survey-form-status" class="text-sm min-h-5"></p>
+        </form>
+      </div>
+
+      <!-- 回覆統計 -->
+      <div id="survey-stats-view" class="hidden">
+        <button id="stats-back-btn" data-magnetic class="mb-6 text-sm font-semibold text-clay hover:text-ink transition-colors no-print">← 回問卷列表</button>
+
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-6 no-print">
+          <h2 id="stats-title" class="font-display text-2xl text-ink"></h2>
+          <div class="flex flex-wrap gap-2">
+            <button id="copy-link-btn" class="px-4 py-1.5 border-2 border-ink text-sm font-semibold hover:bg-ink hover:text-cream transition-colors">複製問卷連結</button>
+            <button id="export-csv-btn" class="px-4 py-1.5 border-2 border-ink text-sm font-semibold hover:bg-ink hover:text-cream transition-colors">匯出 CSV</button>
+            <button id="print-btn" class="px-4 py-1.5 border-2 border-ink text-sm font-semibold hover:bg-ink hover:text-cream transition-colors">列印 / 存成 PDF</button>
+          </div>
+        </div>
+        <p id="copy-link-status" class="text-sm text-ink-light mb-4 no-print"></p>
+
+        <div id="stats-report">
+          <h2 id="stats-report-title" class="font-display text-2xl text-ink mb-1 print-only"></h2>
+          <p id="stats-count" class="text-ink-light mb-6"></p>
+          <div id="stats-content" class="grid gap-5"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .print-only {
+    display: none;
+  }
+
+  @media print {
+    .no-print {
+      display: none !important;
+    }
+    .print-only {
+      display: block !important;
+    }
+    #survey-list-view,
+    #survey-edit-view,
+    #login-view {
+      display: none !important;
+    }
+  }
+</style>
+
+<script>
+  import { supabase } from '../../lib/supabase';
+  import type { Survey, SurveyQuestion, SurveyOption } from '../../lib/supabase';
+
+  const ADMIN_EMAIL = 'yayalin322@gmail.com';
+
+  const loginView = document.getElementById('login-view')!;
+  const adminView = document.getElementById('admin-view')!;
+  const loginForm = document.getElementById('login-form') as HTMLFormElement;
+  const loginEmail = document.getElementById('login-email') as HTMLInputElement;
+  const loginStatus = document.getElementById('login-status')!;
+  const logoutBtn = document.getElementById('logout-btn')!;
+
+  loginForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    loginStatus.textContent = '寄送中...';
+    const { error } = await supabase.auth.signInWithOtp({
+      email: loginEmail.value.trim(),
+      options: { shouldCreateUser: false, emailRedirectTo: window.location.origin + '/write/surveys' },
+    });
+    loginStatus.textContent = error
+      ? '寄送失敗，請確認 Email 是否正確。'
+      : '登入連結已寄出，請到信箱點連結（可能在垃圾信件夾）。';
+  });
+
+  logoutBtn.addEventListener('click', async () => {
+    await supabase.auth.signOut();
+  });
+
+  async function renderForSession() {
+    const { data } = await supabase.auth.getSession();
+    const email = data.session?.user.email;
+    if (email === ADMIN_EMAIL) {
+      loginView.classList.add('hidden');
+      adminView.classList.remove('hidden');
+      loadSurveyList();
+    } else {
+      loginView.classList.remove('hidden');
+      adminView.classList.add('hidden');
+    }
+  }
+
+  supabase.auth.onAuthStateChange(() => renderForSession());
+  renderForSession();
+
+  function esc(value: string) {
+    const div = document.createElement('div');
+    div.textContent = value ?? '';
+    return div.innerHTML;
+  }
+
+  const fmtDate = (d: string) => new Date(d).toLocaleDateString('zh-Hant-TW');
+
+  // ---------- 視圖切換 ----------
+  const listView = document.getElementById('survey-list-view')!;
+  const editView = document.getElementById('survey-edit-view')!;
+  const statsView = document.getElementById('survey-stats-view')!;
+
+  function showView(view: 'list' | 'edit' | 'stats') {
+    listView.classList.toggle('hidden', view !== 'list');
+    editView.classList.toggle('hidden', view !== 'edit');
+    statsView.classList.toggle('hidden', view !== 'stats');
+  }
+
+  document.getElementById('edit-back-btn')?.addEventListener('click', () => showView('list'));
+  document.getElementById('stats-back-btn')?.addEventListener('click', () => showView('list'));
+
+  // ---------- 問卷列表 ----------
+  const surveyList = document.getElementById('survey-list')!;
+
+  async function loadSurveyList() {
+    const { data: surveys } = await supabase.from('surveys').select('*').order('created_at', { ascending: false });
+    surveyList.innerHTML = '';
+    (surveys ?? []).forEach((survey) => {
+      const li = document.createElement('li');
+      li.className = 'border-2 border-ink bg-cream p-4 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3';
+      li.innerHTML = `
+        <div class="min-w-0">
+          <p class="text-xs text-ink-light mb-1">${fmtDate(survey.created_at)} · ${survey.is_active ? '已啟用' : '已停用'}</p>
+          <p class="font-semibold text-ink">${esc(survey.title)}</p>
+        </div>
+        <div class="flex gap-2 shrink-0">
+          <button data-stats class="px-3 py-1 text-xs font-semibold border-2 border-sage-dark text-sage-dark hover:bg-sage-dark hover:text-cream transition-colors">回覆統計</button>
+          <button data-edit class="px-3 py-1 text-xs font-semibold border-2 border-ink hover:bg-ink hover:text-cream transition-colors">編輯</button>
+          <button data-delete class="px-3 py-1 text-xs font-semibold border-2 border-clay text-clay hover:bg-clay hover:text-cream transition-colors">刪除</button>
+        </div>
+      `;
+      li.querySelector('[data-edit]')?.addEventListener('click', () => openEditView(survey));
+      li.querySelector('[data-stats]')?.addEventListener('click', () => openStatsView(survey));
+      li.querySelector('[data-delete]')?.addEventListener('click', async () => {
+        if (!confirm(`確定要刪除「${survey.title}」嗎？連同所有回覆一起刪除，無法復原。`)) return;
+        await supabase.from('surveys').delete().eq('id', survey.id);
+        loadSurveyList();
+      });
+      surveyList.appendChild(li);
+    });
+  }
+
+  // ---------- 編輯問卷（含建題） ----------
+  const surveyForm = document.getElementById('survey-form') as HTMLFormElement;
+  const surveyIdInput = document.getElementById('survey-id') as HTMLInputElement;
+  const surveyTitleInput = document.getElementById('survey-title') as HTMLInputElement;
+  const surveyDescriptionInput = document.getElementById('survey-description') as HTMLTextAreaElement;
+  const surveyActiveInput = document.getElementById('survey-active') as HTMLInputElement;
+  const surveyLinkInput = document.getElementById('survey-link') as HTMLInputElement;
+  const surveyPdfInput = document.getElementById('survey-pdf') as HTMLInputElement;
+  const surveyPdfPreview = document.getElementById('survey-pdf-preview') as HTMLAnchorElement;
+  const surveyPdfFileInput = document.getElementById('survey-pdf-input') as HTMLInputElement;
+  const surveyPdfRemoveBtn = document.getElementById('survey-pdf-remove')!;
+  const surveyPdfStatus = document.getElementById('survey-pdf-status')!;
+  const questionList = document.getElementById('question-list')!;
+  const surveyFormStatus = document.getElementById('survey-form-status')!;
+
+  let removedQuestionIds: string[] = [];
+
+  function setSurveyPdf(url: string) {
+    surveyPdfInput.value = url;
+    surveyPdfPreview.href = url;
+    surveyPdfPreview.classList.remove('hidden');
+    surveyPdfRemoveBtn.classList.remove('hidden');
+  }
+
+  function clearSurveyPdf() {
+    surveyPdfInput.value = '';
+    surveyPdfPreview.href = '';
+    surveyPdfPreview.classList.add('hidden');
+    surveyPdfRemoveBtn.classList.add('hidden');
+    surveyPdfFileInput.value = '';
+  }
+
+  surveyPdfFileInput.addEventListener('change', async () => {
+    const file = surveyPdfFileInput.files?.[0];
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      alert('檔案太大了，請上傳 10MB 以下的 PDF。');
+      return;
+    }
+    surveyPdfStatus.textContent = '上傳中...';
+    const path = `${crypto.randomUUID()}.pdf`;
+    const { error } = await supabase.storage.from('timeline-files').upload(path, file);
+    if (error) {
+      alert(`PDF 上傳失敗：${error.message}`);
+      surveyPdfStatus.textContent = '';
+      return;
+    }
+    const { data } = supabase.storage.from('timeline-files').getPublicUrl(path);
+    surveyPdfStatus.textContent = '上傳完成！';
+    setSurveyPdf(data.publicUrl);
+  });
+
+  surveyPdfRemoveBtn.addEventListener('click', clearSurveyPdf);
+
+  function createOptionRow(option?: SurveyOption) {
+    const row = document.createElement('div');
+    row.className = 'flex items-center gap-2';
+    row.dataset.optionId = option?.id ?? crypto.randomUUID();
+    row.innerHTML = `
+      <input type="checkbox" data-option-correct class="w-4 h-4 shrink-0" title="標準答案" ${option?.correct ? 'checked' : ''} />
+      <input type="text" data-option-text placeholder="選項內容" value="${esc(option?.text ?? '')}" class="flex-1 border-2 border-ink bg-cream px-3 py-1.5 focus:outline-none" />
+      <button type="button" data-remove-option class="text-clay text-sm font-semibold shrink-0">移除</button>
+    `;
+    row.querySelector('[data-remove-option]')?.addEventListener('click', () => row.remove());
+    return row;
+  }
+
+  function createQuestionBlock(question?: SurveyQuestion) {
+    const block = document.createElement('div');
+    block.className = 'border-2 border-ink bg-cream p-4 grid gap-3';
+    block.dataset.questionId = question?.id ?? crypto.randomUUID();
+    block.dataset.existing = question ? 'true' : 'false';
+
+    block.innerHTML = `
+      <div class="flex flex-wrap gap-3">
+        <input type="text" data-question-text placeholder="題目內容" value="${esc(question?.question_text ?? '')}" required class="flex-1 min-w-[12rem] border-2 border-ink bg-cream px-3 py-1.5 focus:outline-none" />
+        <select data-question-type class="border-2 border-ink bg-cream px-3 py-1.5 focus:outline-none">
+          <option value="text">簡答</option>
+          <option value="single">單選</option>
+          <option value="multiple">複選</option>
+        </select>
+        <label class="flex items-center gap-1.5 text-sm">
+          <input type="checkbox" data-question-required ${question?.required ? 'checked' : ''} class="w-4 h-4" />
+          必填
+        </label>
+        <button type="button" data-remove-question class="text-clay text-sm font-semibold">刪除題目</button>
+      </div>
+      <div data-options-wrapper class="hidden grid gap-2 pl-2 border-l-4 border-ink/20">
+        <div data-options-list class="grid gap-2"></div>
+        <button type="button" data-add-option class="justify-self-start text-sm font-semibold text-clay">+ 新增選項</button>
+        <p class="text-xs text-ink-light">勾選「標準答案」是選填的，設定後統計會顯示答對率。</p>
+      </div>
+    `;
+
+    const typeSelect = block.querySelector('[data-question-type]') as HTMLSelectElement;
+    const optionsWrapper = block.querySelector('[data-options-wrapper]') as HTMLElement;
+    const optionsList = block.querySelector('[data-options-list]') as HTMLElement;
+
+    typeSelect.value = question?.type ?? 'text';
+    const syncOptionsVisibility = () => {
+      optionsWrapper.classList.toggle('hidden', typeSelect.value === 'text');
+    };
+    typeSelect.addEventListener('change', syncOptionsVisibility);
+    syncOptionsVisibility();
+
+    if (question?.options?.length) {
+      question.options.forEach((opt) => optionsList.appendChild(createOptionRow(opt)));
+    }
+
+    block.querySelector('[data-add-option]')?.addEventListener('click', () => {
+      optionsList.appendChild(createOptionRow());
+    });
+
+    block.querySelector('[data-remove-question]')?.addEventListener('click', () => {
+      if (block.dataset.existing === 'true') removedQuestionIds.push(block.dataset.questionId!);
+      block.remove();
+    });
+
+    return block;
+  }
+
+  document.getElementById('add-question-btn')?.addEventListener('click', () => {
+    questionList.appendChild(createQuestionBlock());
+  });
+
+  function resetSurveyForm() {
+    surveyForm.reset();
+    surveyIdInput.value = '';
+    questionList.innerHTML = '';
+    removedQuestionIds = [];
+    clearSurveyPdf();
+  }
+
+  document.getElementById('new-survey-btn')?.addEventListener('click', () => {
+    resetSurveyForm();
+    showView('edit');
+  });
+
+  async function openEditView(survey: Survey) {
+    resetSurveyForm();
+    surveyIdInput.value = survey.id;
+    surveyTitleInput.value = survey.title;
+    surveyDescriptionInput.value = survey.description ?? '';
+    surveyActiveInput.checked = survey.is_active;
+    surveyLinkInput.value = survey.link_url ?? '';
+    if (survey.pdf_url) setSurveyPdf(survey.pdf_url);
+
+    const { data: questions } = await supabase
+      .from('survey_questions')
+      .select('*')
+      .eq('survey_id', survey.id)
+      .order('position', { ascending: true });
+    (questions ?? []).forEach((q) => questionList.appendChild(createQuestionBlock(q)));
+
+    showView('edit');
+  }
+
+  surveyForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    surveyFormStatus.textContent = '儲存中...';
+
+    const surveyPayload = {
+      title: surveyTitleInput.value.trim(),
+      description: surveyDescriptionInput.value.trim(),
+      is_active: surveyActiveInput.checked,
+      link_url: surveyLinkInput.value.trim() || null,
+      pdf_url: surveyPdfInput.value || null,
+    };
+
+    let surveyId = surveyIdInput.value;
+    if (surveyId) {
+      const { error } = await supabase.from('surveys').update(surveyPayload).eq('id', surveyId);
+      if (error) {
+        surveyFormStatus.textContent = `儲存失敗：${error.message}`;
+        return;
+      }
+    } else {
+      const { data, error } = await supabase.from('surveys').insert(surveyPayload).select().single();
+      if (error || !data) {
+        surveyFormStatus.textContent = `儲存失敗：${error?.message}`;
+        return;
+      }
+      surveyId = data.id;
+      surveyIdInput.value = surveyId;
+    }
+
+    if (removedQuestionIds.length) {
+      await supabase.from('survey_questions').delete().in('id', removedQuestionIds);
+      removedQuestionIds = [];
+    }
+
+    const questionBlocks = Array.from(questionList.children) as HTMLElement[];
+    const questionRows = questionBlocks.map((block, index) => {
+      const type = (block.querySelector('[data-question-type]') as HTMLSelectElement).value;
+      const options =
+        type === 'text'
+          ? []
+          : Array.from(block.querySelectorAll('[data-options-list] > div')).map((row) => {
+              const el = row as HTMLElement;
+              return {
+                id: el.dataset.optionId,
+                text: (el.querySelector('[data-option-text]') as HTMLInputElement).value.trim(),
+                correct: (el.querySelector('[data-option-correct]') as HTMLInputElement).checked,
+              };
+            });
+      return {
+        id: block.dataset.questionId,
+        survey_id: surveyId,
+        position: index,
+        question_text: (block.querySelector('[data-question-text]') as HTMLInputElement).value.trim(),
+        type,
+        required: (block.querySelector('[data-question-required]') as HTMLInputElement).checked,
+        options,
+      };
+    });
+
+    if (questionRows.length) {
+      const { error } = await supabase.from('survey_questions').upsert(questionRows);
+      if (error) {
+        surveyFormStatus.textContent = `題目儲存失敗：${error.message}`;
+        return;
+      }
+    }
+
+    surveyFormStatus.textContent = '已儲存！';
+    loadSurveyList();
+  });
+
+  // ---------- 回覆統計 ----------
+  const statsTitle = document.getElementById('stats-title')!;
+  const statsReportTitle = document.getElementById('stats-report-title')!;
+  const statsCount = document.getElementById('stats-count')!;
+  const statsContent = document.getElementById('stats-content')!;
+  const copyLinkBtn = document.getElementById('copy-link-btn')!;
+  const copyLinkStatus = document.getElementById('copy-link-status')!;
+  const exportCsvBtn = document.getElementById('export-csv-btn')!;
+  const printBtn = document.getElementById('print-btn')!;
+
+  let currentStatsSurvey: Survey | null = null;
+  let currentStatsQuestions: SurveyQuestion[] = [];
+  let currentStatsResponses: { id: string; answers: Record<string, string | string[]> }[] = [];
+
+  async function openStatsView(survey: Survey) {
+    currentStatsSurvey = survey;
+    statsTitle.textContent = survey.title;
+    statsReportTitle.textContent = `${survey.title}｜問卷統計報告`;
+    statsContent.innerHTML = '';
+    copyLinkStatus.textContent = '';
+
+    const { data: questions } = await supabase
+      .from('survey_questions')
+      .select('*')
+      .eq('survey_id', survey.id)
+      .order('position', { ascending: true });
+    currentStatsQuestions = (questions ?? []) as SurveyQuestion[];
+
+    const { data: responses } = await supabase
+      .from('survey_responses')
+      .select('*')
+      .eq('survey_id', survey.id)
+      .order('submitted_at', { ascending: false });
+    currentStatsResponses = (responses ?? []) as { id: string; answers: Record<string, string | string[]> }[];
+
+    statsCount.textContent = `共 ${currentStatsResponses.length} 筆回覆`;
+
+    currentStatsQuestions.forEach((q, i) => {
+      const block = document.createElement('div');
+      block.className = 'border-2 border-ink bg-cream p-5';
+
+      if (q.type === 'text') {
+        const texts = currentStatsResponses
+          .map((r) => r.answers[q.id])
+          .filter((v): v is string => typeof v === 'string' && v.trim() !== '');
+        block.innerHTML = `
+          <p class="font-semibold text-ink mb-3">${i + 1}. ${esc(q.question_text)}（簡答，共 ${texts.length} 筆回覆）</p>
+          <ul class="grid gap-2">
+            ${texts.length ? texts.map((t) => `<li class="text-ink-light bg-cream-dark px-3 py-2 whitespace-pre-wrap break-words">${esc(t)}</li>`).join('') : '<li class="text-ink-light">還沒有回覆</li>'}
+          </ul>
+        `;
+      } else {
+        const total = currentStatsResponses.filter((r) => r.answers[q.id] !== undefined).length;
+        const correctIds = new Set(q.options.filter((o) => o.correct).map((o) => o.id));
+        const hasCorrectAnswer = correctIds.size > 0;
+        let correctCount = 0;
+
+        const counts: Record<string, number> = {};
+        q.options.forEach((o) => (counts[o.id] = 0));
+        currentStatsResponses.forEach((r) => {
+          const value = r.answers[q.id];
+          if (value === undefined) return;
+          const selected = Array.isArray(value) ? value : [value];
+          selected.forEach((v) => {
+            if (counts[v] !== undefined) counts[v]++;
+          });
+          if (hasCorrectAnswer) {
+            const selectedSet = new Set(selected);
+            const isCorrect =
+              selectedSet.size === correctIds.size && [...selectedSet].every((v) => correctIds.has(v));
+            if (isCorrect) correctCount++;
+          }
+        });
+
+        const optionRows = q.options
+          .map((o) => {
+            const count = counts[o.id] ?? 0;
+            const pct = total ? Math.round((count / total) * 100) : 0;
+            return `
+              <div>
+                <div class="flex items-center justify-between text-sm mb-1">
+                  <span class="text-ink">${esc(o.text)}${o.correct ? ' ✅' : ''}</span>
+                  <span class="text-ink-light">${count} 票・${pct}%</span>
+                </div>
+                <div class="h-2 bg-cream-dark"><div class="h-2 bg-clay" style="width:${pct}%"></div></div>
+              </div>
+            `;
+          })
+          .join('');
+
+        block.innerHTML = `
+          <p class="font-semibold text-ink mb-1">${i + 1}. ${esc(q.question_text)}（${q.type === 'single' ? '單選' : '複選'}，共 ${total} 筆回覆${hasCorrectAnswer ? `・答對率 ${total ? Math.round((correctCount / total) * 100) : 0}%` : ''}）</p>
+          <div class="grid gap-3 mt-3">${optionRows}</div>
+        `;
+      }
+
+      statsContent.appendChild(block);
+    });
+
+    showView('stats');
+  }
+
+  copyLinkBtn.addEventListener('click', async () => {
+    if (!currentStatsSurvey) return;
+    const url = `${window.location.origin}/survey/${currentStatsSurvey.id}`;
+    await navigator.clipboard.writeText(url);
+    copyLinkStatus.textContent = `已複製：${url}`;
+  });
+
+  function csvEscape(value: string) {
+    if (/[",\n]/.test(value)) {
+      return `"${value.replace(/"/g, '""')}"`;
+    }
+    return value;
+  }
+
+  exportCsvBtn.addEventListener('click', () => {
+    if (!currentStatsSurvey) return;
+    const optionTextById: Record<string, string> = {};
+    currentStatsQuestions.forEach((q) => q.options.forEach((o) => (optionTextById[o.id] = o.text)));
+
+    const headers = ['送出時間', ...currentStatsQuestions.map((q) => q.question_text)];
+    const rows = currentStatsResponses.map((r) => {
+      const cells = currentStatsQuestions.map((q) => {
+        const value = r.answers[q.id];
+        if (value === undefined) return '';
+        if (Array.isArray(value)) return value.map((v) => optionTextById[v] ?? v).join('、');
+        return optionTextById[value] ?? value;
+      });
+      return [new Date(r.submitted_at).toLocaleString('zh-Hant-TW'), ...cells];
+    });
+
+    const csv = [headers, ...rows].map((row) => row.map((cell) => csvEscape(String(cell))).join(',')).join('\n');
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${currentStatsSurvey.title || 'survey'}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  printBtn.addEventListener('click', () => window.print());
+</script>

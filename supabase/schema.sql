@@ -211,6 +211,8 @@ insert into site_pages (slug, title, content) values
 
 - **留言板**：你留言時填寫的暱稱與留言內容，會先送進審核，經過核准才會公開顯示在網站上。
 - **聯絡表單**：你填寫的姓名、Email、訊息內容，只有網站管理者看得到，不會公開顯示，僅用於回覆你的訊息。
+- **學生意見箱**：你填寫的建議內容（及選填的學校/年級），完全不公開，只有網站管理者看得到，會作為爭取校園權益、向縣政府等單位提案的參考。
+- **問卷**：你填寫的問卷回覆內容，只有網站管理者看得到，用於了解大家的想法、統計分析，並可能提供給相關單位（例如縣政府）參考。
 - **後台登入**：僅網站管理者本人使用 Email 一次性連結登入後台，一般訪客不會被要求登入或提供帳號密碼。
 
 ## 我們不會做的事
@@ -242,6 +244,10 @@ insert into site_pages (slug, title, content) values
 - 廣告、垃圾訊息或詐騙連結
 - 人身攻擊、歧視或不實指控
 - 違反法律規定的內容
+
+## 學生意見箱與問卷規範
+
+學生意見箱與問卷開放給所有訪客填寫，請提供真實、與主題相關的內容，請勿惡意灌水、留下廣告或不實資訊。管理者保留刪除不當回覆的權利。
 
 ## 免責聲明
 
@@ -308,6 +314,71 @@ create policy "only admin can read student_suggestions"
 
 create policy "only admin can delete student_suggestions"
   on student_suggestions for delete
+  using (auth.jwt() ->> 'email' = 'yayalin322@gmail.com');
+
+-- ---------- 問卷系統 ----------
+create table if not exists surveys (
+  id uuid primary key default gen_random_uuid(),
+  title text not null,
+  description text not null default '',
+  is_active boolean not null default true,
+  link_url text,
+  pdf_url text,
+  created_at timestamptz not null default now()
+);
+
+alter table surveys enable row level security;
+
+create policy "surveys are publicly readable"
+  on surveys for select
+  using (true);
+
+create policy "only admin can write surveys"
+  on surveys for all
+  using (auth.jwt() ->> 'email' = 'yayalin322@gmail.com')
+  with check (auth.jwt() ->> 'email' = 'yayalin322@gmail.com');
+
+create table if not exists survey_questions (
+  id uuid primary key default gen_random_uuid(),
+  survey_id uuid not null references surveys(id) on delete cascade,
+  position integer not null default 0,
+  question_text text not null,
+  type text not null check (type in ('text', 'single', 'multiple')),
+  required boolean not null default false,
+  options jsonb not null default '[]'::jsonb,
+  created_at timestamptz not null default now()
+);
+
+alter table survey_questions enable row level security;
+
+create policy "survey_questions are publicly readable"
+  on survey_questions for select
+  using (true);
+
+create policy "only admin can write survey_questions"
+  on survey_questions for all
+  using (auth.jwt() ->> 'email' = 'yayalin322@gmail.com')
+  with check (auth.jwt() ->> 'email' = 'yayalin322@gmail.com');
+
+create table if not exists survey_responses (
+  id uuid primary key default gen_random_uuid(),
+  survey_id uuid not null references surveys(id) on delete cascade,
+  answers jsonb not null default '{}'::jsonb,
+  submitted_at timestamptz not null default now()
+);
+
+alter table survey_responses enable row level security;
+
+create policy "anyone can submit a survey response"
+  on survey_responses for insert
+  with check (true);
+
+create policy "only admin can read survey_responses"
+  on survey_responses for select
+  using (auth.jwt() ->> 'email' = 'yayalin322@gmail.com');
+
+create policy "only admin can delete survey_responses"
+  on survey_responses for delete
   using (auth.jwt() ->> 'email' = 'yayalin322@gmail.com');
 
 -- ---------- 文章圖片（儲存桶 post-images 需另外用 Storage API/介面建立，公開讀取） ----------
