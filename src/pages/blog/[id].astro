@@ -46,6 +46,20 @@ const bodyHtml = await marked.parse(post.body);
     )}
 
     <div class="reveal prose-blog" style="animation-delay: 0.2s;" set:html={bodyHtml} />
+
+    {post.tags && post.tags.length > 0 && (
+      <div class="reveal flex flex-wrap gap-2 mt-8">
+        {post.tags.map((tag) => (
+          <a
+            href={`/blog?tag=${encodeURIComponent(tag)}`}
+            data-magnetic
+            class="text-sm text-ink-light border border-ink/30 px-3 py-1 hover:bg-ink hover:text-cream hover:border-ink transition-colors"
+          >
+            #{tag}
+          </a>
+        ))}
+      </div>
+    )}
   </article>
 </BaseLayout>
 

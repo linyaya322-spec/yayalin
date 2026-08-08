@@ -24,6 +24,8 @@ const formatDate = (date: string) =>
   class="reveal group block bg-cream border-2 border-ink"
   style={`animation-delay: ${index * 0.08}s`}
   data-category={post.category}
+  data-tags={(post.tags ?? []).join(',')}
+  data-search={`${post.title} ${post.excerpt}`.toLowerCase()}
 >
   {post.cover_image ? (
     <img src={post.cover_image} alt="" class="w-full h-40 object-cover border-b-2 border-ink" loading="lazy" />
@@ -41,5 +43,12 @@ const formatDate = (date: string) =>
       {post.title}
     </h3>
     <p class="text-sm text-ink-light leading-relaxed line-clamp-3">{post.excerpt}</p>
+    {post.tags && post.tags.length > 0 && (
+      <div class="flex flex-wrap gap-1.5 mt-3">
+        {post.tags.map((tag) => (
+          <span class="text-xs text-ink-light border border-ink/30 px-2 py-0.5">#{tag}</span>
+        ))}
+      </div>
+    )}
   </div>
 </a>

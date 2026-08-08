@@ -54,6 +54,8 @@ import BaseLayout from '../layouts/BaseLayout.astro';
           </div>
           <textarea id="post-excerpt" required placeholder="摘要" rows="2" class="border-2 border-ink bg-cream px-4 py-2 focus:outline-none resize-none"></textarea>
 
+          <input type="text" id="post-tags" placeholder="標籤，用逗號分隔（例如：兒少權益,新竹在地生活）" class="border-2 border-ink bg-cream px-4 py-2 focus:outline-none" />
+
           <div class="grid gap-2 bg-cream border-2 border-ink p-3">
             <label class="text-xs font-semibold text-ink-light">封面圖片（顯示在文章卡片與內頁最上方，選填）</label>
             <input type="hidden" id="post-cover-image" />
@@ -141,6 +143,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
           <button data-page-slug="about" class="page-tab-btn px-4 py-1.5 text-sm font-semibold border-2 border-ink bg-ink text-cream">關於我</button>
           <button data-page-slug="privacy" class="page-tab-btn px-4 py-1.5 text-sm font-semibold border-2 border-ink bg-cream text-ink">隱私權政策</button>
           <button data-page-slug="terms" class="page-tab-btn px-4 py-1.5 text-sm font-semibold border-2 border-ink bg-cream text-ink">服務條款</button>
+          <button data-page-slug="committee-intro" class="page-tab-btn px-4 py-1.5 text-sm font-semibold border-2 border-ink bg-cream text-ink">兒少代表說明</button>
         </div>
         <form id="page-form" class="grid gap-3 bg-butter-light border-2 border-ink p-6">
           <input type="text" id="page-title" required placeholder="頁面標題" class="border-2 border-ink bg-cream px-4 py-2 focus:outline-none" />
@@ -256,6 +259,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
   const postDate = document.getElementById('post-date') as HTMLInputElement;
   const postCategory = document.getElementById('post-category') as HTMLSelectElement;
   const postExcerpt = document.getElementById('post-excerpt') as HTMLTextAreaElement;
+  const postTags = document.getElementById('post-tags') as HTMLInputElement;
   const postBody = document.getElementById('post-body') as HTMLTextAreaElement;
   const postCoverImage = document.getElementById('post-cover-image') as HTMLInputElement;
   const postCoverPreview = document.getElementById('post-cover-preview') as HTMLImageElement;
@@ -328,6 +332,10 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       excerpt: postExcerpt.value.trim(),
       body: postBody.value.trim(),
       cover_image: postCoverImage.value || null,
+      tags: postTags.value
+        .split(',')
+        .map((t) => t.trim())
+        .filter(Boolean),
     };
     postStatus.textContent = '儲存中...';
     const { error } = postId.value
@@ -362,6 +370,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         postDate.value = post.date.slice(0, 10);
         postCategory.value = post.category;
         postExcerpt.value = post.excerpt;
+        postTags.value = (post.tags ?? []).join(', ');
         postBody.value = post.body;
         if (post.cover_image) {
           setCoverImage(post.cover_image);

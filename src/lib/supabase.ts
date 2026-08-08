@@ -13,6 +13,7 @@ export interface BlogPost {
   excerpt: string;
   body: string;
   cover_image: string | null;
+  tags: string[];
   created_at: string;
 }
 

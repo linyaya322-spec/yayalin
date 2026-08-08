@@ -12,6 +12,7 @@ create table if not exists blog_posts (
   excerpt text not null,
   body text not null,
   cover_image text,
+  tags text[] not null default '{}'::text[],
   created_at timestamptz not null default now()
 );
 
@@ -251,6 +252,15 @@ insert into site_pages (slug, title, content) values
 ## 聯絡我們
 
 有任何問題歡迎透過[聯絡頁面](/contact)與我聯絡。$$
+),
+(
+  'committee-intro',
+  '什麼是兒少代表？',
+  $$兒少代表（全名「兒童及少年福利與權益促進委員會委員」）是政府依法邀請青少年參與地方公共事務的機制，讓 18 歲以下的兒童及少年也能對跟自己切身相關的政策表達意見。
+
+新竹縣兒少委員會由各局處代表、專家學者，以及像我這樣的青少年代表共同組成，定期召開會議，討論教育、交通安全、學生權益等與兒少相關的議題，並可以正式提案給縣政府。
+
+我在這裡的每一次參與，都是想讓「大人世界」多聽一點「我們的想法」。$$
 )
 on conflict (slug) do nothing;
 

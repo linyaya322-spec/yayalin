@@ -1,0 +1,127 @@
+---
+import type { BlogPost } from '../lib/supabase';
+
+interface Props {
+  posts: BlogPost[];
+}
+
+const { posts } = Astro.props;
+
+const categories = ['全部', '生活隨筆', '兒少議題', '興趣分享'];
+
+const allTags = Array.from(new Set(posts.flatMap((p) => p.tags ?? []))).sort((a, b) =>
+  a.localeCompare(b, 'zh-Hant')
+);
+---
+
+<div class="mb-10">
+  <input
+    type="text"
+    id="blog-search"
+    placeholder="搜尋文章標題或摘要..."
+    class="w-full border-2 border-ink bg-cream px-4 py-2.5 mb-4 focus:outline-none focus:bg-sage-light"
+  />
+
+  <div id="category-filter" class="flex flex-wrap gap-2 mb-3">
+    {categories.map((cat, i) => (
+      <button
+        type="button"
+        data-magnetic
+        class:list={[
+          'filter-btn px-4 py-1.5 text-sm font-semibold border-2 border-ink transition-colors',
+          i === 0 ? 'bg-ink text-cream' : 'bg-cream text-ink hover:bg-sage-light',
+        ]}
+        data-category={cat}
+      >
+        {cat}
+      </button>
+    ))}
+  </div>
+
+  {allTags.length > 0 && (
+    <div id="tag-filter" class="flex flex-wrap gap-2">
+      <button type="button" data-magnetic class="tag-btn px-3 py-1 text-xs font-semibold border border-ink bg-ink text-cream transition-colors" data-tag="">
+        全部標籤
+      </button>
+      {allTags.map((tag) => (
+        <button
+          type="button"
+          data-magnetic
+          class="tag-btn px-3 py-1 text-xs font-semibold border border-ink/40 transition-colors"
+          data-tag={tag}
+        >
+          #{tag}
+        </button>
+      ))}
+    </div>
+  )}
+
+  <p id="blog-empty-state" class="hidden text-ink-light mt-6">找不到符合條件的文章。</p>
+</div>
+
+<script>
+  const searchInput = document.getElementById('blog-search') as HTMLInputElement;
+  const categoryButtons = document.querySelectorAll<HTMLButtonElement>('.filter-btn');
+  const tagButtons = document.querySelectorAll<HTMLButtonElement>('.tag-btn');
+  const cards = document.querySelectorAll<HTMLElement>('[data-category]:not(.filter-btn)');
+  const emptyState = document.getElementById('blog-empty-state');
+
+  let selectedCategory = '全部';
+  let selectedTag = '';
+
+  function applyFilters() {
+    const query = searchInput.value.trim().toLowerCase();
+    let visibleCount = 0;
+    cards.forEach((card) => {
+      const matchesCategory = selectedCategory === '全部' || card.dataset.category === selectedCategory;
+      const cardTags = (card.dataset.tags ?? '').split(',').filter(Boolean);
+      const matchesTag = !selectedTag || cardTags.includes(selectedTag);
+      const matchesSearch = !query || (card.dataset.search ?? '').includes(query);
+      const show = matchesCategory && matchesTag && matchesSearch;
+      card.style.display = show ? '' : 'none';
+      if (show) visibleCount++;
+    });
+    emptyState?.classList.toggle('hidden', visibleCount > 0);
+  }
+
+  function selectCategory(selected: string) {
+    selectedCategory = selected;
+    categoryButtons.forEach((b) => {
+      const isMatch = b.dataset.category === selected;
+      b.classList.toggle('bg-ink', isMatch);
+      b.classList.toggle('text-cream', isMatch);
+      b.classList.toggle('bg-cream', !isMatch);
+      b.classList.toggle('text-ink', !isMatch);
+    });
+    applyFilters();
+  }
+
+  function selectTag(tag: string) {
+    selectedTag = tag;
+    tagButtons.forEach((b) => {
+      const isMatch = (b.dataset.tag ?? '') === tag;
+      b.classList.toggle('bg-ink', isMatch);
+      b.classList.toggle('text-cream', isMatch);
+      b.classList.toggle('border-ink', isMatch);
+    });
+    applyFilters();
+  }
+
+  categoryButtons.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      if (btn.dataset.category) selectCategory(btn.dataset.category);
+    });
+  });
+
+  tagButtons.forEach((btn) => {
+    btn.addEventListener('click', () => selectTag(btn.dataset.tag ?? ''));
+  });
+
+  searchInput.addEventListener('input', applyFilters);
+
+  const params = new URLSearchParams(window.location.search);
+  const urlCategory = params.get('category');
+  const urlTag = params.get('tag');
+  if (urlCategory) selectCategory(urlCategory);
+  if (urlTag) selectTag(urlTag);
+</script>
