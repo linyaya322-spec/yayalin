@@ -13,10 +13,10 @@ export async function getStaticPaths() {
 const { post } = Astro.props;
 const { Content } = await render(post);
 
-const categoryStyles: Record<string, string> = {
-  生活隨筆: 'bg-sage-light text-sage-dark',
-  兒少議題: 'bg-clay-light text-clay',
-  興趣分享: 'bg-cream-dark text-ink-light',
+const categoryColor: Record<string, string> = {
+  生活隨筆: 'bg-sage',
+  兒少議題: 'bg-clay',
+  興趣分享: 'bg-butter',
 };
 
 const formatDate = (date: Date) =>
@@ -25,17 +25,17 @@ const formatDate = (date: Date) =>
 
 <BaseLayout title={post.data.title} description={post.data.excerpt}>
   <article class="max-w-2xl mx-auto px-6 pt-16 pb-24">
-    <a href="/blog" class="reveal text-sm text-sage-dark hover:underline">← 回部落格列表</a>
+    <a href="/blog" data-magnetic class="reveal inline-block text-sm font-semibold text-clay hover:text-ink transition-colors">← 回部落格列表</a>
 
     <div class="reveal flex items-center gap-3 mt-6 mb-4" style="animation-delay: 0.05s;">
-      <span class={`text-xs font-medium px-3 py-1 rounded-full ${categoryStyles[post.data.category] ?? 'bg-cream-dark text-ink-light'}`}>
+      <span class={`text-xs font-semibold text-cream px-3 py-1 ${categoryColor[post.data.category] ?? 'bg-ink'}`}>
         {post.data.category}
       </span>
       <time class="text-sm text-ink-light">{formatDate(post.data.date)}</time>
     </div>
 
-    <h1 class="reveal font-display text-3xl sm:text-4xl text-ink mb-8" style="animation-delay: 0.1s;">
-      {post.data.title}
+    <h1 class="font-display text-3xl sm:text-4xl text-ink mb-8">
+      <span data-text-reveal>{post.data.title}</span>
     </h1>
 
     <div class="reveal prose-blog" style="animation-delay: 0.2s;">
@@ -64,7 +64,8 @@ const formatDate = (date: Date) =>
     color: var(--color-ink);
   }
   .prose-blog :global(a) {
-    color: var(--color-sage-dark);
+    color: var(--color-clay);
+    font-weight: 600;
     text-decoration: underline;
   }
 </style>

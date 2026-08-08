@@ -1,5 +1,6 @@
 backend:
-  name: git-gateway
+  name: github
+  repo: your-github-username/yayalin
   branch: main
 
 local_backend: true
@@ -14,10 +15,16 @@ logo_url: /favicon.svg
 collections:
   - name: "blog"
     label: "部落格文章"
+    icon: "edit_note"
     folder: "src/content/blog"
     create: true
-    slug: "{{slug}}"
+    slug: "{{year}}{{month}}{{day}}{{hour}}{{minute}}{{second}}"
     identifier_field: title
+    summary: "{{title}} — {{category}}"
+    sortable_fields: ["date", "title", "category"]
+    view_groups:
+      - label: "分類"
+        field: category
     fields:
       - { label: "標題", name: "title", widget: "string" }
       - { label: "日期", name: "date", widget: "datetime" }
@@ -30,10 +37,13 @@ collections:
 
   - name: "timeline"
     label: "兒少委員時間軸"
+    icon: "timeline"
     folder: "src/content/timeline"
     create: true
-    slug: "{{year}}-{{month}}-{{slug}}"
+    slug: "{{year}}{{month}}{{day}}{{hour}}{{minute}}{{second}}"
     identifier_field: title
+    summary: "{{date}} — {{title}}"
+    sortable_fields: ["date", "title"]
     fields:
       - { label: "日期", name: "date", widget: "datetime" }
       - { label: "標題", name: "title", widget: "string" }
@@ -41,6 +51,7 @@ collections:
 
   - name: "quotes"
     label: "今日小語"
+    icon: "format_quote"
     files:
       - name: "quotes"
         label: "小語清單"
@@ -49,6 +60,7 @@ collections:
           - name: "quotes"
             label: "小語"
             widget: "list"
+            summary: "{{fields.text}}"
             fields:
               - { label: "編號", name: "id", widget: "string" }
               - { label: "文字", name: "text", widget: "string" }

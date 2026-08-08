@@ -2,12 +2,26 @@
 const year = new Date().getFullYear();
 ---
 
-<footer class="border-t border-sage-light mt-24">
-  <div class="max-w-4xl mx-auto px-6 py-10 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-ink-light">
-    <p>&copy; {year} Yaya 林. All feelings reserved.</p>
-    <div class="flex gap-4">
-      <a href="mailto:yayalin322@gmail.com" class="hover:text-sage-dark transition-colors">Email</a>
-      <a href="https://www.instagram.com/yaya.__.lin/" target="_blank" rel="noopener noreferrer" class="hover:text-sage-dark transition-colors">Instagram</a>
+<footer class="bg-ink text-cream mt-32">
+  <div class="max-w-5xl mx-auto px-6 py-12 flex flex-col sm:flex-row items-center justify-between gap-6">
+    <p class="font-display text-lg">Yaya 林 &middot; {year}</p>
+    <div class="flex gap-3">
+      <a
+        href="mailto:yayalin322@gmail.com"
+        data-magnetic
+        class="px-4 py-2 border border-cream/40 hover:bg-clay hover:border-clay transition-colors text-sm font-medium"
+      >
+        Email
+      </a>
+      <a
+        href="https://www.instagram.com/yaya.__.lin/"
+        target="_blank"
+        rel="noopener noreferrer"
+        data-magnetic
+        class="px-4 py-2 border border-cream/40 hover:bg-clay hover:border-clay transition-colors text-sm font-medium"
+      >
+        Instagram
+      </a>
     </div>
   </div>
 </footer>

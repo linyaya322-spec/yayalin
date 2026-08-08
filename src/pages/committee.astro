@@ -5,9 +5,9 @@ import Timeline from '../components/Timeline.astro';
 
 <BaseLayout title="兒少委員專區" description="新竹縣兒少委員 Yaya 的參與紀錄與時間軸。">
   <section class="max-w-3xl mx-auto px-6 pt-16 pb-8">
-    <p class="reveal text-sage-dark font-medium mb-3">兒少委員專區</p>
-    <h1 class="reveal font-display text-4xl text-ink mb-6" style="animation-delay: 0.1s;">
-      我在新竹縣兒少委員會的參與紀錄
+    <p class="reveal inline-block bg-ink text-cream text-sm font-medium px-3 py-1 mb-6">兒少委員專區</p>
+    <h1 class="font-display text-4xl sm:text-5xl text-ink mb-6">
+      <span data-text-reveal>我在新竹縣兒少委員會的參與紀錄</span>
     </h1>
     <p class="reveal text-ink-light leading-relaxed text-lg max-w-2xl" style="animation-delay: 0.2s;">
       這裡紀錄我擔任新竹縣兒童及少年福利與權益促進委員會委員以來，參與過的會議、倡議與心得。希望能讓更多同齡人知道，我們的意見也可以被認真對待。
@@ -19,9 +19,9 @@ import Timeline from '../components/Timeline.astro';
   </section>
 
   <section class="max-w-3xl mx-auto px-6 pb-24">
-    <div class="reveal bg-sage-light/40 border border-sage-light rounded-2xl p-8 text-center">
-      <p class="text-ink-light mb-2">想看更完整的心得紀錄？</p>
-      <a href="/blog?category=兒少議題" class="text-sage-dark font-medium hover:underline">
+    <div class="reveal bg-butter-light border-2 border-ink p-8 text-center">
+      <p class="text-ink mb-2">想看更完整的心得紀錄？</p>
+      <a href="/blog?category=兒少議題" data-magnetic class="inline-block text-clay font-semibold hover:text-ink transition-colors">
         到部落格看「兒少議題」分類 →
       </a>
     </div>

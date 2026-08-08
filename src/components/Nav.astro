@@ -9,9 +9,12 @@ const links = [
 const currentPath = Astro.url.pathname;
 ---
 
-<header class="sticky top-0 z-50 backdrop-blur bg-cream/80 border-b border-sage-light">
-  <nav class="max-w-4xl mx-auto flex items-center justify-between px-6 py-4">
-    <a href="/" class="font-display text-xl text-ink tracking-wide">Yaya <span class="text-sage-dark">林</span></a>
+<header class="sticky top-0 z-50 bg-cream border-b-2 border-ink">
+  <nav class="max-w-5xl mx-auto flex items-center justify-between px-6 py-4">
+    <a href="/" class="flex items-center gap-2 group" data-magnetic>
+      <span class="w-9 h-9 bg-clay flex items-center justify-center font-display font-semibold text-cream text-lg group-hover:bg-ink transition-colors">Y</span>
+      <span class="font-display text-xl text-ink tracking-wide">Yaya 林</span>
+    </a>
     <button
       id="nav-toggle"
       class="sm:hidden text-ink"
@@ -22,16 +25,17 @@ const currentPath = Astro.url.pathname;
         <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5M3.75 17.25h16.5" />
       </svg>
     </button>
-    <ul id="nav-links" class="hidden sm:flex gap-6 text-sm text-ink-light">
+    <ul id="nav-links" class="hidden sm:flex gap-1 text-sm">
       {links.map((link) => {
         const isActive = currentPath === link.href || (link.href !== '/' && currentPath.startsWith(link.href));
         return (
           <li>
             <a
               href={link.href}
+              data-magnetic
               class:list={[
-                'transition-colors hover:text-sage-dark',
-                isActive ? 'text-sage-dark font-medium' : '',
+                'inline-block px-3 py-1.5 font-medium transition-colors',
+                isActive ? 'bg-ink text-cream' : 'text-ink hover:bg-sage-light',
               ]}
             >
               {link.label}
@@ -41,10 +45,10 @@ const currentPath = Astro.url.pathname;
       })}
     </ul>
   </nav>
-  <ul id="nav-links-mobile" class="sm:hidden hidden flex-col gap-1 px-6 pb-4 text-ink-light">
+  <ul id="nav-links-mobile" class="sm:hidden hidden flex-col gap-1 px-6 pb-4">
     {links.map((link) => (
       <li>
-        <a href={link.href} class="block py-2 hover:text-sage-dark">{link.label}</a>
+        <a href={link.href} class="block py-2 px-3 font-medium text-ink hover:bg-sage-light">{link.label}</a>
       </li>
     ))}
   </ul>

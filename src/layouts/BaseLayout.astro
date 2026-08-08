@@ -1,7 +1,7 @@
 ---
 import Nav from '../components/Nav.astro';
 import Footer from '../components/Footer.astro';
-import CursorGlow from '../components/CursorGlow.astro';
+import Interactions from '../components/Interactions.astro';
 import '../styles/global.css';
 
 interface Props {
@@ -28,26 +28,11 @@ const { title, description = '新竹縣兒少委員 Yaya 的個人網站，記�
     />
   </head>
   <body class="relative min-h-screen flex flex-col overflow-x-hidden">
-    <CursorGlow />
+    <Interactions />
     <Nav />
     <main class="relative z-10 flex-1 w-full">
       <slot />
     </main>
     <Footer />
-    <script>
-      const revealEls = document.querySelectorAll('.reveal');
-      const observer = new IntersectionObserver(
-        (entries) => {
-          for (const entry of entries) {
-            if (entry.isIntersecting) {
-              entry.target.classList.add('is-visible');
-              observer.unobserve(entry.target);
-            }
-          }
-        },
-        { threshold: 0.15 }
-      );
-      revealEls.forEach((el) => observer.observe(el));
-    </script>
   </body>
 </html>

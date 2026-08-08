@@ -13,9 +13,10 @@ const { label, value, href, icon } = Astro.props;
   href={href}
   target={icon === 'instagram' ? '_blank' : undefined}
   rel={icon === 'instagram' ? 'noopener noreferrer' : undefined}
-  class="reveal group flex items-center gap-4 bg-white/70 border border-sage-light rounded-2xl p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-sage-light/50"
+  data-tilt
+  class="reveal group flex items-center gap-4 bg-cream border-2 border-ink p-6 hover:bg-ink transition-colors"
 >
-  <span class="flex items-center justify-center w-12 h-12 rounded-full bg-sage-light text-sage-dark group-hover:bg-sage group-hover:text-white transition-colors">
+  <span class="flex items-center justify-center w-12 h-12 bg-clay text-cream group-hover:bg-butter group-hover:text-ink transition-colors shrink-0">
     {icon === 'mail' ? (
       <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
         <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 6.75c0-.414.336-.75.75-.75h18c.414 0 .75.336.75.75v10.5a.75.75 0 01-.75.75H3a.75.75 0 01-.75-.75V6.75z" />
@@ -30,7 +31,7 @@ const { label, value, href, icon } = Astro.props;
     )}
   </span>
   <div>
-    <p class="text-sm text-ink-light">{label}</p>
-    <p class="text-ink font-medium group-hover:text-sage-dark transition-colors">{value}</p>
+    <p class="text-sm text-ink-light group-hover:text-cream/70 transition-colors">{label}</p>
+    <p class="text-ink font-medium group-hover:text-cream transition-colors">{value}</p>
   </div>
 </a>

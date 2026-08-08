@@ -5,14 +5,16 @@ const quotes = await getCollection('quotes');
 const quoteTexts = quotes.map((q) => q.data.text);
 ---
 
-<div class="reveal bg-white/60 border border-sage-light rounded-3xl p-8 sm:p-10 text-center max-w-lg mx-auto shadow-sm">
-  <p class="text-sm text-sage-dark font-medium mb-4">今日小語</p>
+<div class="reveal bg-sage-light border-2 border-ink p-8 sm:p-10 text-center max-w-lg mx-auto relative overflow-hidden">
+  <div class="shape-block -top-6 -right-6 w-20 h-20 bg-butter rotate-12" data-parallax="0.06" aria-hidden="true"></div>
+  <p class="inline-block bg-ink text-cream text-xs font-semibold px-2.5 py-1 mb-5">今日小語</p>
   <p id="quote-text" class="font-display text-xl sm:text-2xl text-ink leading-relaxed min-h-16 flex items-center justify-center">
     點按鈕，抽一句話給今天的自己
   </p>
   <button
     id="quote-btn"
-    class="mt-6 px-6 py-2.5 rounded-full bg-clay text-white text-sm font-medium hover:bg-clay/90 active:scale-95 transition-all"
+    data-magnetic
+    class="mt-6 px-6 py-2.5 bg-clay text-cream text-sm font-semibold hover:bg-ink active:scale-95 transition-colors"
   >
     抽一句話
   </button>
