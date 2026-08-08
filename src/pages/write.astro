@@ -38,6 +38,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         <button data-tab="suggestions" class="tab-btn px-4 py-1.5 text-sm font-semibold border-2 border-ink bg-cream text-ink">學生意見箱</button>
         <button data-tab="contact" class="tab-btn px-4 py-1.5 text-sm font-semibold border-2 border-ink bg-cream text-ink">聯絡訊息</button>
         <button data-tab="pages" class="tab-btn px-4 py-1.5 text-sm font-semibold border-2 border-ink bg-cream text-ink">頁面內容</button>
+        <button data-tab="newsletter" class="tab-btn px-4 py-1.5 text-sm font-semibold border-2 border-ink bg-cream text-ink">電子報</button>
         <a href="/write/surveys" data-magnetic class="px-4 py-1.5 text-sm font-semibold border-2 border-clay text-clay hover:bg-clay hover:text-cream transition-colors">問卷管理 →</a>
       </div>
 
@@ -173,6 +174,27 @@ import BaseLayout from '../layouts/BaseLayout.astro';
           <p id="page-status" class="text-sm min-h-5"></p>
         </form>
       </section>
+
+      <!-- 電子報 -->
+      <section data-panel="newsletter" class="hidden">
+        <form id="newsletter-form" class="grid gap-3 mb-10 bg-sage-light border-2 border-ink p-6">
+          <input type="hidden" id="newsletter-id" />
+          <input type="text" id="newsletter-subject" required placeholder="主旨" class="border-2 border-ink bg-cream px-4 py-2 focus:outline-none" />
+          <textarea id="newsletter-content" required placeholder="內容（可以直接貼完整 HTML，或打一般文字也可以）" rows="12" class="border-2 border-ink bg-cream px-4 py-2 focus:outline-none font-mono text-sm"></textarea>
+          <div class="flex flex-wrap gap-3">
+            <button type="submit" class="px-6 py-2.5 bg-clay text-cream text-sm font-semibold hover:bg-ink transition-colors">儲存草稿</button>
+            <button type="button" id="newsletter-cancel" class="hidden px-6 py-2.5 border-2 border-ink text-sm font-semibold hover:bg-ink hover:text-cream transition-colors">取消編輯</button>
+          </div>
+          <p id="newsletter-status" class="text-sm min-h-5"></p>
+        </form>
+        <ul id="newsletter-list" class="grid gap-3 mb-12"></ul>
+
+        <div class="border-t-2 border-ink pt-8">
+          <h2 class="font-display text-xl text-ink mb-1">訂閱名單</h2>
+          <p id="subscriber-count" class="text-sm text-ink-light mb-4"></p>
+          <ul id="subscriber-list" class="grid gap-2"></ul>
+        </div>
+      </section>
     </div>
   </section>
 </BaseLayout>
@@ -245,6 +267,8 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     loadContact();
     loadPages();
     loadSuggestions();
+    loadNewsletters();
+    loadSubscribers();
   }
 
   const fmtDate = (d: string) => new Date(d).toLocaleDateString('zh-Hant-TW');
@@ -751,6 +775,121 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         loadSuggestions();
       });
       suggestionList.appendChild(li);
+    });
+  }
+
+  // ---------- 電子報 ----------
+  const newsletterForm = document.getElementById('newsletter-form') as HTMLFormElement;
+  const newsletterId = document.getElementById('newsletter-id') as HTMLInputElement;
+  const newsletterSubject = document.getElementById('newsletter-subject') as HTMLInputElement;
+  const newsletterContent = document.getElementById('newsletter-content') as HTMLTextAreaElement;
+  const newsletterCancel = document.getElementById('newsletter-cancel')!;
+  const newsletterStatus = document.getElementById('newsletter-status')!;
+  const newsletterList = document.getElementById('newsletter-list')!;
+  const subscriberCount = document.getElementById('subscriber-count')!;
+  const subscriberList = document.getElementById('subscriber-list')!;
+
+  let activeSubscriberCount = 0;
+
+  function resetNewsletterForm() {
+    newsletterForm.reset();
+    newsletterId.value = '';
+    newsletterCancel.classList.add('hidden');
+  }
+
+  newsletterCancel.addEventListener('click', resetNewsletterForm);
+
+  newsletterForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const payload = {
+      subject: newsletterSubject.value.trim(),
+      content: newsletterContent.value.trim(),
+    };
+    newsletterStatus.textContent = '儲存中...';
+    const { error } = newsletterId.value
+      ? await supabase.from('newsletters').update(payload).eq('id', newsletterId.value)
+      : await supabase.from('newsletters').insert(payload);
+    newsletterStatus.textContent = error ? `儲存失敗：${error.message}` : '已儲存草稿！';
+    if (!error) {
+      resetNewsletterForm();
+      loadNewsletters();
+    }
+  });
+
+  const newsletterStatusLabel: Record<string, string> = {
+    draft: '草稿',
+    sending: '寄送中...',
+    sent: '已寄出',
+  };
+
+  async function loadNewsletters() {
+    const { data } = await supabase.from('newsletters').select('*').order('created_at', { ascending: false });
+    newsletterList.innerHTML = '';
+    (data ?? []).forEach((n) => {
+      const li = document.createElement('li');
+      li.className = 'border-2 border-ink bg-cream p-4 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3';
+      const meta = n.status === 'sent'
+        ? `已於 ${fmtDate(n.sent_at)} 寄給 ${n.recipient_count ?? 0} 位訂閱者`
+        : `${fmtDate(n.created_at)} · ${newsletterStatusLabel[n.status] ?? n.status}`;
+      li.innerHTML = `
+        <div class="min-w-0">
+          <p class="text-xs text-ink-light mb-1">${esc(meta)}</p>
+          <p class="font-semibold text-ink">${esc(n.subject)}</p>
+        </div>
+        <div class="flex gap-2 shrink-0">
+          ${n.status === 'draft' ? '<button data-edit class="px-3 py-1 text-xs font-semibold border-2 border-ink hover:bg-ink hover:text-cream transition-colors">編輯</button>' : ''}
+          ${n.status === 'draft' ? '<button data-send class="px-3 py-1 text-xs font-semibold border-2 border-sage-dark text-sage-dark hover:bg-sage-dark hover:text-cream transition-colors">寄出</button>' : ''}
+          <button data-delete class="px-3 py-1 text-xs font-semibold border-2 border-clay text-clay hover:bg-clay hover:text-cream transition-colors">刪除</button>
+        </div>
+      `;
+      li.querySelector('[data-edit]')?.addEventListener('click', () => {
+        newsletterId.value = n.id;
+        newsletterSubject.value = n.subject;
+        newsletterContent.value = n.content;
+        newsletterCancel.classList.remove('hidden');
+        newsletterForm.scrollIntoView({ behavior: 'smooth' });
+      });
+      li.querySelector('[data-send]')?.addEventListener('click', async () => {
+        if (!confirm(`確定要把「${n.subject}」寄給目前 ${activeSubscriberCount} 位訂閱者嗎？寄出後無法收回。`)) return;
+        const { error } = await supabase.from('newsletters').update({ status: 'sending' }).eq('id', n.id);
+        if (error) {
+          alert(`寄送失敗：${error.message}`);
+        } else {
+          alert('已開始寄送，稍後重新整理這頁查看寄送結果。');
+        }
+        loadNewsletters();
+      });
+      li.querySelector('[data-delete]')?.addEventListener('click', async () => {
+        if (!confirm(`確定要刪除「${n.subject}」嗎？`)) return;
+        await supabase.from('newsletters').delete().eq('id', n.id);
+        loadNewsletters();
+      });
+      newsletterList.appendChild(li);
+    });
+  }
+
+  async function loadSubscribers() {
+    const { data } = await supabase
+      .from('newsletter_subscribers')
+      .select('*')
+      .order('subscribed_at', { ascending: false });
+    const subscribers = data ?? [];
+    activeSubscriberCount = subscribers.filter((s) => !s.unsubscribed_at).length;
+    subscriberCount.textContent = `共 ${subscribers.length} 筆，其中 ${activeSubscriberCount} 位仍訂閱中`;
+    subscriberList.innerHTML = '';
+    subscribers.forEach((s) => {
+      const li = document.createElement('li');
+      li.className = 'border-2 border-ink bg-cream p-3 flex items-center justify-between gap-3';
+      li.innerHTML = `
+        <p class="text-sm text-ink min-w-0 truncate">${esc(s.email)} <span class="text-ink-light">· ${fmtDate(s.subscribed_at)}${s.unsubscribed_at ? '（已取消訂閱）' : ''}</span></p>
+        <button data-delete class="px-3 py-1 text-xs font-semibold border-2 border-clay text-clay hover:bg-clay hover:text-cream transition-colors shrink-0">刪除</button>
+      `;
+      li.querySelector('[data-delete]')?.addEventListener('click', async () => {
+        if (!confirm(`確定要刪除 ${s.email} 嗎？`)) return;
+        await supabase.from('newsletter_subscribers').delete().eq('id', s.id);
+        loadSubscribers();
+      });
+      subscriberList.appendChild(li);
     });
   }
 </script>

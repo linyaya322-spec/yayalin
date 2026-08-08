@@ -132,3 +132,21 @@ export interface SurveyProgress {
   started_at: string;
   updated_at: string;
 }
+
+export interface NewsletterSubscriber {
+  id: string;
+  email: string;
+  unsubscribe_token: string;
+  subscribed_at: string;
+  unsubscribed_at: string | null;
+}
+
+export interface Newsletter {
+  id: string;
+  subject: string;
+  content: string;
+  status: 'draft' | 'sending' | 'sent';
+  sent_at: string | null;
+  recipient_count: number | null;
+  created_at: string;
+}

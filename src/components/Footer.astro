@@ -3,7 +3,7 @@ const year = new Date().getFullYear();
 ---
 
 <footer class="bg-ink text-cream mt-32">
-  <div class="max-w-5xl mx-auto px-6 py-12 flex flex-col gap-6">
+  <div class="max-w-5xl mx-auto px-6 py-12 flex flex-col gap-8">
     <div class="flex flex-col sm:flex-row items-center justify-between gap-6">
       <p class="font-display text-lg">yaya 林 &middot; {year}</p>
       <div class="flex flex-wrap justify-center gap-3">
@@ -25,9 +25,63 @@ const year = new Date().getFullYear();
         </a>
       </div>
     </div>
+
+    <div class="border-t border-cream/20 pt-8">
+      <p class="text-sm font-semibold mb-3">訂閱電子報</p>
+      <form id="newsletter-subscribe-form" class="flex flex-col sm:flex-row gap-2 max-w-sm">
+        <input
+          type="email"
+          id="newsletter-subscribe-email"
+          name="email"
+          required
+          placeholder="你的 Email"
+          aria-label="你的 Email"
+          class="flex-1 border border-cream/40 bg-transparent px-4 py-2 text-cream placeholder:text-cream/50 text-sm focus:outline-none focus:border-clay"
+        />
+        <button
+          type="submit"
+          data-magnetic
+          class="px-4 py-2 bg-clay text-cream text-sm font-semibold hover:bg-cream hover:text-ink transition-colors disabled:opacity-50"
+        >
+          訂閱
+        </button>
+      </form>
+      <p id="newsletter-subscribe-status" class="text-xs text-cream/60 min-h-4 mt-2"></p>
+    </div>
+
     <div class="flex flex-wrap justify-center sm:justify-start gap-x-4 gap-y-2 text-sm text-cream/60">
       <a href="/privacy" class="hover:text-cream transition-colors">隱私權政策</a>
       <a href="/terms" class="hover:text-cream transition-colors">服務條款</a>
     </div>
   </div>
 </footer>
+
+<script>
+  import { supabase } from '../lib/supabase';
+
+  const form = document.getElementById('newsletter-subscribe-form') as HTMLFormElement | null;
+  const status = document.getElementById('newsletter-subscribe-status');
+
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement | null;
+    const formData = new FormData(form);
+    const email = String(formData.get('email') ?? '').trim();
+    if (!email) return;
+
+    if (submitBtn) submitBtn.disabled = true;
+    if (status) status.textContent = '訂閱中...';
+
+    const { error } = await supabase.from('newsletter_subscribers').insert({ email });
+
+    if (error) {
+      if (status) {
+        status.textContent = error.code === '23505' ? '這個 Email 已經訂閱過囉！' : '訂閱失敗，請稍後再試一次。';
+      }
+    } else {
+      if (status) status.textContent = '訂閱成功，謝謝你！';
+      form.reset();
+    }
+    if (submitBtn) submitBtn.disabled = false;
+  });
+</script>

@@ -1,0 +1,27 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="取消訂閱電子報" description="取消訂閱 yaya 林的電子報。" noindex>
+  <section class="max-w-lg mx-auto px-6 pt-24 pb-24 text-center">
+    <h1 class="font-display text-3xl text-ink mb-4">取消訂閱電子報</h1>
+    <p id="unsubscribe-message" class="text-ink-light">處理中...</p>
+  </section>
+</BaseLayout>
+
+<script>
+  import { supabase } from '../lib/supabase';
+
+  const message = document.getElementById('unsubscribe-message')!;
+  const token = new URLSearchParams(window.location.search).get('token');
+
+  if (!token) {
+    message.textContent = '連結無效，找不到取消訂閱的識別碼。';
+  } else {
+    supabase.rpc('unsubscribe_newsletter', { p_token: token }).then(({ error }) => {
+      message.textContent = error
+        ? '取消訂閱失敗，請稍後再試一次。'
+        : '已經幫你取消訂閱，之後不會再收到電子報囉。';
+    });
+  }
+</script>
