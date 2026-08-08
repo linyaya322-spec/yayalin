@@ -75,6 +75,8 @@ export interface SurveyOption {
   id: string;
   text: string;
   correct: boolean;
+  isOther?: boolean;
+  goto?: string | null;
 }
 
 export interface Survey {

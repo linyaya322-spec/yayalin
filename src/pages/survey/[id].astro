@@ -60,55 +60,112 @@ const { survey, questions } = Astro.props;
       </div>
     )}
 
-    <div id="survey-form-wrapper">
-      <form id="survey-form" class="grid gap-6" data-survey-id={survey.id}>
-        {questions.map((q, i) => (
-          <div class="bg-cream border-2 border-ink p-6" data-question-id={q.id} data-question-type={q.type} data-required={q.required ? 'true' : 'false'}>
-            <p class="font-semibold text-ink mb-3">
-              {i + 1}. {q.question_text}
-              {q.required && <span class="text-clay ml-1">*</span>}
-            </p>
-            {q.type === 'text' && (
-              <textarea
-                name={q.id}
-                required={q.required}
-                rows="3"
-                class="w-full border-2 border-ink bg-cream px-4 py-2 focus:outline-none focus:bg-sage-light resize-none"
-              ></textarea>
-            )}
-            {q.type === 'single' && (
-              <div class="grid gap-2">
-                {q.options.map((opt) => (
-                  <label class="flex items-center gap-2 cursor-pointer">
-                    <input type="radio" name={q.id} value={opt.id} required={q.required} class="w-4 h-4" />
-                    <span class="text-ink-light">{opt.text}</span>
-                  </label>
-                ))}
-              </div>
-            )}
-            {q.type === 'multiple' && (
-              <div class="grid gap-2">
-                {q.options.map((opt) => (
-                  <label class="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" name={q.id} value={opt.id} class="w-4 h-4" />
-                    <span class="text-ink-light">{opt.text}</span>
-                  </label>
-                ))}
-              </div>
-            )}
-          </div>
-        ))}
+    {questions.length === 0 ? (
+      <p class="text-ink-light">這份問卷還沒有題目。</p>
+    ) : (
+      <div id="survey-form-wrapper">
+        <p id="survey-progress" class="text-sm text-ink-light mb-3"></p>
+        <div class="grid gap-1 mb-6 h-1.5 bg-cream-dark">
+          <div id="survey-progress-bar" class="h-1.5 bg-clay transition-all duration-300" style="width: 0%"></div>
+        </div>
 
-        <button
-          type="submit"
-          data-magnetic
-          class="justify-self-start px-7 py-3 bg-clay text-cream text-sm font-semibold hover:bg-ink transition-colors disabled:opacity-50"
-        >
-          送出問卷
-        </button>
-        <p id="survey-status" class="text-sm min-h-5"></p>
-      </form>
-    </div>
+        <div id="survey-questions">
+          {questions.map((q, i) => (
+            <div
+              class="survey-question bg-cream border-2 border-ink p-6"
+              data-question-id={q.id}
+              data-question-type={q.type}
+              data-required={q.required ? 'true' : 'false'}
+              data-index={i}
+              style="display: none;"
+            >
+              <p class="font-semibold text-ink mb-4 text-lg">
+                {q.question_text}
+                {q.required && <span class="text-clay ml-1">*</span>}
+              </p>
+              {q.type === 'text' && (
+                <textarea
+                  data-answer-text
+                  rows="4"
+                  class="w-full border-2 border-ink bg-cream px-4 py-2 focus:outline-none focus:bg-sage-light resize-none"
+                ></textarea>
+              )}
+              {q.type === 'single' && (
+                <div class="grid gap-2">
+                  {q.options.map((opt) => (
+                    <div>
+                      <label class="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name={`q-${q.id}`}
+                          value={opt.id}
+                          data-answer-option
+                          data-goto={opt.goto ?? ''}
+                          data-other={opt.isOther ? 'true' : 'false'}
+                          class="w-4 h-4"
+                        />
+                        <span class="text-ink-light">{opt.text}</span>
+                      </label>
+                      {opt.isOther && (
+                        <input
+                          type="text"
+                          data-other-text-for={opt.id}
+                          placeholder="請輸入..."
+                          class="hidden mt-2 ml-6 border-2 border-ink bg-cream px-3 py-1.5 focus:outline-none w-[calc(100%-1.5rem)]"
+                        />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+              {q.type === 'multiple' && (
+                <div class="grid gap-2">
+                  {q.options.map((opt) => (
+                    <div>
+                      <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" value={opt.id} data-answer-option data-other={opt.isOther ? 'true' : 'false'} class="w-4 h-4" />
+                        <span class="text-ink-light">{opt.text}</span>
+                      </label>
+                      {opt.isOther && (
+                        <input
+                          type="text"
+                          data-other-text-for={opt.id}
+                          placeholder="請輸入..."
+                          class="hidden mt-2 ml-6 border-2 border-ink bg-cream px-3 py-1.5 focus:outline-none w-[calc(100%-1.5rem)]"
+                        />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+
+        <p id="survey-validation-message" class="text-clay text-sm mt-3 min-h-5"></p>
+
+        <div class="flex items-center justify-between mt-6">
+          <button
+            type="button"
+            id="survey-prev-btn"
+            data-magnetic
+            class="hidden px-6 py-3 border-2 border-ink text-ink text-sm font-semibold hover:bg-ink hover:text-cream transition-colors"
+          >
+            ← 上一題
+          </button>
+          <div class="flex-1"></div>
+          <button
+            type="button"
+            id="survey-next-btn"
+            data-magnetic
+            class="px-7 py-3 bg-clay text-cream text-sm font-semibold hover:bg-ink transition-colors disabled:opacity-50"
+          >
+            下一題
+          </button>
+        </div>
+        <p id="survey-status" class="text-sm min-h-5 mt-2"></p>
+      </div>
+    )}
 
     <div id="survey-done" class="hidden reveal bg-sage-light border-2 border-ink p-10 text-center">
       <p class="font-display text-2xl text-ink mb-2">謝謝你的填寫！</p>
@@ -120,48 +177,162 @@ const { survey, questions } = Astro.props;
 <script>
   import { supabase } from '../../lib/supabase';
 
-  const form = document.getElementById('survey-form') as HTMLFormElement | null;
   const wrapper = document.getElementById('survey-form-wrapper');
   const done = document.getElementById('survey-done');
   const status = document.getElementById('survey-status');
+  const validationMessage = document.getElementById('survey-validation-message')!;
+  const progress = document.getElementById('survey-progress')!;
+  const progressBar = document.getElementById('survey-progress-bar')!;
+  const prevBtn = document.getElementById('survey-prev-btn') as HTMLButtonElement | null;
+  const nextBtn = document.getElementById('survey-next-btn') as HTMLButtonElement | null;
 
-  form?.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const surveyId = form.dataset.surveyId;
-    const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement | null;
-    const formData = new FormData(form);
+  const questionEls = Array.from(document.querySelectorAll<HTMLElement>('.survey-question'));
+  const surveyId = window.location.pathname.split('/').filter(Boolean).pop();
 
+  if (questionEls.length && nextBtn) {
+    const totalCount = questionEls.length;
+    const history: string[] = [];
     const answers: Record<string, string | string[]> = {};
-    let missingRequired = false;
-    form.querySelectorAll<HTMLElement>('[data-question-id]').forEach((el) => {
-      const id = el.dataset.questionId!;
-      const type = el.dataset.questionType;
-      if (type === 'multiple') {
-        const values = formData.getAll(id).map(String);
-        if (values.length) answers[id] = values;
-        if (values.length === 0 && el.dataset.required === 'true') missingRequired = true;
+    let currentId = questionEls[0].dataset.questionId!;
+
+    // sync "other" text input visibility with checkbox/radio state
+    questionEls.forEach((q) => {
+      q.querySelectorAll<HTMLInputElement>('[data-answer-option]').forEach((input) => {
+        input.addEventListener('change', () => {
+          const group = input.closest('.survey-question')!;
+          if (input.dataset.other === 'true') {
+            const textInput = group.querySelector<HTMLInputElement>(`[data-other-text-for="${input.value}"]`);
+            const showIt = input.checked;
+            textInput?.classList.toggle('hidden', !showIt);
+            if (showIt) textInput?.focus();
+          }
+          // for radios sharing a name, hide other-text inputs of unselected siblings
+          if (input.type === 'radio') {
+            group.querySelectorAll<HTMLInputElement>('[data-other-text-for]').forEach((ti) => {
+              const owner = group.querySelector<HTMLInputElement>(`[value="${ti.dataset.otherTextFor}"][data-answer-option]`);
+              if (owner && !owner.checked) ti.classList.add('hidden');
+            });
+            updateNextButtonLabel();
+          }
+        });
+      });
+    });
+
+    function getQuestionEl(id: string) {
+      return questionEls.find((q) => q.dataset.questionId === id)!;
+    }
+
+    function updateNextButtonLabel() {
+      const isLast = getNextTarget(currentId) === '__end__';
+      if (nextBtn) nextBtn.textContent = isLast ? '送出問卷' : '下一題';
+    }
+
+    function showQuestion(id: string) {
+      questionEls.forEach((q) => (q.style.display = q.dataset.questionId === id ? '' : 'none'));
+      validationMessage.textContent = '';
+      const visitedCount = history.length + 1;
+      progress.textContent = `第 ${visitedCount} 題`;
+      progressBar.style.width = `${Math.min(100, Math.round((visitedCount / totalCount) * 100))}%`;
+      prevBtn?.classList.toggle('hidden', history.length === 0);
+      updateNextButtonLabel();
+    }
+
+    function collectAnswer(q: HTMLElement): { ok: boolean; value: string | string[] | null } {
+      const type = q.dataset.questionType;
+      const required = q.dataset.required === 'true';
+
+      if (type === 'text') {
+        const textarea = q.querySelector<HTMLTextAreaElement>('[data-answer-text]')!;
+        const value = textarea.value.trim();
+        if (required && !value) return { ok: false, value: null };
+        return { ok: true, value: value || '' };
+      }
+
+      if (type === 'single') {
+        const checked = q.querySelector<HTMLInputElement>('[data-answer-option]:checked');
+        if (!checked) {
+          if (required) return { ok: false, value: null };
+          return { ok: true, value: '' };
+        }
+        if (checked.dataset.other === 'true') {
+          const textInput = q.querySelector<HTMLInputElement>(`[data-other-text-for="${checked.value}"]`);
+          const text = textInput?.value.trim() ?? '';
+          if (required && !text) return { ok: false, value: null };
+          return { ok: true, value: `other:${text}` };
+        }
+        return { ok: true, value: checked.value };
+      }
+
+      // multiple
+      const checkedBoxes = Array.from(q.querySelectorAll<HTMLInputElement>('[data-answer-option]:checked'));
+      if (required && checkedBoxes.length === 0) return { ok: false, value: null };
+      const values = checkedBoxes.map((box) => {
+        if (box.dataset.other === 'true') {
+          const textInput = q.querySelector<HTMLInputElement>(`[data-other-text-for="${box.value}"]`);
+          return `other:${textInput?.value.trim() ?? ''}`;
+        }
+        return box.value;
+      });
+      return { ok: true, value: values };
+    }
+
+    function getNextTarget(fromId: string): string {
+      const q = getQuestionEl(fromId);
+      if (q.dataset.questionType === 'single') {
+        const checked = q.querySelector<HTMLInputElement>('[data-answer-option]:checked');
+        const goto = checked?.dataset.goto;
+        if (goto === '__submit__') return '__end__';
+        if (goto) return goto;
+      }
+      const index = questionEls.indexOf(q);
+      const next = questionEls[index + 1];
+      return next ? next.dataset.questionId! : '__end__';
+    }
+
+    async function submitSurvey() {
+      if (nextBtn) nextBtn.disabled = true;
+      if (status) status.textContent = '送出中...';
+      const { error } = await supabase.from('survey_responses').insert({ survey_id: surveyId, answers });
+      if (error) {
+        if (status) status.textContent = `送出失敗：${error.message}`;
+        if (nextBtn) nextBtn.disabled = false;
       } else {
-        const value = formData.get(id);
-        if (value) answers[id] = String(value);
+        wrapper?.classList.add('hidden');
+        done?.classList.remove('hidden');
+      }
+    }
+
+    nextBtn.addEventListener('click', async () => {
+      const currentQ = getQuestionEl(currentId);
+      const result = collectAnswer(currentQ);
+      if (!result.ok) {
+        validationMessage.textContent = '這題是必填，請完成後再繼續。';
+        return;
+      }
+      if (result.value !== '' && !(Array.isArray(result.value) && result.value.length === 0)) {
+        answers[currentId] = result.value as string | string[];
+      } else {
+        delete answers[currentId];
+      }
+
+      const target = getNextTarget(currentId);
+      if (target === '__end__') {
+        await submitSurvey();
+        return;
+      }
+      history.push(currentId);
+      currentId = target;
+      showQuestion(currentId);
+    });
+
+    prevBtn?.addEventListener('click', () => {
+      const prev = history.pop();
+      if (prev) {
+        currentId = prev;
+        showQuestion(currentId);
       }
     });
 
-    if (missingRequired) {
-      if (status) status.textContent = '請完成所有必填題目（複選題至少選一個）。';
-      return;
-    }
-
-    if (submitBtn) submitBtn.disabled = true;
-    if (status) status.textContent = '送出中...';
-
-    const { error } = await supabase.from('survey_responses').insert({ survey_id: surveyId, answers });
-
-    if (error) {
-      if (status) status.textContent = `送出失敗：${error.message}`;
-      if (submitBtn) submitBtn.disabled = false;
-    } else {
-      wrapper?.classList.add('hidden');
-      done?.classList.remove('hidden');
-    }
-  });
+    showQuestion(currentId);
+  }
 </script>
