@@ -5,24 +5,38 @@ const { data: quotes } = await supabase.from('quotes').select('text');
 const quoteTexts = (quotes ?? []).map((q) => q.text);
 ---
 
-<div class="reveal bg-sage-light border-2 border-ink p-8 sm:p-10 text-center max-w-lg mx-auto relative overflow-hidden">
-  <div class="shape-block -top-6 -right-6 w-20 h-20 bg-butter rotate-12" data-parallax="0.06" aria-hidden="true"></div>
-  <p class="inline-block bg-ink text-cream text-xs font-semibold px-2.5 py-1 mb-5">今日小語</p>
-  <p id="quote-text" class="font-display text-xl sm:text-2xl text-ink leading-relaxed min-h-16 flex items-center justify-center">
-    點按鈕，抽一句話給今天的自己
-  </p>
-  <button
-    id="quote-btn"
-    data-magnetic
-    class="mt-6 px-6 py-2.5 bg-clay text-cream text-sm font-semibold hover:bg-ink active:scale-95 transition-colors"
-  >
-    抽一句話
-  </button>
+<div
+  id="quote-card"
+  class="reveal relative max-w-lg mx-auto text-center p-8 sm:p-12 rounded-[2rem] overflow-hidden"
+  style="background: radial-gradient(circle at 50% 20%, var(--color-butter-light), var(--color-clay-light) 70%); box-shadow: 0 0 0 1px rgba(28,28,26,0.08), 0 20px 45px -20px rgba(226,72,31,0.35);"
+>
+  <div id="quote-glow" class="pointer-events-none absolute -top-10 left-1/2 -translate-x-1/2 w-56 h-56 rounded-full bg-butter/50 blur-3xl" aria-hidden="true"></div>
+
+  <div class="relative">
+    <p class="inline-flex items-center gap-1.5 bg-cream/80 text-clay-dark text-xs font-semibold px-3 py-1.5 rounded-full mb-6">
+      <span aria-hidden="true">☀️</span> 今日小語
+    </p>
+    <p
+      id="quote-text"
+      class="font-display text-xl sm:text-2xl text-ink leading-relaxed min-h-16 flex items-center justify-center px-2"
+    >
+      點按鈕，抽一句話給今天的自己
+    </p>
+    <button
+      id="quote-btn"
+      data-magnetic
+      class="mt-8 px-7 py-3 rounded-full bg-clay text-cream text-sm font-semibold shadow-[0_8px_24px_-8px_rgba(226,72,31,0.6)] hover:brightness-110 hover:shadow-[0_10px_28px_-6px_rgba(226,72,31,0.7)] active:scale-95 transition-all"
+    >
+      抽一句話 🫶
+    </button>
+  </div>
 </div>
 
 <script define:vars={{ quoteTexts }}>
   const btn = document.getElementById('quote-btn');
   const text = document.getElementById('quote-text');
+  const card = document.getElementById('quote-card');
+  const glow = document.getElementById('quote-glow');
   let lastIndex = -1;
 
   btn?.addEventListener('click', () => {
@@ -33,16 +47,62 @@ const quoteTexts = (quotes ?? []).map((q) => q.text);
     }
     lastIndex = index;
 
+    text.classList.remove('quote-pop');
     text.style.opacity = '0';
+    text.style.transform = 'translateY(6px) scale(0.98)';
+
+    glow?.classList.remove('glow-pulse');
+    void glow?.offsetWidth;
+    glow?.classList.add('glow-pulse');
+
     setTimeout(() => {
       text.textContent = quoteTexts[index];
       text.style.opacity = '1';
-    }, 200);
+      text.style.transform = 'translateY(0) scale(1)';
+      text.classList.add('quote-pop');
+    }, 260);
   });
 </script>
 
 <style>
   #quote-text {
-    transition: opacity 0.2s ease;
+    transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1), transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @keyframes glow-breathe {
+    0%,
+    100% {
+      opacity: 0.5;
+      transform: translateX(-50%) scale(1);
+    }
+    50% {
+      opacity: 0.8;
+      transform: translateX(-50%) scale(1.15);
+    }
+  }
+
+  #quote-glow {
+    animation: glow-breathe 4s ease-in-out infinite;
+  }
+
+  @keyframes glow-pulse {
+    0% {
+      opacity: 0.9;
+      transform: translateX(-50%) scale(1.35);
+    }
+    100% {
+      opacity: 0.5;
+      transform: translateX(-50%) scale(1);
+    }
+  }
+
+  #quote-glow.glow-pulse {
+    animation: glow-pulse 0.7s ease-out;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    #quote-glow {
+      animation: none;
+    }
   }
 </style>
