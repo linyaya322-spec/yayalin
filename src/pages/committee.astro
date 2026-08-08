@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Timeline from '../components/Timeline.astro';
+import SuggestionBox from '../components/SuggestionBox.astro';
 import { supabase } from '../lib/supabase';
 import { marked } from 'marked';
 
@@ -35,6 +36,10 @@ const introHtml = introPage ? await marked.parse(introPage.content) : null;
 
   <section class="max-w-3xl mx-auto px-6 pb-24">
     <Timeline />
+  </section>
+
+  <section class="max-w-3xl mx-auto px-6 pb-24">
+    <SuggestionBox />
   </section>
 
   <section class="max-w-3xl mx-auto px-6 pb-24">

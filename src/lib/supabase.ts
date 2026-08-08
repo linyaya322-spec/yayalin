@@ -24,6 +24,8 @@ export interface TimelineEntry {
   description: string;
   pdf_url: string | null;
   link_url: string | null;
+  status: string | null;
+  government_response: string | null;
   created_at: string;
 }
 
@@ -54,4 +56,17 @@ export interface ContactSubmission {
   email: string;
   message: string;
   created_at: string;
+}
+
+export interface StudentSuggestion {
+  id: string;
+  message: string;
+  school: string | null;
+  grade: string | null;
+  created_at: string;
+}
+
+export interface AppSetting {
+  key: string;
+  value: string;
 }
