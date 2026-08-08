@@ -9,7 +9,7 @@ const title = page?.title ?? '服務條款';
 const bodyHtml = page ? await marked.parse(page.content) : '<p>內容準備中。</p>';
 ---
 
-<BaseLayout title="服務條款" description="Yaya 林個人網站的服務條款。">
+<BaseLayout title="服務條款" description="yaya 林個人網站的服務條款。">
   <section class="max-w-2xl mx-auto px-6 pt-16 pb-24">
     <p class="reveal inline-block bg-ink text-cream text-sm font-medium px-3 py-1 mb-6">政策</p>
     <h1 class="font-display text-4xl text-ink mb-8"><span data-text-reveal>{title}</span></h1>

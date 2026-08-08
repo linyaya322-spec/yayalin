@@ -5,11 +5,11 @@ import { marked } from 'marked';
 
 const { data: page } = await supabase.from('site_pages').select('*').eq('slug', 'about').maybeSingle();
 
-const title = page?.title ?? '嗨，我是 Yaya 林';
+const title = page?.title ?? '嗨，我是 yaya 林';
 const bodyHtml = page ? await marked.parse(page.content) : '';
 ---
 
-<BaseLayout title="關於我" description="關於 Yaya，學生、新竹縣兒少委員的自我介紹。">
+<BaseLayout title="關於我" description="關於 yaya，學生、新竹縣兒少委員的自我介紹。">
   <section class="max-w-3xl mx-auto px-6 pt-16 pb-24">
     <p class="reveal inline-block bg-ink text-cream text-sm font-medium px-3 py-1 mb-6">關於我</p>
     <h1 class="font-display text-4xl sm:text-5xl text-ink mb-8">

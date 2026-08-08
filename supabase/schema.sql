@@ -1,4 +1,4 @@
--- Yaya 林個人網站 — Supabase 資料表 + 權限規則 + 種子資料
+-- yaya 林個人網站 — Supabase 資料表 + 權限規則 + 種子資料
 -- 使用方式：複製整份貼到 Supabase 專案的 SQL Editor，執行一次即可。
 
 create extension if not exists "pgcrypto";
@@ -193,7 +193,7 @@ insert into quotes (text) values
 insert into site_pages (slug, title, content) values
 (
   'about',
-  '嗨，我是 Yaya 林',
+  '嗨，我是 yaya 林',
   $$目前是一名學生，同時也是新竹縣兒少委員，希望能把同齡人的想法帶進公共討論裡，也讓更多人知道青少年其實很願意參與、很願意被聽見。
 
 平常喜歡觀察生活裡的小細節，拍照、手寫筆記、沒有目的地的散步，都是我讓自己慢下來的方式。這個網站是我紀錄這些事情的地方——有正經的公共議題，也有很日常的碎碎念。
