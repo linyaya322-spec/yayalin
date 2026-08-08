@@ -86,6 +86,8 @@ export interface Survey {
   is_active: boolean;
   link_url: string | null;
   pdf_url: string | null;
+  opens_at: string | null;
+  closes_at: string | null;
   created_at: string;
 }
 

@@ -63,7 +63,15 @@ const { survey, questions } = Astro.props;
     {questions.length === 0 ? (
       <p class="text-ink-light">這份問卷還沒有題目。</p>
     ) : (
-      <div id="survey-form-wrapper">
+      <div id="survey-form-wrapper" data-opens-at={survey.opens_at ?? ''} data-closes-at={survey.closes_at ?? ''}>
+        <div id="survey-not-open" class="hidden bg-cream-dark border-2 border-ink p-10 text-center">
+          <p class="font-display text-2xl text-ink mb-2">問卷尚未開放</p>
+          <p id="survey-opens-at-text" class="text-ink-light"></p>
+        </div>
+        <div id="survey-closed-schedule" class="hidden bg-cream-dark border-2 border-ink p-10 text-center">
+          <p class="font-display text-2xl text-ink mb-2">問卷已截止</p>
+          <p class="text-ink-light">感謝大家的參與，這份問卷目前不開放填寫。</p>
+        </div>
         <div id="survey-consent" class="bg-cream border-2 border-ink p-6 sm:p-8">
           <p class="font-semibold text-ink mb-3">填寫前請先確認</p>
           <p class="text-ink-light leading-relaxed mb-4">
@@ -218,6 +226,38 @@ const { survey, questions } = Astro.props;
 
   const questionEls = Array.from(document.querySelectorAll<HTMLElement>('.survey-question'));
   let progressRowId: string | null = null;
+
+  // ---------- 開放/截止時間檢查 ----------
+  (function checkSchedule() {
+    if (!wrapper) return;
+    const opensAt = wrapper.dataset.opensAt;
+    const closesAt = wrapper.dataset.closesAt;
+    const now = Date.now();
+    const consentBlockEl = document.getElementById('survey-consent');
+
+    if (closesAt && new Date(closesAt).getTime() < now) {
+      consentBlockEl?.classList.add('hidden');
+      document.getElementById('survey-quiz-body')?.classList.add('hidden');
+      document.getElementById('survey-closed-schedule')?.classList.remove('hidden');
+      return;
+    }
+    if (opensAt && new Date(opensAt).getTime() > now) {
+      consentBlockEl?.classList.add('hidden');
+      document.getElementById('survey-quiz-body')?.classList.add('hidden');
+      const notOpen = document.getElementById('survey-not-open');
+      const text = document.getElementById('survey-opens-at-text');
+      if (text) {
+        text.textContent = `開放時間：${new Date(opensAt).toLocaleString('zh-Hant-TW', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+        })}`;
+      }
+      notOpen?.classList.remove('hidden');
+    }
+  })();
 
   async function trackStart(surveyIdForTracking: string) {
     const { data } = await supabase

@@ -53,6 +53,18 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
             <input type="checkbox" id="survey-active" checked class="w-4 h-4" />
             <span class="text-sm text-ink">啟用（顯示在首頁與可公開填寫）</span>
           </label>
+
+          <div class="grid sm:grid-cols-2 gap-3">
+            <label class="grid gap-1 text-xs text-ink-light">
+              開放時間（選填，未到時間前訪客會看到「尚未開放」）
+              <input type="datetime-local" id="survey-opens-at" class="border-2 border-ink bg-cream px-4 py-2 text-sm focus:outline-none" />
+            </label>
+            <label class="grid gap-1 text-xs text-ink-light">
+              截止時間（選填，過了時間訪客會看到「已截止」，後台仍看得到）
+              <input type="datetime-local" id="survey-closes-at" class="border-2 border-ink bg-cream px-4 py-2 text-sm focus:outline-none" />
+            </label>
+          </div>
+
           <input type="text" id="survey-link" placeholder="相關連結網址（選填）" class="border-2 border-ink bg-cream px-4 py-2 focus:outline-none" />
 
           <div class="grid gap-2 bg-cream border-2 border-ink p-3">
@@ -213,6 +225,13 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 
   const fmtDate = (d: string) => new Date(d).toLocaleDateString('zh-Hant-TW');
 
+  function toLocalInputValue(iso: string | null) {
+    if (!iso) return '';
+    const d = new Date(iso);
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+
   // ---------- 視圖切換 ----------
   const listView = document.getElementById('survey-list-view')!;
   const editView = document.getElementById('survey-edit-view')!;
@@ -237,21 +256,33 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     const { data: surveys } = await supabase.from('surveys').select('*').order('created_at', { ascending: false });
     surveyList.innerHTML = '';
     (surveys ?? []).forEach((survey) => {
+      const now = Date.now();
+      let scheduleLabel = survey.is_active ? '已啟用' : '已停用';
+      if (survey.closes_at && new Date(survey.closes_at).getTime() < now) scheduleLabel = '已截止';
+      else if (survey.opens_at && new Date(survey.opens_at).getTime() > now) scheduleLabel = '尚未開放';
+
       const li = document.createElement('li');
       li.className = 'border-2 border-ink bg-cream p-4 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3';
       li.innerHTML = `
         <div class="min-w-0">
-          <p class="text-xs text-ink-light mb-1">${fmtDate(survey.created_at)} · ${survey.is_active ? '已啟用' : '已停用'}</p>
+          <p class="text-xs text-ink-light mb-1">${fmtDate(survey.created_at)} · ${scheduleLabel}</p>
           <p class="font-semibold text-ink">${esc(survey.title)}</p>
         </div>
-        <div class="flex gap-2 shrink-0">
+        <div class="flex flex-wrap gap-2 shrink-0">
           <button data-stats class="px-3 py-1 text-xs font-semibold border-2 border-sage-dark text-sage-dark hover:bg-sage-dark hover:text-cream transition-colors">回覆統計</button>
           <button data-edit class="px-3 py-1 text-xs font-semibold border-2 border-ink hover:bg-ink hover:text-cream transition-colors">編輯</button>
-          <button data-delete class="px-3 py-1 text-xs font-semibold border-2 border-clay text-clay hover:bg-clay hover:text-cream transition-colors">刪除</button>
+          <button data-clear class="px-3 py-1 text-xs font-semibold border-2 border-butter text-clay hover:bg-butter hover:text-ink transition-colors">清空回覆</button>
+          <button data-delete class="px-3 py-1 text-xs font-semibold border-2 border-clay text-clay hover:bg-clay hover:text-cream transition-colors">刪除問卷</button>
         </div>
       `;
       li.querySelector('[data-edit]')?.addEventListener('click', () => openEditView(survey));
       li.querySelector('[data-stats]')?.addEventListener('click', () => openStatsView(survey));
+      li.querySelector('[data-clear]')?.addEventListener('click', async () => {
+        if (!confirm(`確定要清空「${survey.title}」的所有填答資料嗎？問卷本身跟題目會保留，只刪除回覆紀錄，無法復原。`)) return;
+        await supabase.from('survey_responses').delete().eq('survey_id', survey.id);
+        await supabase.from('survey_progress').delete().eq('survey_id', survey.id);
+        alert('已清空這份問卷的所有填答資料。');
+      });
       li.querySelector('[data-delete]')?.addEventListener('click', async () => {
         if (!confirm(`確定要刪除「${survey.title}」嗎？連同所有回覆一起刪除，無法復原。`)) return;
         await supabase.from('surveys').delete().eq('id', survey.id);
@@ -267,6 +298,8 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
   const surveyTitleInput = document.getElementById('survey-title') as HTMLInputElement;
   const surveyDescriptionInput = document.getElementById('survey-description') as HTMLTextAreaElement;
   const surveyActiveInput = document.getElementById('survey-active') as HTMLInputElement;
+  const surveyOpensAtInput = document.getElementById('survey-opens-at') as HTMLInputElement;
+  const surveyClosesAtInput = document.getElementById('survey-closes-at') as HTMLInputElement;
   const surveyLinkInput = document.getElementById('survey-link') as HTMLInputElement;
   const surveyPdfInput = document.getElementById('survey-pdf') as HTMLInputElement;
   const surveyPdfPreview = document.getElementById('survey-pdf-preview') as HTMLAnchorElement;
@@ -452,6 +485,8 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     surveyTitleInput.value = survey.title;
     surveyDescriptionInput.value = survey.description ?? '';
     surveyActiveInput.checked = survey.is_active;
+    surveyOpensAtInput.value = toLocalInputValue(survey.opens_at);
+    surveyClosesAtInput.value = toLocalInputValue(survey.closes_at);
     surveyLinkInput.value = survey.link_url ?? '';
     if (survey.pdf_url) setSurveyPdf(survey.pdf_url);
 
@@ -474,6 +509,8 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       title: surveyTitleInput.value.trim(),
       description: surveyDescriptionInput.value.trim(),
       is_active: surveyActiveInput.checked,
+      opens_at: surveyOpensAtInput.value ? new Date(surveyOpensAtInput.value).toISOString() : null,
+      closes_at: surveyClosesAtInput.value ? new Date(surveyClosesAtInput.value).toISOString() : null,
       link_url: surveyLinkInput.value.trim() || null,
       pdf_url: surveyPdfInput.value || null,
     };

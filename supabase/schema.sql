@@ -324,6 +324,8 @@ create table if not exists surveys (
   is_active boolean not null default true,
   link_url text,
   pdf_url text,
+  opens_at timestamptz,
+  closes_at timestamptz,
   created_at timestamptz not null default now()
 );
 
