@@ -21,6 +21,8 @@ export interface TimelineEntry {
   date: string;
   title: string;
   description: string;
+  pdf_url: string | null;
+  link_url: string | null;
   created_at: string;
 }
 

@@ -32,6 +32,8 @@ create table if not exists timeline_entries (
   date timestamptz not null default now(),
   title text not null,
   description text not null,
+  pdf_url text,
+  link_url text,
   created_at timestamptz not null default now()
 );
 
@@ -181,3 +183,17 @@ create policy "only admin can upload to post-images"
 create policy "only admin can delete from post-images"
   on storage.objects for delete
   using (bucket_id = 'post-images' and auth.jwt() ->> 'email' = 'yayalin322@gmail.com');
+
+-- ---------- 時間軸附件（儲存桶 timeline-files 需另外用 Storage API/介面建立，公開讀取） ----------
+
+create policy "public can view timeline-files"
+  on storage.objects for select
+  using (bucket_id = 'timeline-files');
+
+create policy "only admin can upload to timeline-files"
+  on storage.objects for insert
+  with check (bucket_id = 'timeline-files' and auth.jwt() ->> 'email' = 'yayalin322@gmail.com');
+
+create policy "only admin can delete from timeline-files"
+  on storage.objects for delete
+  using (bucket_id = 'timeline-files' and auth.jwt() ->> 'email' = 'yayalin322@gmail.com');

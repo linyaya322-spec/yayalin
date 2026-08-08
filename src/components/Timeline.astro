@@ -19,6 +19,32 @@ const formatDate = (date: string) =>
       </p>
       <h3 class="font-display text-xl text-ink mb-1">{entry.title}</h3>
       <p class="text-ink-light leading-relaxed">{entry.description}</p>
+      {(entry.pdf_url || entry.link_url) && (
+        <div class="flex flex-wrap gap-3 mt-3">
+          {entry.pdf_url && (
+            <a
+              href={entry.pdf_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              data-magnetic
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 border-2 border-ink text-sm font-semibold text-ink hover:bg-ink hover:text-cream transition-colors"
+            >
+              📄 提案文件 PDF
+            </a>
+          )}
+          {entry.link_url && (
+            <a
+              href={entry.link_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              data-magnetic
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 border-2 border-ink text-sm font-semibold text-ink hover:bg-ink hover:text-cream transition-colors"
+            >
+              🔗 相關連結
+            </a>
+          )}
+        </div>
+      )}
     </li>
   ))}
 </ol>

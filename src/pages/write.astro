@@ -43,9 +43,9 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         <form id="post-form" class="grid gap-3 mb-10 bg-sage-light border-2 border-ink p-6">
           <input type="hidden" id="post-id" />
           <input type="text" id="post-title" required placeholder="標題" class="border-2 border-ink bg-cream px-4 py-2 focus:outline-none" />
-          <div class="grid grid-cols-2 gap-3">
-            <input type="date" id="post-date" required class="border-2 border-ink bg-cream px-4 py-2 focus:outline-none" />
-            <select id="post-category" class="border-2 border-ink bg-cream px-4 py-2 focus:outline-none">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <input type="date" id="post-date" required class="border-2 border-ink bg-cream px-4 py-2 focus:outline-none w-full" />
+            <select id="post-category" class="border-2 border-ink bg-cream px-4 py-2 focus:outline-none w-full">
               <option>生活隨筆</option>
               <option>兒少議題</option>
               <option>興趣分享</option>
@@ -57,8 +57,8 @@ import BaseLayout from '../layouts/BaseLayout.astro';
             <label class="text-xs font-semibold text-ink-light">封面圖片（顯示在文章卡片與內頁最上方，選填）</label>
             <input type="hidden" id="post-cover-image" />
             <img id="post-cover-preview" class="hidden max-h-32 object-cover border-2 border-ink" alt="封面預覽" />
-            <div class="flex items-center gap-3">
-              <input type="file" id="post-cover-input" accept="image/png,image/jpeg,image/webp,image/gif" class="text-sm" />
+            <div class="flex flex-wrap items-center gap-3">
+              <input type="file" id="post-cover-input" accept="image/png,image/jpeg,image/webp,image/gif" class="text-sm max-w-full" />
               <button type="button" id="post-cover-remove" class="hidden text-xs font-semibold text-clay underline">移除封面</button>
             </div>
             <p id="post-cover-status" class="text-xs text-ink-light min-h-4"></p>
@@ -66,7 +66,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 
           <div class="grid gap-2 bg-cream border-2 border-ink p-3">
             <label class="text-xs font-semibold text-ink-light">插入圖片到內容（上傳後會把圖片網址加到下面內容欄位游標位置）</label>
-            <input type="file" id="post-inline-image-input" accept="image/png,image/jpeg,image/webp,image/gif" class="text-sm" />
+            <input type="file" id="post-inline-image-input" accept="image/png,image/jpeg,image/webp,image/gif" class="text-sm max-w-full" />
             <p id="post-inline-image-status" class="text-xs text-ink-light min-h-4"></p>
           </div>
 
@@ -87,6 +87,20 @@ import BaseLayout from '../layouts/BaseLayout.astro';
           <input type="date" id="timeline-date" required class="border-2 border-ink bg-cream px-4 py-2 focus:outline-none" />
           <input type="text" id="timeline-title" required placeholder="標題" class="border-2 border-ink bg-cream px-4 py-2 focus:outline-none" />
           <textarea id="timeline-description" required placeholder="說明" rows="3" class="border-2 border-ink bg-cream px-4 py-2 focus:outline-none resize-none"></textarea>
+
+          <input type="text" id="timeline-link" placeholder="相關連結網址（選填，例如新聞或會議紀錄連結）" class="border-2 border-ink bg-cream px-4 py-2 focus:outline-none" />
+
+          <div class="grid gap-2 bg-cream border-2 border-ink p-3">
+            <label class="text-xs font-semibold text-ink-light">提案文件 PDF（選填）</label>
+            <input type="hidden" id="timeline-pdf" />
+            <a id="timeline-pdf-preview" class="hidden text-sm font-semibold text-clay underline" target="_blank" rel="noopener noreferrer">目前的 PDF</a>
+            <div class="flex flex-wrap items-center gap-3">
+              <input type="file" id="timeline-pdf-input" accept="application/pdf" class="text-sm max-w-full" />
+              <button type="button" id="timeline-pdf-remove" class="hidden text-xs font-semibold text-clay underline">移除 PDF</button>
+            </div>
+            <p id="timeline-pdf-status" class="text-xs text-ink-light min-h-4"></p>
+          </div>
+
           <div class="flex gap-3">
             <button type="submit" class="px-6 py-2.5 bg-clay text-cream text-sm font-semibold hover:bg-ink transition-colors">儲存項目</button>
             <button type="button" id="timeline-cancel" class="hidden px-6 py-2.5 border-2 border-ink text-sm font-semibold hover:bg-ink hover:text-cream transition-colors">取消編輯</button>
@@ -314,9 +328,9 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     postList.innerHTML = '';
     (data ?? []).forEach((post) => {
       const li = document.createElement('li');
-      li.className = 'border-2 border-ink bg-cream p-4 flex items-start justify-between gap-4';
+      li.className = 'border-2 border-ink bg-cream p-4 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3';
       li.innerHTML = `
-        <div>
+        <div class="min-w-0">
           <p class="text-xs text-ink-light mb-1">${fmtDate(post.date)} · ${esc(post.category)}</p>
           <p class="font-semibold text-ink">${esc(post.title)}</p>
         </div>
@@ -355,14 +369,59 @@ import BaseLayout from '../layouts/BaseLayout.astro';
   const timelineDate = document.getElementById('timeline-date') as HTMLInputElement;
   const timelineTitle = document.getElementById('timeline-title') as HTMLInputElement;
   const timelineDescription = document.getElementById('timeline-description') as HTMLTextAreaElement;
+  const timelineLink = document.getElementById('timeline-link') as HTMLInputElement;
+  const timelinePdf = document.getElementById('timeline-pdf') as HTMLInputElement;
+  const timelinePdfPreview = document.getElementById('timeline-pdf-preview') as HTMLAnchorElement;
+  const timelinePdfInput = document.getElementById('timeline-pdf-input') as HTMLInputElement;
+  const timelinePdfRemove = document.getElementById('timeline-pdf-remove')!;
+  const timelinePdfStatus = document.getElementById('timeline-pdf-status')!;
   const timelineCancel = document.getElementById('timeline-cancel')!;
   const timelineStatus = document.getElementById('timeline-status')!;
   const timelineList = document.getElementById('timeline-list')!;
+
+  function setTimelinePdf(url: string) {
+    timelinePdf.value = url;
+    timelinePdfPreview.href = url;
+    timelinePdfPreview.classList.remove('hidden');
+    timelinePdfRemove.classList.remove('hidden');
+  }
+
+  function clearTimelinePdf() {
+    timelinePdf.value = '';
+    timelinePdfPreview.href = '';
+    timelinePdfPreview.classList.add('hidden');
+    timelinePdfRemove.classList.add('hidden');
+    timelinePdfInput.value = '';
+  }
+
+  timelinePdfInput.addEventListener('change', async () => {
+    const file = timelinePdfInput.files?.[0];
+    if (!file) return;
+    timelinePdfStatus.textContent = '上傳中...';
+    if (file.size > MAX_IMAGE_BYTES * 2) {
+      alert('檔案太大了，請上傳 10MB 以下的 PDF。');
+      timelinePdfStatus.textContent = '';
+      return;
+    }
+    const path = `${crypto.randomUUID()}.pdf`;
+    const { error } = await supabase.storage.from('timeline-files').upload(path, file);
+    if (error) {
+      alert(`PDF 上傳失敗：${error.message}`);
+      timelinePdfStatus.textContent = '';
+      return;
+    }
+    const { data } = supabase.storage.from('timeline-files').getPublicUrl(path);
+    timelinePdfStatus.textContent = '上傳完成！';
+    setTimelinePdf(data.publicUrl);
+  });
+
+  timelinePdfRemove.addEventListener('click', clearTimelinePdf);
 
   function resetTimelineForm() {
     timelineForm.reset();
     timelineId.value = '';
     timelineCancel.classList.add('hidden');
+    clearTimelinePdf();
   }
 
   timelineCancel.addEventListener('click', resetTimelineForm);
@@ -373,6 +432,8 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       date: timelineDate.value,
       title: timelineTitle.value.trim(),
       description: timelineDescription.value.trim(),
+      link_url: timelineLink.value.trim() || null,
+      pdf_url: timelinePdf.value || null,
     };
     timelineStatus.textContent = '儲存中...';
     const { error } = timelineId.value
@@ -390,9 +451,9 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     timelineList.innerHTML = '';
     (data ?? []).forEach((entry) => {
       const li = document.createElement('li');
-      li.className = 'border-2 border-ink bg-cream p-4 flex items-start justify-between gap-4';
+      li.className = 'border-2 border-ink bg-cream p-4 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3';
       li.innerHTML = `
-        <div>
+        <div class="min-w-0">
           <p class="text-xs text-ink-light mb-1">${fmtDate(entry.date)}</p>
           <p class="font-semibold text-ink">${esc(entry.title)}</p>
         </div>
@@ -406,6 +467,12 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         timelineDate.value = entry.date.slice(0, 10);
         timelineTitle.value = entry.title;
         timelineDescription.value = entry.description;
+        timelineLink.value = entry.link_url ?? '';
+        if (entry.pdf_url) {
+          setTimelinePdf(entry.pdf_url);
+        } else {
+          clearTimelinePdf();
+        }
         timelineCancel.classList.remove('hidden');
         timelineForm.scrollIntoView({ behavior: 'smooth' });
       });
@@ -453,7 +520,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     quoteList.innerHTML = '';
     (data ?? []).forEach((q) => {
       const li = document.createElement('li');
-      li.className = 'border-2 border-ink bg-cream p-4 flex items-start justify-between gap-4';
+      li.className = 'border-2 border-ink bg-cream p-4 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3';
       li.innerHTML = `
         <p class="font-semibold text-ink">${esc(q.text)}</p>
         <div class="flex gap-2 shrink-0">
@@ -487,11 +554,11 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     guestbookAdminList.innerHTML = '';
     (data ?? []).forEach((m) => {
       const li = document.createElement('li');
-      li.className = `border-2 p-4 flex items-start justify-between gap-4 ${m.is_approved ? 'border-sage bg-sage-light' : 'border-ink bg-cream'}`;
+      li.className = `border-2 p-4 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 ${m.is_approved ? 'border-sage bg-sage-light' : 'border-ink bg-cream'}`;
       li.innerHTML = `
-        <div>
+        <div class="min-w-0">
           <p class="text-xs text-ink-light mb-1">${fmtDate(m.created_at)} · ${esc(m.name)} ${m.is_approved ? '（已公開）' : '（待審核）'}</p>
-          <p class="text-ink whitespace-pre-wrap">${esc(m.message)}</p>
+          <p class="text-ink whitespace-pre-wrap break-words">${esc(m.message)}</p>
         </div>
         <div class="flex gap-2 shrink-0">
           ${m.is_approved ? '' : '<button data-approve class="px-3 py-1 text-xs font-semibold border-2 border-sage-dark text-sage-dark hover:bg-sage-dark hover:text-cream transition-colors">核准</button>'}
@@ -522,11 +589,11 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     contactList.innerHTML = '';
     (data ?? []).forEach((c) => {
       const li = document.createElement('li');
-      li.className = 'border-2 border-ink bg-cream p-4 flex items-start justify-between gap-4';
+      li.className = 'border-2 border-ink bg-cream p-4 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3';
       li.innerHTML = `
-        <div>
+        <div class="min-w-0">
           <p class="text-xs text-ink-light mb-1">${fmtDate(c.created_at)} · ${esc(c.name)} · ${esc(c.email)}</p>
-          <p class="text-ink whitespace-pre-wrap">${esc(c.message)}</p>
+          <p class="text-ink whitespace-pre-wrap break-words">${esc(c.message)}</p>
         </div>
         <button data-delete class="px-3 py-1 text-xs font-semibold border-2 border-clay text-clay hover:bg-clay hover:text-cream transition-colors shrink-0">刪除</button>
       `;
