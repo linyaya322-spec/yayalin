@@ -19,8 +19,10 @@ const collectSchool = setting?.value === 'true';
 
   <form id="suggestion-form" class="grid gap-3 max-w-lg">
     <textarea
+      id="suggestion-message"
       name="message"
       placeholder="想說的建議..."
+      aria-label="想說的建議"
       required
       maxlength="1000"
       rows="4"
@@ -30,14 +32,18 @@ const collectSchool = setting?.value === 'true';
       <div class="grid grid-cols-2 gap-3">
         <input
           type="text"
+          id="suggestion-school"
           name="school"
           placeholder="學校（選填）"
+          aria-label="學校"
           class="border-2 border-ink bg-cream px-4 py-2.5 text-ink placeholder:text-ink-light/70 focus:outline-none focus:bg-sage-light"
         />
         <input
           type="text"
+          id="suggestion-grade"
           name="grade"
           placeholder="年級（選填）"
+          aria-label="年級"
           class="border-2 border-ink bg-cream px-4 py-2.5 text-ink placeholder:text-ink-light/70 focus:outline-none focus:bg-sage-light"
         />
       </div>

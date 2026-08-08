@@ -19,15 +19,19 @@ const formatDate = (date: string) =>
   <form id="guestbook-form" class="grid gap-3 mb-4 max-w-lg">
     <input
       type="text"
+      id="guestbook-name"
       name="name"
       placeholder="怎麼稱呼你？"
+      aria-label="怎麼稱呼你"
       required
       maxlength="40"
       class="border-2 border-ink bg-cream px-4 py-2.5 text-ink placeholder:text-ink-light/70 focus:outline-none focus:bg-sage-light"
     />
     <textarea
+      id="guestbook-message"
       name="message"
       placeholder="想說的話..."
+      aria-label="想說的話"
       required
       maxlength="500"
       rows="3"

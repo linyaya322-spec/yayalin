@@ -94,7 +94,9 @@ const { survey, questions } = Astro.props;
             <input
               type="email"
               id="email-gate-input"
+              name="email"
               placeholder="you@gmail.com"
+              aria-label="你的 Gmail 信箱"
               class="flex-1 min-w-[12rem] border-2 border-ink bg-cream px-4 py-2.5 focus:outline-none focus:bg-sage-light"
             />
             <button type="button" id="email-gate-btn" data-magnetic class="px-6 py-2.5 bg-clay text-cream text-sm font-semibold hover:bg-ink transition-colors">
@@ -110,7 +112,9 @@ const { survey, questions } = Astro.props;
             <input
               type="text"
               id="password-gate-input"
+              name="access-password"
               placeholder="請輸入密碼"
+              aria-label="通行密碼"
               class="flex-1 min-w-[12rem] border-2 border-ink bg-cream px-4 py-2.5 focus:outline-none focus:bg-sage-light"
             />
             <button type="button" id="password-gate-btn" data-magnetic class="px-6 py-2.5 bg-clay text-cream text-sm font-semibold hover:bg-ink transition-colors">
@@ -165,7 +169,10 @@ const { survey, questions } = Astro.props;
               </p>
               {q.type === 'text' && (
                 <textarea
+                  id={`answer-${q.id}`}
+                  name={`answer-${q.id}`}
                   data-answer-text
+                  aria-label={q.question_text}
                   rows="4"
                   class="w-full border-2 border-ink bg-cream px-4 py-2 focus:outline-none focus:bg-sage-light resize-none"
                 ></textarea>
@@ -177,6 +184,7 @@ const { survey, questions } = Astro.props;
                       <label class="flex items-center gap-2 cursor-pointer">
                         <input
                           type="radio"
+                          id={`opt-${opt.id}`}
                           name={`q-${q.id}`}
                           value={opt.id}
                           data-answer-option
@@ -189,8 +197,11 @@ const { survey, questions } = Astro.props;
                       {opt.isOther && (
                         <input
                           type="text"
+                          id={`other-text-${opt.id}`}
+                          name={`other-text-${opt.id}`}
                           data-other-text-for={opt.id}
                           placeholder="請輸入..."
+                          aria-label={`${opt.text}：請輸入內容`}
                           class="hidden mt-2 ml-6 border-2 border-ink bg-cream px-3 py-1.5 focus:outline-none w-[calc(100%-1.5rem)]"
                         />
                       )}
@@ -203,14 +214,25 @@ const { survey, questions } = Astro.props;
                   {q.options.map((opt) => (
                     <div>
                       <label class="flex items-center gap-2 cursor-pointer">
-                        <input type="checkbox" value={opt.id} data-answer-option data-other={opt.isOther ? 'true' : 'false'} class="w-4 h-4" />
+                        <input
+                          type="checkbox"
+                          id={`opt-${opt.id}`}
+                          name={`q-${q.id}[]`}
+                          value={opt.id}
+                          data-answer-option
+                          data-other={opt.isOther ? 'true' : 'false'}
+                          class="w-4 h-4"
+                        />
                         <span class="text-ink-light">{opt.text}</span>
                       </label>
                       {opt.isOther && (
                         <input
                           type="text"
+                          id={`other-text-${opt.id}`}
+                          name={`other-text-${opt.id}`}
                           data-other-text-for={opt.id}
                           placeholder="請輸入..."
+                          aria-label={`${opt.text}：請輸入內容`}
                           class="hidden mt-2 ml-6 border-2 border-ink bg-cream px-3 py-1.5 focus:outline-none w-[calc(100%-1.5rem)]"
                         />
                       )}

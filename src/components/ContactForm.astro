@@ -3,22 +3,28 @@
 <form id="contact-form" class="reveal grid gap-3 max-w-lg">
   <input
     type="text"
+    id="contact-name"
     name="name"
     placeholder="你的名字"
+    aria-label="你的名字"
     required
     maxlength="40"
     class="border-2 border-ink bg-cream px-4 py-2.5 text-ink placeholder:text-ink-light/70 focus:outline-none focus:bg-sage-light"
   />
   <input
     type="email"
+    id="contact-email"
     name="email"
     placeholder="你的 Email，方便我回覆你"
+    aria-label="你的 Email"
     required
     class="border-2 border-ink bg-cream px-4 py-2.5 text-ink placeholder:text-ink-light/70 focus:outline-none focus:bg-sage-light"
   />
   <textarea
+    id="contact-message"
     name="message"
     placeholder="想跟我說的事..."
+    aria-label="想跟我說的事"
     required
     maxlength="1000"
     rows="4"
