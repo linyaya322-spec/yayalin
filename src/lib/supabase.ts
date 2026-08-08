@@ -88,6 +88,20 @@ export interface Survey {
   pdf_url: string | null;
   opens_at: string | null;
   closes_at: string | null;
+  access_mode: 'public' | 'gmail_whitelist' | 'qr_code' | 'password';
+  access_password: string | null;
+  access_password_expires_at: string | null;
+  qr_token: string | null;
+  qr_token_expires_at: string | null;
+  created_at: string;
+}
+
+export interface SurveyAllowedEmail {
+  id: string;
+  survey_id: string;
+  email: string;
+  max_submissions: number;
+  used_count: number;
   created_at: string;
 }
 
@@ -106,6 +120,7 @@ export interface SurveyResponse {
   id: string;
   survey_id: string;
   answers: Record<string, string | string[]>;
+  respondent_email: string | null;
   submitted_at: string;
 }
 

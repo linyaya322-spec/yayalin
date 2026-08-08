@@ -326,6 +326,11 @@ create table if not exists surveys (
   pdf_url text,
   opens_at timestamptz,
   closes_at timestamptz,
+  access_mode text not null default 'public' check (access_mode in ('public', 'gmail_whitelist', 'qr_code', 'password')),
+  access_password text,
+  access_password_expires_at timestamptz,
+  qr_token text,
+  qr_token_expires_at timestamptz,
   created_at timestamptz not null default now()
 );
 
@@ -339,6 +344,35 @@ create policy "only admin can write surveys"
   on surveys for all
   using (auth.jwt() ->> 'email' = 'yayalin322@gmail.com')
   with check (auth.jwt() ->> 'email' = 'yayalin322@gmail.com');
+
+create table if not exists survey_allowed_emails (
+  id uuid primary key default gen_random_uuid(),
+  survey_id uuid not null references surveys(id) on delete cascade,
+  email text not null,
+  max_submissions integer not null default 1,
+  used_count integer not null default 0,
+  created_at timestamptz not null default now(),
+  unique (survey_id, email)
+);
+
+alter table survey_allowed_emails enable row level security;
+
+create policy "anyone can read survey_allowed_emails"
+  on survey_allowed_emails for select
+  using (true);
+
+create policy "anyone can update used_count on survey_allowed_emails"
+  on survey_allowed_emails for update
+  using (true)
+  with check (true);
+
+create policy "only admin can insert survey_allowed_emails"
+  on survey_allowed_emails for insert
+  with check (auth.jwt() ->> 'email' = 'yayalin322@gmail.com');
+
+create policy "only admin can delete survey_allowed_emails"
+  on survey_allowed_emails for delete
+  using (auth.jwt() ->> 'email' = 'yayalin322@gmail.com');
 
 create table if not exists survey_questions (
   id uuid primary key default gen_random_uuid(),
@@ -366,6 +400,7 @@ create table if not exists survey_responses (
   id uuid primary key default gen_random_uuid(),
   survey_id uuid not null references surveys(id) on delete cascade,
   answers jsonb not null default '{}'::jsonb,
+  respondent_email text,
   submitted_at timestamptz not null default now()
 );
 

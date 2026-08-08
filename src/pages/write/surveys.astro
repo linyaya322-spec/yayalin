@@ -78,6 +78,54 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
             <p id="survey-pdf-status" class="text-xs text-ink-light min-h-4"></p>
           </div>
 
+          <div class="grid gap-3 bg-cream border-2 border-ink p-3">
+            <label class="text-xs font-semibold text-ink-light">
+              存取權限（⚠️ 這些都是「擋一般人」的防呆機制，不是真正的身分驗證，懂技術的人理論上能繞過，僅適合內部小範圍使用）
+            </label>
+            <select id="survey-access-mode" class="border-2 border-ink bg-cream px-3 py-2 text-sm focus:outline-none">
+              <option value="public">公開（任何人都能填）</option>
+              <option value="gmail_whitelist">Gmail 白名單</option>
+              <option value="qr_code">限時 QR Code</option>
+              <option value="password">限時密碼</option>
+            </select>
+
+            <!-- Gmail 白名單管理 -->
+            <div id="access-gmail-panel" class="hidden grid gap-2">
+              <p id="access-gmail-hint" class="text-xs text-clay"></p>
+              <div id="access-gmail-list" class="grid gap-2"></div>
+              <div class="flex flex-wrap gap-2">
+                <input type="email" id="access-gmail-input" placeholder="新增 Gmail" class="flex-1 min-w-[10rem] border-2 border-ink bg-cream px-3 py-1.5 text-sm focus:outline-none" />
+                <input type="number" id="access-gmail-max" value="1" min="1" class="w-20 border-2 border-ink bg-cream px-3 py-1.5 text-sm focus:outline-none" title="最多可填幾次" />
+                <button type="button" id="access-gmail-add" class="px-3 py-1.5 text-xs font-semibold border-2 border-ink hover:bg-ink hover:text-cream transition-colors">+ 新增</button>
+              </div>
+            </div>
+
+            <!-- QR Code -->
+            <div id="access-qr-panel" class="hidden grid gap-2">
+              <p id="access-qr-hint" class="text-xs text-clay"></p>
+              <div class="flex flex-wrap items-center gap-2">
+                <label class="text-xs text-ink-light">有效分鐘數：</label>
+                <input type="number" id="access-qr-minutes" value="30" min="1" class="w-20 border-2 border-ink bg-cream px-3 py-1.5 text-sm focus:outline-none" />
+                <button type="button" id="access-qr-generate" class="px-3 py-1.5 text-xs font-semibold border-2 border-ink hover:bg-ink hover:text-cream transition-colors">產生新的 QR Code</button>
+              </div>
+              <div id="access-qr-display" class="hidden grid gap-2">
+                <img id="access-qr-image" class="w-40 h-40 border-2 border-ink" alt="QR Code" />
+                <p id="access-qr-expiry" class="text-xs text-ink-light"></p>
+              </div>
+            </div>
+
+            <!-- 限時密碼 -->
+            <div id="access-password-panel" class="hidden grid gap-2">
+              <p id="access-password-hint" class="text-xs text-clay"></p>
+              <div class="flex flex-wrap items-center gap-2">
+                <input type="text" id="access-password-input" placeholder="設定密碼" class="border-2 border-ink bg-cream px-3 py-1.5 text-sm focus:outline-none" />
+                <label class="text-xs text-ink-light">有效分鐘數：</label>
+                <input type="number" id="access-password-minutes" value="30" min="1" class="w-20 border-2 border-ink bg-cream px-3 py-1.5 text-sm focus:outline-none" />
+                <button type="button" id="access-password-activate" class="px-3 py-1.5 text-xs font-semibold border-2 border-ink hover:bg-ink hover:text-cream transition-colors">啟用密碼</button>
+              </div>
+            </div>
+          </div>
+
           <div>
             <div class="flex items-center justify-between mb-3">
               <p class="font-semibold text-ink">題目</p>
@@ -309,6 +357,133 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
   const questionList = document.getElementById('question-list')!;
   const surveyFormStatus = document.getElementById('survey-form-status')!;
 
+  const surveyAccessModeSelect = document.getElementById('survey-access-mode') as HTMLSelectElement;
+  const accessGmailPanel = document.getElementById('access-gmail-panel')!;
+  const accessGmailHint = document.getElementById('access-gmail-hint')!;
+  const accessGmailList = document.getElementById('access-gmail-list')!;
+  const accessGmailInput = document.getElementById('access-gmail-input') as HTMLInputElement;
+  const accessGmailMaxInput = document.getElementById('access-gmail-max') as HTMLInputElement;
+  const accessGmailAddBtn = document.getElementById('access-gmail-add')!;
+  const accessQrPanel = document.getElementById('access-qr-panel')!;
+  const accessQrHint = document.getElementById('access-qr-hint')!;
+  const accessQrMinutesInput = document.getElementById('access-qr-minutes') as HTMLInputElement;
+  const accessQrGenerateBtn = document.getElementById('access-qr-generate')!;
+  const accessQrDisplay = document.getElementById('access-qr-display')!;
+  const accessQrImage = document.getElementById('access-qr-image') as HTMLImageElement;
+  const accessQrExpiry = document.getElementById('access-qr-expiry')!;
+  const accessPasswordPanel = document.getElementById('access-password-panel')!;
+  const accessPasswordHint = document.getElementById('access-password-hint')!;
+  const accessPasswordInput = document.getElementById('access-password-input') as HTMLInputElement;
+  const accessPasswordMinutesInput = document.getElementById('access-password-minutes') as HTMLInputElement;
+  const accessPasswordActivateBtn = document.getElementById('access-password-activate')!;
+
+  function syncAccessPanels() {
+    const mode = surveyAccessModeSelect.value;
+    accessGmailPanel.classList.toggle('hidden', mode !== 'gmail_whitelist');
+    accessQrPanel.classList.toggle('hidden', mode !== 'qr_code');
+    accessPasswordPanel.classList.toggle('hidden', mode !== 'password');
+    const needsSaveFirst = !surveyIdInput.value;
+    const hint = needsSaveFirst ? '請先儲存問卷一次，才能設定這個功能。' : '';
+    accessGmailHint.textContent = hint;
+    accessQrHint.textContent = hint;
+    accessPasswordHint.textContent = hint;
+  }
+  surveyAccessModeSelect.addEventListener('change', syncAccessPanels);
+
+  async function loadAllowedEmails() {
+    const surveyId = surveyIdInput.value;
+    if (!surveyId) return;
+    const { data } = await supabase
+      .from('survey_allowed_emails')
+      .select('*')
+      .eq('survey_id', surveyId)
+      .order('created_at', { ascending: true });
+    accessGmailList.innerHTML = '';
+    (data ?? []).forEach((row) => {
+      const li = document.createElement('div');
+      li.className = 'flex items-center justify-between gap-2 bg-sage-light border-2 border-ink px-3 py-2 text-sm';
+      li.innerHTML = `
+        <span class="text-ink">${esc(row.email)}　<span class="text-ink-light">已填 ${row.used_count} / ${row.max_submissions} 次</span></span>
+        <div class="flex gap-2 shrink-0">
+          <button data-bump class="text-xs font-semibold text-clay underline">+1 次數</button>
+          <button data-remove-email class="text-xs font-semibold text-clay underline">移除</button>
+        </div>
+      `;
+      li.querySelector('[data-bump]')?.addEventListener('click', async () => {
+        await supabase
+          .from('survey_allowed_emails')
+          .update({ max_submissions: row.max_submissions + 1 })
+          .eq('id', row.id);
+        loadAllowedEmails();
+      });
+      li.querySelector('[data-remove-email]')?.addEventListener('click', async () => {
+        if (!confirm(`移除 ${row.email} 嗎？`)) return;
+        await supabase.from('survey_allowed_emails').delete().eq('id', row.id);
+        loadAllowedEmails();
+      });
+      accessGmailList.appendChild(li);
+    });
+  }
+
+  accessGmailAddBtn.addEventListener('click', async () => {
+    const surveyId = surveyIdInput.value;
+    if (!surveyId) return;
+    const email = accessGmailInput.value.trim().toLowerCase();
+    if (!email) return;
+    const maxSubmissions = Math.max(1, Number(accessGmailMaxInput.value) || 1);
+    const { error } = await supabase
+      .from('survey_allowed_emails')
+      .insert({ survey_id: surveyId, email, max_submissions: maxSubmissions });
+    if (error) {
+      alert(`新增失敗：${error.message}`);
+      return;
+    }
+    accessGmailInput.value = '';
+    accessGmailMaxInput.value = '1';
+    loadAllowedEmails();
+  });
+
+  accessQrGenerateBtn.addEventListener('click', async () => {
+    const surveyId = surveyIdInput.value;
+    if (!surveyId) return;
+    const minutes = Math.max(1, Number(accessQrMinutesInput.value) || 30);
+    const token = crypto.randomUUID();
+    const expiresAt = new Date(Date.now() + minutes * 60000).toISOString();
+    const { error } = await supabase
+      .from('surveys')
+      .update({ qr_token: token, qr_token_expires_at: expiresAt })
+      .eq('id', surveyId);
+    if (error) {
+      alert(`產生失敗：${error.message}`);
+      return;
+    }
+    const surveyUrl = `${window.location.origin}/survey/${surveyId}?qr=${token}`;
+    accessQrImage.src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(surveyUrl)}`;
+    accessQrExpiry.textContent = `有效至：${new Date(expiresAt).toLocaleString('zh-Hant-TW')}（連結：${surveyUrl}）`;
+    accessQrDisplay.classList.remove('hidden');
+  });
+
+  accessPasswordActivateBtn.addEventListener('click', async () => {
+    const surveyId = surveyIdInput.value;
+    if (!surveyId) return;
+    const password = accessPasswordInput.value.trim();
+    if (!password) {
+      alert('請先輸入密碼');
+      return;
+    }
+    const minutes = Math.max(1, Number(accessPasswordMinutesInput.value) || 30);
+    const expiresAt = new Date(Date.now() + minutes * 60000).toISOString();
+    const { error } = await supabase
+      .from('surveys')
+      .update({ access_password: password, access_password_expires_at: expiresAt })
+      .eq('id', surveyId);
+    if (error) {
+      alert(`啟用失敗：${error.message}`);
+      return;
+    }
+    alert(`密碼已啟用，有效至 ${new Date(expiresAt).toLocaleString('zh-Hant-TW')}`);
+  });
+
   let removedQuestionIds: string[] = [];
 
   function setSurveyPdf(url: string) {
@@ -472,6 +647,11 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     questionList.innerHTML = '';
     removedQuestionIds = [];
     clearSurveyPdf();
+    surveyAccessModeSelect.value = 'public';
+    accessGmailList.innerHTML = '';
+    accessQrDisplay.classList.add('hidden');
+    accessPasswordInput.value = '';
+    syncAccessPanels();
   }
 
   document.getElementById('new-survey-btn')?.addEventListener('click', () => {
@@ -489,6 +669,24 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     surveyClosesAtInput.value = toLocalInputValue(survey.closes_at);
     surveyLinkInput.value = survey.link_url ?? '';
     if (survey.pdf_url) setSurveyPdf(survey.pdf_url);
+
+    surveyAccessModeSelect.value = survey.access_mode;
+    syncAccessPanels();
+    if (survey.access_mode === 'gmail_whitelist') loadAllowedEmails();
+    if (survey.access_mode === 'qr_code' && survey.qr_token && survey.qr_token_expires_at) {
+      const surveyUrl = `${window.location.origin}/survey/${survey.id}?qr=${survey.qr_token}`;
+      accessQrImage.src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(surveyUrl)}`;
+      const stillValid = new Date(survey.qr_token_expires_at).getTime() > Date.now();
+      accessQrExpiry.textContent = `${stillValid ? '有效至' : '已過期（'}${new Date(survey.qr_token_expires_at).toLocaleString('zh-Hant-TW')}${stillValid ? '' : '）'}：${surveyUrl}`;
+      accessQrDisplay.classList.remove('hidden');
+    }
+    if (survey.access_mode === 'password' && survey.access_password) {
+      accessPasswordInput.value = survey.access_password;
+      const stillValid = survey.access_password_expires_at && new Date(survey.access_password_expires_at).getTime() > Date.now();
+      accessPasswordHint.textContent = stillValid
+        ? `目前密碼有效至 ${new Date(survey.access_password_expires_at!).toLocaleString('zh-Hant-TW')}`
+        : '目前密碼已過期，需要重新啟用。';
+    }
 
     const { data: questions } = await supabase
       .from('survey_questions')
@@ -511,6 +709,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       is_active: surveyActiveInput.checked,
       opens_at: surveyOpensAtInput.value ? new Date(surveyOpensAtInput.value).toISOString() : null,
       closes_at: surveyClosesAtInput.value ? new Date(surveyClosesAtInput.value).toISOString() : null,
+      access_mode: surveyAccessModeSelect.value,
       link_url: surveyLinkInput.value.trim() || null,
       pdf_url: surveyPdfInput.value || null,
     };
@@ -530,6 +729,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       }
       surveyId = data.id;
       surveyIdInput.value = surveyId;
+      syncAccessPanels();
     }
 
     if (removedQuestionIds.length) {

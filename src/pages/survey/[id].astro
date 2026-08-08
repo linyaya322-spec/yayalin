@@ -63,7 +63,16 @@ const { survey, questions } = Astro.props;
     {questions.length === 0 ? (
       <p class="text-ink-light">這份問卷還沒有題目。</p>
     ) : (
-      <div id="survey-form-wrapper" data-opens-at={survey.opens_at ?? ''} data-closes-at={survey.closes_at ?? ''}>
+      <div
+        id="survey-form-wrapper"
+        data-opens-at={survey.opens_at ?? ''}
+        data-closes-at={survey.closes_at ?? ''}
+        data-access-mode={survey.access_mode}
+        data-qr-token={survey.qr_token ?? ''}
+        data-qr-token-expires-at={survey.qr_token_expires_at ?? ''}
+        data-access-password={survey.access_password ?? ''}
+        data-access-password-expires-at={survey.access_password_expires_at ?? ''}
+      >
         <div id="survey-not-open" class="hidden bg-cream-dark border-2 border-ink p-10 text-center">
           <p class="font-display text-2xl text-ink mb-2">問卷尚未開放</p>
           <p id="survey-opens-at-text" class="text-ink-light"></p>
@@ -72,7 +81,46 @@ const { survey, questions } = Astro.props;
           <p class="font-display text-2xl text-ink mb-2">問卷已截止</p>
           <p class="text-ink-light">感謝大家的參與，這份問卷目前不開放填寫。</p>
         </div>
-        <div id="survey-consent" class="bg-cream border-2 border-ink p-6 sm:p-8">
+
+        <div id="survey-qr-invalid" class="hidden bg-cream-dark border-2 border-ink p-10 text-center">
+          <p class="font-display text-2xl text-ink mb-2">連結已失效</p>
+          <p class="text-ink-light">這個 QR Code 連結已過期或不正確，請重新掃描最新的 QR Code。</p>
+        </div>
+
+        <div id="survey-email-gate" class="hidden bg-cream border-2 border-ink p-6 sm:p-8">
+          <p class="font-semibold text-ink mb-3">這份問卷限定受邀對象填寫</p>
+          <p class="text-ink-light leading-relaxed mb-4">請輸入你收到邀請時使用的 Gmail 信箱。</p>
+          <div class="flex flex-wrap gap-2">
+            <input
+              type="email"
+              id="email-gate-input"
+              placeholder="you@gmail.com"
+              class="flex-1 min-w-[12rem] border-2 border-ink bg-cream px-4 py-2.5 focus:outline-none focus:bg-sage-light"
+            />
+            <button type="button" id="email-gate-btn" data-magnetic class="px-6 py-2.5 bg-clay text-cream text-sm font-semibold hover:bg-ink transition-colors">
+              確認
+            </button>
+          </div>
+          <p id="email-gate-status" class="text-clay text-sm mt-3 min-h-5"></p>
+        </div>
+
+        <div id="survey-password-gate" class="hidden bg-cream border-2 border-ink p-6 sm:p-8">
+          <p class="font-semibold text-ink mb-3">這份問卷需要通行密碼</p>
+          <div class="flex flex-wrap gap-2">
+            <input
+              type="text"
+              id="password-gate-input"
+              placeholder="請輸入密碼"
+              class="flex-1 min-w-[12rem] border-2 border-ink bg-cream px-4 py-2.5 focus:outline-none focus:bg-sage-light"
+            />
+            <button type="button" id="password-gate-btn" data-magnetic class="px-6 py-2.5 bg-clay text-cream text-sm font-semibold hover:bg-ink transition-colors">
+              確認
+            </button>
+          </div>
+          <p id="password-gate-status" class="text-clay text-sm mt-3 min-h-5"></p>
+        </div>
+
+        <div id="survey-consent" class="hidden bg-cream border-2 border-ink p-6 sm:p-8">
           <p class="font-semibold text-ink mb-3">填寫前請先確認</p>
           <p class="text-ink-light leading-relaxed mb-4">
             送出問卷前，請詳閱並同意
@@ -227,8 +275,10 @@ const { survey, questions } = Astro.props;
   const questionEls = Array.from(document.querySelectorAll<HTMLElement>('.survey-question'));
   let progressRowId: string | null = null;
 
-  // ---------- 開放/截止時間檢查 ----------
-  (function checkSchedule() {
+  let respondentEmail: string | null = null;
+
+  // ---------- 開放/截止時間 + 存取權限檢查 ----------
+  (function checkAccess() {
     if (!wrapper) return;
     const opensAt = wrapper.dataset.opensAt;
     const closesAt = wrapper.dataset.closesAt;
@@ -236,15 +286,10 @@ const { survey, questions } = Astro.props;
     const consentBlockEl = document.getElementById('survey-consent');
 
     if (closesAt && new Date(closesAt).getTime() < now) {
-      consentBlockEl?.classList.add('hidden');
-      document.getElementById('survey-quiz-body')?.classList.add('hidden');
       document.getElementById('survey-closed-schedule')?.classList.remove('hidden');
       return;
     }
     if (opensAt && new Date(opensAt).getTime() > now) {
-      consentBlockEl?.classList.add('hidden');
-      document.getElementById('survey-quiz-body')?.classList.add('hidden');
-      const notOpen = document.getElementById('survey-not-open');
       const text = document.getElementById('survey-opens-at-text');
       if (text) {
         text.textContent = `開放時間：${new Date(opensAt).toLocaleString('zh-Hant-TW', {
@@ -255,9 +300,81 @@ const { survey, questions } = Astro.props;
           minute: '2-digit',
         })}`;
       }
-      notOpen?.classList.remove('hidden');
+      document.getElementById('survey-not-open')?.classList.remove('hidden');
+      return;
     }
+
+    const accessMode = wrapper.dataset.accessMode;
+
+    if (accessMode === 'qr_code') {
+      const qrToken = wrapper.dataset.qrToken;
+      const qrExpiresAt = wrapper.dataset.qrTokenExpiresAt;
+      const urlToken = new URLSearchParams(window.location.search).get('qr');
+      const valid = qrToken && urlToken === qrToken && qrExpiresAt && new Date(qrExpiresAt).getTime() > now;
+      if (!valid) {
+        document.getElementById('survey-qr-invalid')?.classList.remove('hidden');
+        return;
+      }
+      consentBlockEl?.classList.remove('hidden');
+      return;
+    }
+
+    if (accessMode === 'gmail_whitelist') {
+      document.getElementById('survey-email-gate')?.classList.remove('hidden');
+      return;
+    }
+
+    if (accessMode === 'password') {
+      const expiresAt = wrapper.dataset.accessPasswordExpiresAt;
+      if (!expiresAt || new Date(expiresAt).getTime() < now) {
+        document.getElementById('survey-password-gate')?.classList.add('hidden');
+        document.getElementById('survey-closed-schedule')?.classList.remove('hidden');
+        return;
+      }
+      document.getElementById('survey-password-gate')?.classList.remove('hidden');
+      return;
+    }
+
+    // public
+    consentBlockEl?.classList.remove('hidden');
   })();
+
+  document.getElementById('email-gate-btn')?.addEventListener('click', async () => {
+    const input = document.getElementById('email-gate-input') as HTMLInputElement;
+    const statusEl = document.getElementById('email-gate-status')!;
+    const email = input.value.trim().toLowerCase();
+    if (!email) return;
+    statusEl.textContent = '確認中...';
+    const { data } = await supabase
+      .from('survey_allowed_emails')
+      .select('*')
+      .eq('survey_id', surveyId)
+      .eq('email', email)
+      .maybeSingle();
+    if (!data) {
+      statusEl.textContent = '這個信箱不在受邀名單中，請確認輸入是否正確。';
+      return;
+    }
+    if (data.used_count >= data.max_submissions) {
+      statusEl.textContent = '這個信箱已達可填寫次數上限。';
+      return;
+    }
+    respondentEmail = email;
+    document.getElementById('survey-email-gate')?.classList.add('hidden');
+    document.getElementById('survey-consent')?.classList.remove('hidden');
+  });
+
+  document.getElementById('password-gate-btn')?.addEventListener('click', () => {
+    const input = document.getElementById('password-gate-input') as HTMLInputElement;
+    const statusEl = document.getElementById('password-gate-status')!;
+    const correctPassword = wrapper?.dataset.accessPassword;
+    if (input.value !== correctPassword) {
+      statusEl.textContent = '密碼不正確，請再試一次。';
+      return;
+    }
+    document.getElementById('survey-password-gate')?.classList.add('hidden');
+    document.getElementById('survey-consent')?.classList.remove('hidden');
+  });
 
   async function trackStart(surveyIdForTracking: string) {
     const { data } = await supabase
@@ -389,11 +506,28 @@ const { survey, questions } = Astro.props;
     async function submitSurvey() {
       if (nextBtn) nextBtn.disabled = true;
       if (status) status.textContent = '送出中...';
-      const { error } = await supabase.from('survey_responses').insert({ survey_id: surveyId, answers });
+      const { error } = await supabase
+        .from('survey_responses')
+        .insert({ survey_id: surveyId, answers, respondent_email: respondentEmail });
       if (error) {
         if (status) status.textContent = `送出失敗：${error.message}`;
         if (nextBtn) nextBtn.disabled = false;
       } else {
+        if (respondentEmail) {
+          const { data: allowed } = await supabase
+            .from('survey_allowed_emails')
+            .select('used_count')
+            .eq('survey_id', surveyId)
+            .eq('email', respondentEmail)
+            .maybeSingle();
+          if (allowed) {
+            await supabase
+              .from('survey_allowed_emails')
+              .update({ used_count: allowed.used_count + 1 })
+              .eq('survey_id', surveyId)
+              .eq('email', respondentEmail);
+          }
+        }
         trackFinish('submitted');
         wrapper?.classList.add('hidden');
         done?.classList.remove('hidden');
