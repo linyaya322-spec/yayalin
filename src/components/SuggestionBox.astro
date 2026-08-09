@@ -62,8 +62,9 @@ const collectContact = settings?.find((s) => s.key === 'suggestion_box_collect_c
           type="email"
           id="suggestion-contact-email"
           name="contact_email"
-          placeholder="Email（選填，方便我回覆你）"
+          placeholder="Email（必填，方便我回覆你）"
           aria-label="Email，方便我回覆你"
+          required
           class="border-2 border-ink bg-cream px-4 py-2.5 text-ink placeholder:text-ink-light/70 focus:outline-none focus:bg-sage-light"
         />
       </div>
