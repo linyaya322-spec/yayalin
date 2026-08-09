@@ -737,20 +737,23 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       const li = document.createElement('li');
       li.className = 'border-2 border-ink bg-cream p-4 grid gap-3';
       const meta = [fmtDate(s.created_at), s.school, s.grade, s.contact_name].filter(Boolean).map(esc).join(' · ');
+      const attachmentChip = (path: string, label: string, deleteAttr: string) => `
+        <span class="inline-flex border-2 border-ink">
+          <button type="button" data-view-attachment="${esc(path)}" class="px-2.5 py-1 text-xs font-semibold hover:bg-ink hover:text-cream transition-colors">📎 ${label}</button>
+          <button type="button" ${deleteAttr}="${esc(path)}" title="刪除這個附件" class="px-2 py-1 text-xs font-semibold border-l-2 border-ink text-clay hover:bg-clay hover:text-cream transition-colors">✕</button>
+        </span>
+      `;
       const attachmentsHtml = (s.attachment_paths ?? [])
-        .map(
-          (path: string, i: number) => `
-            <span class="inline-flex border-2 border-ink">
-              <button type="button" data-view-attachment="${esc(path)}" class="px-2.5 py-1 text-xs font-semibold hover:bg-ink hover:text-cream transition-colors">📎 附件 ${i + 1}</button>
-              <button type="button" data-delete-attachment="${esc(path)}" title="刪除這個附件" class="px-2 py-1 text-xs font-semibold border-l-2 border-ink text-clay hover:bg-clay hover:text-cream transition-colors">✕</button>
-            </span>
-          `
-        )
+        .map((path: string, i: number) => attachmentChip(path, `附件 ${i + 1}`, 'data-delete-attachment'))
+        .join('');
+      const replyAttachmentsHtml = (s.reply_attachment_paths ?? [])
+        .map((path: string, i: number) => attachmentChip(path, `回覆附件 ${i + 1}`, 'data-delete-reply-attachment'))
         .join('');
       const replyHtml = s.contact_email
         ? `
           <div class="border-t-2 border-ink/10 pt-3 grid gap-2">
             <p class="text-xs text-ink-light">回覆給：${esc(s.contact_email)}${s.reply_status === 'sent' ? `（已於 ${fmtDate(s.reply_sent_at)} 寄出）` : ''}</p>
+            ${replyAttachmentsHtml ? `<div class="flex flex-wrap gap-2">${replyAttachmentsHtml}</div>` : ''}
             <textarea data-reply-text placeholder="輸入回覆內容（純文字）..." rows="3" class="border-2 border-ink bg-cream px-3 py-2 text-sm focus:outline-none resize-none">${esc(s.admin_reply ?? '')}</textarea>
             <div class="grid gap-1">
               <label class="text-xs text-ink-light">附件（選填，會附上下載連結，最多 5 個檔案）</label>
@@ -798,6 +801,27 @@ import BaseLayout from '../layouts/BaseLayout.astro';
           const { error: updateError } = await supabase
             .from('student_suggestions')
             .update({ attachment_paths: remainingPaths.length ? remainingPaths : null })
+            .eq('id', s.id);
+          if (updateError) {
+            alert(`更新失敗：${updateError.message}`);
+            return;
+          }
+          loadSuggestions();
+        });
+      });
+      li.querySelectorAll<HTMLButtonElement>('[data-delete-reply-attachment]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          if (!confirm('確定要刪除這個回覆附件嗎？無法復原。')) return;
+          const path = btn.dataset.deleteReplyAttachment!;
+          const { error: removeError } = await supabase.storage.from('suggestion-files').remove([path]);
+          if (removeError) {
+            alert(`刪除失敗：${removeError.message}`);
+            return;
+          }
+          const remainingPaths = (s.reply_attachment_paths ?? []).filter((p: string) => p !== path);
+          const { error: updateError } = await supabase
+            .from('student_suggestions')
+            .update({ reply_attachment_paths: remainingPaths.length ? remainingPaths : null })
             .eq('id', s.id);
           if (updateError) {
             alert(`更新失敗：${updateError.message}`);
