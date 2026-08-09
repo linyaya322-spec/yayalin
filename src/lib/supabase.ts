@@ -35,14 +35,6 @@ export interface Quote {
   created_at: string;
 }
 
-export interface GuestbookMessage {
-  id: string;
-  name: string;
-  message: string;
-  is_approved: boolean;
-  created_at: string;
-}
-
 export interface SitePage {
   slug: string;
   title: string;

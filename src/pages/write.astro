@@ -34,7 +34,6 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         <button data-tab="posts" class="tab-btn px-4 py-1.5 text-sm font-semibold border-2 border-ink bg-ink text-cream">文章</button>
         <button data-tab="timeline" class="tab-btn px-4 py-1.5 text-sm font-semibold border-2 border-ink bg-cream text-ink">時間軸</button>
         <button data-tab="quotes" class="tab-btn px-4 py-1.5 text-sm font-semibold border-2 border-ink bg-cream text-ink">今日小語</button>
-        <button data-tab="guestbook" class="tab-btn px-4 py-1.5 text-sm font-semibold border-2 border-ink bg-cream text-ink">留言審核</button>
         <button data-tab="suggestions" class="tab-btn px-4 py-1.5 text-sm font-semibold border-2 border-ink bg-cream text-ink">學生意見箱</button>
         <button data-tab="contact" class="tab-btn px-4 py-1.5 text-sm font-semibold border-2 border-ink bg-cream text-ink">聯絡訊息</button>
         <button data-tab="pages" class="tab-btn px-4 py-1.5 text-sm font-semibold border-2 border-ink bg-cream text-ink">頁面內容</button>
@@ -138,11 +137,6 @@ import BaseLayout from '../layouts/BaseLayout.astro';
           <p id="quote-status" class="text-sm min-h-5"></p>
         </form>
         <ul id="quote-list" class="grid gap-3"></ul>
-      </section>
-
-      <!-- 留言審核 -->
-      <section data-panel="guestbook" class="hidden">
-        <ul id="guestbook-admin-list" class="grid gap-3"></ul>
       </section>
 
       <!-- 學生意見箱 -->
@@ -267,7 +261,6 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     loadPosts();
     loadTimeline();
     loadQuotes();
-    loadGuestbook();
     loadContact();
     loadPages();
     loadSuggestions();
@@ -622,41 +615,6 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         loadQuotes();
       });
       quoteList.appendChild(li);
-    });
-  }
-
-  // ---------- 留言審核 ----------
-  const guestbookAdminList = document.getElementById('guestbook-admin-list')!;
-
-  async function loadGuestbook() {
-    const { data } = await supabase
-      .from('guestbook_messages')
-      .select('*')
-      .order('created_at', { ascending: false });
-    guestbookAdminList.innerHTML = '';
-    (data ?? []).forEach((m) => {
-      const li = document.createElement('li');
-      li.className = `border-2 p-4 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 ${m.is_approved ? 'border-sage bg-sage-light' : 'border-ink bg-cream'}`;
-      li.innerHTML = `
-        <div class="min-w-0">
-          <p class="text-xs text-ink-light mb-1">${fmtDate(m.created_at)} · ${esc(m.name)} ${m.is_approved ? '（已公開）' : '（待審核）'}</p>
-          <p class="text-ink whitespace-pre-wrap break-words">${esc(m.message)}</p>
-        </div>
-        <div class="flex gap-2 shrink-0">
-          ${m.is_approved ? '' : '<button data-approve class="px-3 py-1 text-xs font-semibold border-2 border-sage-dark text-sage-dark hover:bg-sage-dark hover:text-cream transition-colors">核准</button>'}
-          <button data-delete class="px-3 py-1 text-xs font-semibold border-2 border-clay text-clay hover:bg-clay hover:text-cream transition-colors">刪除</button>
-        </div>
-      `;
-      li.querySelector('[data-approve]')?.addEventListener('click', async () => {
-        await supabase.from('guestbook_messages').update({ is_approved: true }).eq('id', m.id);
-        loadGuestbook();
-      });
-      li.querySelector('[data-delete]')?.addEventListener('click', async () => {
-        if (!confirm('確定要刪除這則留言嗎？')) return;
-        await supabase.from('guestbook_messages').delete().eq('id', m.id);
-        loadGuestbook();
-      });
-      guestbookAdminList.appendChild(li);
     });
   }
 

@@ -69,34 +69,6 @@ create policy "only admin can write quotes"
   using (auth.jwt() ->> 'email' = 'yayalin322@gmail.com')
   with check (auth.jwt() ->> 'email' = 'yayalin322@gmail.com');
 
--- ---------- 訪客留言板 ----------
-create table if not exists guestbook_messages (
-  id uuid primary key default gen_random_uuid(),
-  name text not null,
-  message text not null,
-  is_approved boolean not null default false,
-  created_at timestamptz not null default now()
-);
-
-alter table guestbook_messages enable row level security;
-
-create policy "anyone can leave a guestbook message"
-  on guestbook_messages for insert
-  with check (true);
-
-create policy "only approved guestbook messages are publicly readable"
-  on guestbook_messages for select
-  using (is_approved = true or auth.jwt() ->> 'email' = 'yayalin322@gmail.com');
-
-create policy "only admin can moderate guestbook_messages"
-  on guestbook_messages for update
-  using (auth.jwt() ->> 'email' = 'yayalin322@gmail.com')
-  with check (auth.jwt() ->> 'email' = 'yayalin322@gmail.com');
-
-create policy "only admin can delete guestbook_messages"
-  on guestbook_messages for delete
-  using (auth.jwt() ->> 'email' = 'yayalin322@gmail.com');
-
 -- ---------- 聯絡表單 ----------
 create table if not exists contact_submissions (
   id uuid primary key default gen_random_uuid(),
@@ -211,7 +183,6 @@ insert into site_pages (slug, title, content) values
 
 依照你使用的功能不同，我們蒐集的資料也不同：
 
-- **留言板**：你填寫的暱稱與留言內容。留言會先進入審核區，只有站長核准後才會公開顯示在網站上；未核准的留言只有站長看得到。
 - **聯絡表單**：你填寫的姓名、Email、訊息內容。這些資料完全不公開，只有站長看得到，僅用於回覆你的訊息，不會用於其他目的。
 - **學生意見箱**：你填寫的建議內容，以及選填的學校、年級資訊（是否需要填寫由站長設定）。這些資料完全不公開，只有站長看得到，會作為爭取校園權益、向縣政府等單位提案的參考。
 - **問卷**：
@@ -223,9 +194,8 @@ insert into site_pages (slug, title, content) values
 
 ## 我們如何使用這些資料
 
-- 顯示你同意公開的內容（例如經審核的留言）。
 - 回覆你透過聯絡表單或意見箱提出的訊息或建議。
-- 統計分析問卷結果，作為公共討論、提案或政策倡議的參考依據，統計結果可能會被整理後分享給政府單位、學校或公開發表，但除非你在留言板等公開欄位主動具名，否則分享出去的通常會是彙整後的統計數據，而不是你個人的原始回覆內容。
+- 統計分析問卷結果，作為公共討論、提案或政策倡議的參考依據，統計結果可能會被整理後分享給政府單位、學校或公開發表，分享出去的通常會是彙整後的統計數據，而不是你個人的原始回覆內容。
 - 改善網站功能與使用體驗（例如透過問卷完成率了解題目是否設計得不清楚）。
 
 ## 我們不會做的事
@@ -243,16 +213,16 @@ insert into site_pages (slug, title, content) values
 為了讓這個網站能夠運作，我們使用以下第三方服務來儲存或處理資料，這些服務都有各自的隱私權政策：
 
 - **[Supabase](https://supabase.com)**：本網站的資料庫、檔案儲存與登入驗證服務，所有上述提到的資料都儲存在 Supabase 提供的雲端資料庫中。
-- **[Resend](https://resend.com)**：用於寄送站長的登入連結信件、當有人送出留言板留言／聯絡表單／學生意見箱建議／問卷回覆時通知站長的信件，以及寄送你主動訂閱的電子報內容給你；我們不會透過 Resend 寄送你未曾同意訂閱的行銷信件。
+- **[Resend](https://resend.com)**：用於寄送站長的登入連結信件、當有人送出聯絡表單／學生意見箱建議／問卷回覆時通知站長的信件，以及寄送你主動訂閱的電子報內容給你；我們不會透過 Resend 寄送你未曾同意訂閱的行銷信件。
 - **QR Code 產生服務（api.qrserver.com）**：如果問卷開啟「限時 QR Code」存取模式，站長在後台產生 QR Code 圖片時，問卷連結會短暫傳送到這個第三方服務以產生圖片，這個動作只有站長操作後台時才會發生，一般訪客填寫問卷不會觸發。
 
 ## 資料保留期限
 
-除非你要求刪除或站長主動清除，你提交的資料會持續保留在資料庫中，沒有自動到期機制。站長可以在後台針對單一問卷「清空所有回覆」，或刪除整份問卷、留言、意見箱訊息等。
+除非你要求刪除或站長主動清除，你提交的資料會持續保留在資料庫中，沒有自動到期機制。站長可以在後台針對單一問卷「清空所有回覆」，或刪除整份問卷、意見箱訊息等。
 
 ## 你的權利
 
-如果你想查詢、更正或要求刪除你曾經提交給本網站的資料（例如留言、聯絡訊息、問卷回覆），歡迎透過[聯絡頁面](/contact)與站長聯絡，我們會盡快協助處理。
+如果你想查詢、更正或要求刪除你曾經提交給本網站的資料（例如聯絡訊息、問卷回覆），歡迎透過[聯絡頁面](/contact)與站長聯絡，我們會盡快協助處理。
 
 ## 未成年使用者
 
@@ -274,21 +244,12 @@ $$
 
 ## 服務內容
 
-本網站提供以下功能：部落格文章閱讀、兒少委員專區（含時間軸與相關文件）、留言板、聯絡表單、學生意見箱、線上問卷（填寫、瀏覽統計結果），以及電子報訂閱。站長保留隨時新增、修改或終止任何功能的權利，不另行個別通知。
+本網站提供以下功能：部落格文章閱讀、兒少委員專區（含時間軸與相關文件）、聯絡表單、學生意見箱、線上問卷（填寫、瀏覽統計結果），以及電子報訂閱。站長保留隨時新增、修改或終止任何功能的權利，不另行個別通知。
 
 ## 內容使用與智慧財產權
 
 - 網站上的文章、圖片、時間軸內容與其他原創內容，其著作權歸站長所有，僅供個人閱讀與非商業性分享；轉載、引用請註明出處與原始連結。
-- 使用者透過留言板、意見箱、問卷等功能提交的文字內容，視為授權站長於本網站及站長之後續公開倡議、報告、對外說明等用途使用（例如將問卷統計結果或具代表性的意見整理後對外發表），但站長不會未經同意公開你標記為私密的原始個資（如聯絡表單中的姓名、Email）。
-
-## 留言板規範
-
-留言板開放給所有訪客使用，請勿留下以下內容，站長有權不予公開或事後移除，不另行通知：
-
-- 廣告、垃圾訊息或詐騙連結
-- 人身攻擊、歧視、騷擾或不實指控
-- 侵犯他人隱私或著作權的內容
-- 違反中華民國法律規定的內容
+- 使用者透過意見箱、問卷等功能提交的文字內容，視為授權站長於本網站及站長之後續公開倡議、報告、對外說明等用途使用（例如將問卷統計結果或具代表性的意見整理後對外發表），但站長不會未經同意公開你標記為私密的原始個資（如聯絡表單中的姓名、Email）。
 
 ## 學生意見箱與問卷規範
 
