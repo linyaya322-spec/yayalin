@@ -61,6 +61,7 @@ export interface StudentSuggestion {
   admin_reply: string | null;
   reply_status: 'pending' | 'sent' | null;
   reply_sent_at: string | null;
+  reply_attachment_paths: string[] | null;
   created_at: string;
 }
 

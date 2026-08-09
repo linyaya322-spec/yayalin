@@ -338,6 +338,7 @@ create table if not exists student_suggestions (
   admin_reply text,
   reply_status text check (reply_status in ('pending', 'sent')),
   reply_sent_at timestamptz,
+  reply_attachment_paths text[],
   created_at timestamptz not null default now()
 );
 

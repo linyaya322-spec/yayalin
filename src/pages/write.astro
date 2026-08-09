@@ -752,6 +752,11 @@ import BaseLayout from '../layouts/BaseLayout.astro';
           <div class="border-t-2 border-ink/10 pt-3 grid gap-2">
             <p class="text-xs text-ink-light">回覆給：${esc(s.contact_email)}${s.reply_status === 'sent' ? `（已於 ${fmtDate(s.reply_sent_at)} 寄出）` : ''}</p>
             <textarea data-reply-text placeholder="輸入回覆內容（純文字）..." rows="3" class="border-2 border-ink bg-cream px-3 py-2 text-sm focus:outline-none resize-none">${esc(s.admin_reply ?? '')}</textarea>
+            <div class="grid gap-1">
+              <label class="text-xs text-ink-light">附件（選填，會附上下載連結，最多 5 個檔案）</label>
+              <input type="file" data-reply-files multiple accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx" class="text-xs" />
+              <p data-reply-file-status class="text-xs text-ink-light min-h-4"></p>
+            </div>
             <button type="button" data-send-reply class="justify-self-start px-4 py-1.5 text-xs font-semibold border-2 border-sage-dark text-sage-dark hover:bg-sage-dark hover:text-cream transition-colors">✉️ 寄出回覆</button>
           </div>
         `
@@ -801,17 +806,60 @@ import BaseLayout from '../layouts/BaseLayout.astro';
           loadSuggestions();
         });
       });
+      li.querySelector('[data-reply-files]')?.addEventListener('change', (e) => {
+        const input = e.target as HTMLInputElement;
+        const statusEl = li.querySelector('[data-reply-file-status]');
+        if (!statusEl) return;
+        const count = input.files?.length ?? 0;
+        statusEl.textContent = count === 0 ? '' : `已選擇：${Array.from(input.files ?? []).map((f) => f.name).join('、')}`;
+      });
       li.querySelector('[data-send-reply]')?.addEventListener('click', async () => {
         const textarea = li.querySelector<HTMLTextAreaElement>('[data-reply-text]')!;
-        const replyText = textarea.value.trim();
+        const fileInput = li.querySelector<HTMLInputElement>('[data-reply-files]')!;
+        const fileStatusEl = li.querySelector('[data-reply-file-status]');
+        let replyText = textarea.value.trim();
         if (!replyText) {
           alert('請先輸入回覆內容。');
           return;
         }
+        const files = Array.from(fileInput.files ?? []);
+        if (files.length > 5) {
+          alert('附件最多只能選 5 個檔案。');
+          return;
+        }
         if (!confirm(`確定要把這則回覆寄給 ${s.contact_email} 嗎？`)) return;
+
+        const attachmentPaths: string[] = [];
+        for (const file of files) {
+          if (fileStatusEl) fileStatusEl.textContent = `上傳中：${file.name}...`;
+          const path = `reply-${crypto.randomUUID()}__${file.name}`;
+          const { error: uploadError } = await supabase.storage.from('suggestion-files').upload(path, file);
+          if (uploadError) {
+            alert(`附件上傳失敗：${uploadError.message}`);
+            return;
+          }
+          attachmentPaths.push(path);
+        }
+        if (fileStatusEl) fileStatusEl.textContent = '';
+
+        if (attachmentPaths.length) {
+          const links = await Promise.all(
+            attachmentPaths.map(async (path) => {
+              const { data: signed } = await supabase.storage.from('suggestion-files').createSignedUrl(path, 60 * 60 * 24 * 7);
+              const filename = path.split('__').slice(1).join('__');
+              return `<a href="${signed?.signedUrl ?? '#'}">${esc(filename)}</a>`;
+            })
+          );
+          replyText += '\n\n附件（連結 7 天內有效）：\n' + links.join('\n');
+        }
+
         const { error } = await supabase
           .from('student_suggestions')
-          .update({ admin_reply: replyText, reply_status: 'pending' })
+          .update({
+            admin_reply: replyText,
+            reply_status: 'pending',
+            reply_attachment_paths: attachmentPaths.length ? attachmentPaths : null,
+          })
           .eq('id', s.id);
         if (error) {
           alert(`寄送失敗：${error.message}`);
