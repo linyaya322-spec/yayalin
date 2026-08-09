@@ -583,6 +583,8 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     const blocks = Array.from(questionList.children) as HTMLElement[];
     const positionById = new Map(blocks.map((b, i) => [b.dataset.questionId, i + 1]));
     blocks.forEach((block, index) => {
+      const numberEl = block.querySelector('[data-question-number]');
+      if (numberEl) numberEl.textContent = String(index + 1);
       block.querySelectorAll<HTMLSelectElement>('[data-option-goto]').forEach((sel) => {
         const pending = (sel as any)._pendingValue ?? sel.value;
         const optionsHtml = [
@@ -607,7 +609,8 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     block.dataset.existing = question ? 'true' : 'false';
 
     block.innerHTML = `
-      <div class="flex flex-wrap gap-3">
+      <div class="flex flex-wrap gap-3 items-center">
+        <span data-question-number class="shrink-0 w-7 h-7 grid place-items-center bg-ink text-cream text-xs font-semibold rounded-full"></span>
         <input type="text" data-question-text placeholder="題目內容" value="${esc(question?.question_text ?? '')}" required class="flex-1 min-w-[12rem] border-2 border-ink bg-cream px-3 py-1.5 focus:outline-none" />
         <select data-question-type class="border-2 border-ink bg-cream px-3 py-1.5 focus:outline-none">
           <option value="text">簡答</option>
@@ -820,6 +823,15 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     const title = surveyTitleInput.value.trim() || '（尚未填寫標題）';
     const description = surveyDescriptionInput.value.trim();
 
+    const positionById = new Map(rows.map((r, i) => [r.id, i + 1]));
+    function gotoLabel(goto: string | null) {
+      if (!goto) return '';
+      if (goto === '__submit__') return '（選此項將直接送出問卷）';
+      if (goto === '__close__') return '（選此項將結束問卷，不記錄這次填答）';
+      const targetPos = positionById.get(goto);
+      return targetPos ? `（選此項將跳到第 ${targetPos} 題）` : '';
+    }
+
     const bodyHtml = rows
       .map((q, i) => {
         const inner =
@@ -827,7 +839,8 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
             ? `<div class="blank-lines"><div></div><div></div><div></div></div>`
             : q.options
                 .map(
-                  (opt) => `<div class="opt"><span class="box${q.type === 'single' ? ' round' : ''}"></span>${esc(opt.text || '')}${opt.isOther ? '（其他，請說明：__________）' : ''}</div>`
+                  (opt) =>
+                    `<div class="opt"><span class="box${q.type === 'single' ? ' round' : ''}"></span>${esc(opt.text || '')}${opt.isOther ? '（其他，請說明：__________）' : ''}${opt.goto ? ` <span class="goto">${gotoLabel(opt.goto)}</span>` : ''}</div>`
                 )
                 .join('');
         return `
@@ -849,6 +862,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
   .q { margin-bottom: 22px; page-break-inside: avoid; }
   .q-title { font-weight: 600; margin-bottom: 8px; }
   .opt { margin: 6px 0 6px 22px; }
+  .goto { color: #b8360f; font-size: 12px; }
   .box { display: inline-block; width: 14px; height: 14px; border: 1.5px solid #1c1c1a; margin-right: 8px; vertical-align: middle; }
   .box.round { border-radius: 50%; }
   .blank-lines div { border-bottom: 1px solid #999; height: 30px; margin-left: 22px; }
