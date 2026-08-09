@@ -760,8 +760,9 @@ import BaseLayout from '../layouts/BaseLayout.astro';
             <p class="text-xs text-ink-light">回覆給：${esc(s.contact_email)}${s.reply_status === 'sent' ? `（已於 ${fmtDate(s.reply_sent_at)} 寄出）` : ''}</p>
             ${replyAttachmentsHtml ? `<div class="flex flex-wrap gap-2">${replyAttachmentsHtml}</div>` : ''}
             <textarea data-reply-text placeholder="輸入回覆內容（純文字）..." rows="3" class="border-2 border-ink bg-cream px-3 py-2 text-sm focus:outline-none resize-none">${esc(s.admin_reply ?? '')}</textarea>
-            <div class="grid gap-1">
-              <label class="text-xs text-ink-light">附件（選填，會附上下載連結，最多 5 個檔案、總大小 3MB）</label>
+            <div class="grid gap-1.5">
+              <label class="text-xs text-ink-light">附件（選填，會附上下載連結，最多 5 個檔案、總大小 3MB，可以分次選取）</label>
+              <div data-reply-staged-list class="flex flex-wrap gap-2"></div>
               <input type="file" data-reply-files multiple accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx" class="text-xs" />
               <p data-reply-file-status class="text-xs text-ink-light min-h-4"></p>
             </div>
@@ -835,27 +836,50 @@ import BaseLayout from '../layouts/BaseLayout.astro';
           loadSuggestions();
         });
       });
-      li.querySelector('[data-reply-files]')?.addEventListener('change', (e) => {
-        const input = e.target as HTMLInputElement;
-        const statusEl = li.querySelector('[data-reply-file-status]');
-        if (!statusEl) return;
-        const count = input.files?.length ?? 0;
-        statusEl.textContent = count === 0 ? '' : `已選擇：${Array.from(input.files ?? []).map((f) => f.name).join('、')}`;
+      let stagedReplyFiles: File[] = [];
+      const replyFileInput = li.querySelector<HTMLInputElement>('[data-reply-files]');
+      const replyStagedList = li.querySelector('[data-reply-staged-list]');
+
+      function renderStagedReplyFiles() {
+        if (!replyStagedList) return;
+        replyStagedList.innerHTML = stagedReplyFiles
+          .map(
+            (f, i) => `
+            <span class="inline-flex items-center gap-1.5 border-2 border-ink px-2 py-1 text-xs">
+              ${esc(f.name)}
+              <button type="button" data-remove-staged-file="${i}" class="text-clay font-bold hover:underline">✕</button>
+            </span>
+          `
+          )
+          .join('');
+        replyStagedList.querySelectorAll<HTMLButtonElement>('[data-remove-staged-file]').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            stagedReplyFiles.splice(Number(btn.dataset.removeStagedFile), 1);
+            renderStagedReplyFiles();
+          });
+        });
+      }
+
+      replyFileInput?.addEventListener('change', () => {
+        const newFiles = Array.from(replyFileInput.files ?? []);
+        if (stagedReplyFiles.length + newFiles.length > 5) {
+          alert('附件最多只能選 5 個檔案。');
+        } else {
+          stagedReplyFiles.push(...newFiles);
+        }
+        replyFileInput.value = '';
+        renderStagedReplyFiles();
       });
+
       li.querySelector('[data-send-reply]')?.addEventListener('click', async () => {
         const textarea = li.querySelector<HTMLTextAreaElement>('[data-reply-text]')!;
-        const fileInput = li.querySelector<HTMLInputElement>('[data-reply-files]')!;
         const fileStatusEl = li.querySelector('[data-reply-file-status]');
         let replyText = textarea.value.trim();
         if (!replyText) {
           alert('請先輸入回覆內容。');
           return;
         }
-        const files = Array.from(fileInput.files ?? []);
-        if (files.length > 5) {
-          alert('附件最多只能選 5 個檔案。');
-          return;
-        }
+        const files = stagedReplyFiles;
         const totalBytes = files.reduce((sum, f) => sum + f.size, 0);
         if (totalBytes > 3 * 1024 * 1024) {
           alert('附件總大小最多 3MB，請減少或壓縮檔案。');

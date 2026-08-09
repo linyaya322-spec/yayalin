@@ -71,7 +71,8 @@ const collectContact = settings?.find((s) => s.key === 'suggestion_box_collect_c
     )}
 
     <div class="grid gap-2 bg-cream border-2 border-ink p-3">
-      <label for="suggestion-files" class="text-xs font-semibold text-ink-light">附件（選填，照片、影片、錄音、PDF、Word、Excel 等，最多 5 個檔案）</label>
+      <label for="suggestion-files" class="text-xs font-semibold text-ink-light">附件（選填，照片、影片、錄音、PDF、Word、Excel 等，最多 5 個檔案，可以分次選取）</label>
+      <div id="suggestion-staged-list" class="flex flex-wrap gap-2"></div>
       <input
         type="file"
         id="suggestion-files"
@@ -110,17 +111,41 @@ const collectContact = settings?.find((s) => s.key === 'suggestion_box_collect_c
   const status = document.getElementById('suggestion-status');
   const filesInput = document.getElementById('suggestion-files') as HTMLInputElement | null;
   const fileStatus = document.getElementById('suggestion-file-status');
+  const stagedList = document.getElementById('suggestion-staged-list');
+
+  let stagedFiles: File[] = [];
+
+  function renderStagedFiles() {
+    if (!stagedList) return;
+    stagedList.innerHTML = '';
+    stagedFiles.forEach((file, i) => {
+      const chip = document.createElement('span');
+      chip.className = 'inline-flex items-center gap-1.5 border-2 border-ink px-2 py-1 text-xs';
+      const nameSpan = document.createElement('span');
+      nameSpan.textContent = file.name;
+      const removeBtn = document.createElement('button');
+      removeBtn.type = 'button';
+      removeBtn.textContent = '✕';
+      removeBtn.className = 'text-clay font-bold hover:underline';
+      removeBtn.addEventListener('click', () => {
+        stagedFiles.splice(i, 1);
+        renderStagedFiles();
+      });
+      chip.append(nameSpan, removeBtn);
+      stagedList.appendChild(chip);
+    });
+  }
 
   filesInput?.addEventListener('change', () => {
-    const count = filesInput.files?.length ?? 0;
-    if (!fileStatus) return;
-    if (count === 0) {
-      fileStatus.textContent = '';
-    } else if (count > MAX_FILES) {
-      fileStatus.textContent = `最多只能選 ${MAX_FILES} 個檔案，目前選了 ${count} 個。`;
+    const newFiles = Array.from(filesInput.files ?? []);
+    if (stagedFiles.length + newFiles.length > MAX_FILES) {
+      if (fileStatus) fileStatus.textContent = `最多只能選 ${MAX_FILES} 個檔案。`;
     } else {
-      fileStatus.textContent = `已選擇：${Array.from(filesInput.files ?? []).map((f) => f.name).join('、')}`;
+      stagedFiles.push(...newFiles);
+      if (fileStatus) fileStatus.textContent = '';
     }
+    filesInput.value = '';
+    renderStagedFiles();
   });
 
   form?.addEventListener('submit', async (e) => {
@@ -134,11 +159,7 @@ const collectContact = settings?.find((s) => s.key === 'suggestion_box_collect_c
     const contactEmail = String(formData.get('contact_email') ?? '').trim();
     if (!message) return;
 
-    const files = Array.from(filesInput?.files ?? []);
-    if (files.length > MAX_FILES) {
-      if (status) status.textContent = `最多只能上傳 ${MAX_FILES} 個檔案。`;
-      return;
-    }
+    const files = stagedFiles;
     if (files.some((f) => f.size > MAX_FILE_BYTES)) {
       if (status) status.textContent = '有檔案超過 25MB，請壓縮後再上傳。';
       return;
@@ -180,6 +201,8 @@ const collectContact = settings?.find((s) => s.key === 'suggestion_box_collect_c
     } else {
       if (status) status.textContent = '已送出，謝謝你的意見！';
       form.reset();
+      stagedFiles = [];
+      renderStagedFiles();
     }
     if (submitBtn) submitBtn.disabled = false;
   });
