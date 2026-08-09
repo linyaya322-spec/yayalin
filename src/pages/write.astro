@@ -772,7 +772,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
           ? `
         <div class="border-2 border-ink bg-sage-light p-3 text-sm">
           <p class="text-xs text-ink-light mb-1">你（舊版回覆紀錄）${s.reply_status === 'sent' ? `· ${fmtDate(s.reply_sent_at)}` : ''}</p>
-          <p class="text-ink whitespace-pre-wrap break-words">${esc(s.admin_reply)}</p>
+          <p class="text-ink break-words">${s.admin_reply.replace(/\n/g, '<br>')}</p>
         </div>
       `
           : '';
@@ -785,7 +785,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
           return `
           <div class="border-2 border-ink p-3 text-sm ${isOut ? 'bg-sage-light' : 'bg-butter-light'}">
             <p class="text-xs text-ink-light mb-1">${isOut ? '你' : '對方回覆'} · ${fmtDate(m.created_at)}${m.status === 'pending' ? '（寄送中...）' : ''}</p>
-            <p class="text-ink whitespace-pre-wrap break-words">${esc(m.body)}</p>
+            <p class="text-ink break-words">${m.direction === 'outbound' ? m.body.replace(/\n/g, '<br>') : esc(m.body).replace(/\n/g, '<br>')}</p>
             ${msgAttachments ? `<div class="flex flex-wrap gap-2 mt-2">${msgAttachments}</div>` : ''}
           </div>
         `;
