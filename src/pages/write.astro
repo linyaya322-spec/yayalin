@@ -282,9 +282,13 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     return div.innerHTML;
   }
 
-  function sanitizeFilename(name: string): string {
-    const cleaned = name.replace(/[\/\\?%*:|"<>]/g, '_').trim();
-    return cleaned || 'file';
+  // Supabase Storage object keys only accept ASCII, so the original filename
+  // (often in Chinese) can't be part of the storage path — keep the path to
+  // a UUID + a safe extension, and use the real filename separately wherever
+  // it needs to be shown to a person.
+  function safeExt(name: string): string {
+    const match = name.match(/\.([a-zA-Z0-9]{1,10})$/);
+    return match ? `.${match[1].toLowerCase()}` : '';
   }
 
   // ---------- 圖片上傳 ----------
@@ -890,11 +894,11 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         if (fileStatusEl && files.length) fileStatusEl.textContent = `上傳中：${files.length} 個檔案...`;
         const uploadResults = await Promise.all(
           files.map((file) => {
-            const path = `reply-${crypto.randomUUID()}__${sanitizeFilename(file.name)}`;
+            const path = `reply-${crypto.randomUUID()}${safeExt(file.name)}`;
             return supabase.storage
               .from('suggestion-files')
               .upload(path, file)
-              .then(({ error }) => ({ path, error }));
+              .then(({ error }) => ({ path, name: file.name, error }));
           })
         );
         const failedUpload = uploadResults.find((r) => r.error);
@@ -905,12 +909,11 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         const attachmentPaths = uploadResults.map((r) => r.path);
         if (fileStatusEl) fileStatusEl.textContent = '';
 
-        if (attachmentPaths.length) {
+        if (uploadResults.length) {
           const links = await Promise.all(
-            attachmentPaths.map(async (path) => {
+            uploadResults.map(async ({ path, name }) => {
               const { data: signed } = await supabase.storage.from('suggestion-files').createSignedUrl(path, 60 * 60 * 24 * 7);
-              const filename = path.split('__').slice(1).join('__');
-              return `<a href="${signed?.signedUrl ?? '#'}">${esc(filename)}</a>`;
+              return `<a href="${signed?.signedUrl ?? '#'}">${esc(name)}</a>`;
             })
           );
           replyText += '\n\n附件（連結 7 天內有效）：\n' + links.join('\n');

@@ -102,9 +102,13 @@ const collectContact = settings?.find((s) => s.key === 'suggestion_box_collect_c
   const MAX_FILES = 5;
   const MAX_FILE_BYTES = 25 * 1024 * 1024;
 
-  function sanitizeFilename(name: string): string {
-    const cleaned = name.replace(/[\/\\?%*:|"<>]/g, '_').trim();
-    return cleaned || 'file';
+  // Supabase Storage object keys only accept ASCII, so the original filename
+  // (which is often in Chinese) can't be part of the storage path — keep the
+  // path to a UUID + a safe extension, and use the real filename separately
+  // wherever it needs to be shown to a person.
+  function safeExt(name: string): string {
+    const match = name.match(/\.([a-zA-Z0-9]{1,10})$/);
+    return match ? `.${match[1].toLowerCase()}` : '';
   }
 
   const form = document.getElementById('suggestion-form') as HTMLFormElement | null;
@@ -171,7 +175,7 @@ const collectContact = settings?.find((s) => s.key === 'suggestion_box_collect_c
     if (fileStatus && files.length) fileStatus.textContent = `上傳中：${files.length} 個檔案...`;
     const uploadResults = await Promise.all(
       files.map((file) => {
-        const path = `${crypto.randomUUID()}-${sanitizeFilename(file.name)}`;
+        const path = `${crypto.randomUUID()}${safeExt(file.name)}`;
         return supabase.storage
           .from('suggestion-files')
           .upload(path, file)
