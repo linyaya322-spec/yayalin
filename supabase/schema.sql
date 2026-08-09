@@ -374,6 +374,25 @@ create policy "only admin can delete from suggestion-files"
   on storage.objects for delete
   using (bucket_id = 'suggestion-files' and auth.jwt() ->> 'email' = 'yayalin322@gmail.com');
 
+-- ---------- 學生意見箱：完整對話串 ----------
+create table if not exists suggestion_messages (
+  id uuid primary key default gen_random_uuid(),
+  suggestion_id uuid not null references student_suggestions(id) on delete cascade,
+  direction text not null check (direction in ('outbound', 'inbound')),
+  body text not null,
+  attachment_paths text[],
+  status text not null default 'sent' check (status in ('pending', 'sent')),
+  sent_at timestamptz,
+  created_at timestamptz not null default now()
+);
+
+alter table suggestion_messages enable row level security;
+
+create policy "only admin can access suggestion_messages"
+  on suggestion_messages for all
+  using (auth.jwt() ->> 'email' = 'yayalin322@gmail.com')
+  with check (auth.jwt() ->> 'email' = 'yayalin322@gmail.com');
+
 -- ---------- 問卷系統 ----------
 create table if not exists surveys (
   id uuid primary key default gen_random_uuid(),

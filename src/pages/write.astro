@@ -741,36 +741,71 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       .from('student_suggestions')
       .select('*')
       .order('created_at', { ascending: false });
+    const { data: messagesData } = await supabase
+      .from('suggestion_messages')
+      .select('*')
+      .order('created_at', { ascending: true });
+    const messagesBySuggestion = new Map<string, any[]>();
+    (messagesData ?? []).forEach((m) => {
+      const arr = messagesBySuggestion.get(m.suggestion_id) ?? [];
+      arr.push(m);
+      messagesBySuggestion.set(m.suggestion_id, arr);
+    });
     suggestionList.innerHTML = '';
     (data ?? []).forEach((s) => {
       const li = document.createElement('li');
       li.className = 'border-2 border-ink bg-cream p-4 grid gap-3';
       const meta = [fmtDate(s.created_at), s.school, s.grade, s.contact_name].filter(Boolean).map(esc).join(' · ');
-      const attachmentChip = (path: string, label: string, deleteAttr: string) => `
+      const attachmentChip = (path: string, label: string, deleteAttr?: string) => `
         <span class="inline-flex border-2 border-ink">
           <button type="button" data-view-attachment="${esc(path)}" class="px-2.5 py-1 text-xs font-semibold hover:bg-ink hover:text-cream transition-colors">📎 ${label}</button>
-          <button type="button" ${deleteAttr}="${esc(path)}" title="刪除這個附件" class="px-2 py-1 text-xs font-semibold border-l-2 border-ink text-clay hover:bg-clay hover:text-cream transition-colors">✕</button>
+          ${deleteAttr ? `<button type="button" ${deleteAttr}="${esc(path)}" title="刪除這個附件" class="px-2 py-1 text-xs font-semibold border-l-2 border-ink text-clay hover:bg-clay hover:text-cream transition-colors">✕</button>` : ''}
         </span>
       `;
       const attachmentsHtml = (s.attachment_paths ?? [])
         .map((path: string, i: number) => attachmentChip(path, `附件 ${i + 1}`, 'data-delete-attachment'))
         .join('');
-      const replyAttachmentsHtml = (s.reply_attachment_paths ?? [])
-        .map((path: string, i: number) => attachmentChip(path, `回覆附件 ${i + 1}`, 'data-delete-reply-attachment'))
+
+      const thread = messagesBySuggestion.get(s.id) ?? [];
+      const legacyReplyHtml =
+        s.admin_reply && thread.length === 0
+          ? `
+        <div class="border-2 border-ink bg-sage-light p-3 text-sm">
+          <p class="text-xs text-ink-light mb-1">你（舊版回覆紀錄）${s.reply_status === 'sent' ? `· ${fmtDate(s.reply_sent_at)}` : ''}</p>
+          <p class="text-ink whitespace-pre-wrap break-words">${esc(s.admin_reply)}</p>
+        </div>
+      `
+          : '';
+      const threadHtml = thread
+        .map((m) => {
+          const isOut = m.direction === 'outbound';
+          const msgAttachments = (m.attachment_paths ?? [])
+            .map((path: string, i: number) => attachmentChip(path, `附件 ${i + 1}`))
+            .join('');
+          return `
+          <div class="border-2 border-ink p-3 text-sm ${isOut ? 'bg-sage-light' : 'bg-butter-light'}">
+            <p class="text-xs text-ink-light mb-1">${isOut ? '你' : '對方回覆'} · ${fmtDate(m.created_at)}${m.status === 'pending' ? '（寄送中...）' : ''}</p>
+            <p class="text-ink whitespace-pre-wrap break-words">${esc(m.body)}</p>
+            ${msgAttachments ? `<div class="flex flex-wrap gap-2 mt-2">${msgAttachments}</div>` : ''}
+          </div>
+        `;
+        })
         .join('');
+
       const replyHtml = s.contact_email
         ? `
           <div class="border-t-2 border-ink/10 pt-3 grid gap-2">
-            <p class="text-xs text-ink-light">回覆給：${esc(s.contact_email)}${s.reply_status === 'sent' ? `（已於 ${fmtDate(s.reply_sent_at)} 寄出）` : ''}</p>
-            ${replyAttachmentsHtml ? `<div class="flex flex-wrap gap-2">${replyAttachmentsHtml}</div>` : ''}
-            <textarea data-reply-text placeholder="輸入回覆內容（純文字）..." rows="3" class="border-2 border-ink bg-cream px-3 py-2 text-sm focus:outline-none resize-none">${esc(s.admin_reply ?? '')}</textarea>
+            <p class="text-xs text-ink-light">與 ${esc(s.contact_email)} 的對話</p>
+            ${legacyReplyHtml}
+            ${threadHtml}
+            <textarea data-reply-text placeholder="輸入回覆內容（純文字）..." rows="3" class="border-2 border-ink bg-cream px-3 py-2 text-sm focus:outline-none resize-none"></textarea>
             <div class="grid gap-1.5">
               <label class="text-xs text-ink-light">附件（選填，會附上下載連結，最多 5 個檔案、總大小 3MB，可以分次選取）</label>
               <div data-reply-staged-list class="flex flex-wrap gap-2"></div>
               <input type="file" data-reply-files multiple accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx" class="text-xs" />
               <p data-reply-file-status class="text-xs text-ink-light min-h-4"></p>
             </div>
-            <button type="button" data-send-reply class="justify-self-start px-4 py-1.5 text-xs font-semibold border-2 border-sage-dark text-sage-dark hover:bg-sage-dark hover:text-cream transition-colors">✉️ 寄出回覆</button>
+            <button type="button" data-send-reply class="justify-self-start px-4 py-1.5 text-xs font-semibold border-2 border-sage-dark text-sage-dark hover:bg-sage-dark hover:text-cream transition-colors">✉️ 寄出</button>
           </div>
         `
         : '';
@@ -811,27 +846,6 @@ import BaseLayout from '../layouts/BaseLayout.astro';
           const { error: updateError } = await supabase
             .from('student_suggestions')
             .update({ attachment_paths: remainingPaths.length ? remainingPaths : null })
-            .eq('id', s.id);
-          if (updateError) {
-            alert(`更新失敗：${updateError.message}`);
-            return;
-          }
-          loadSuggestions();
-        });
-      });
-      li.querySelectorAll<HTMLButtonElement>('[data-delete-reply-attachment]').forEach((btn) => {
-        btn.addEventListener('click', async () => {
-          if (!confirm('確定要刪除這個回覆附件嗎？無法復原。')) return;
-          const path = btn.dataset.deleteReplyAttachment!;
-          const { error: removeError } = await supabase.storage.from('suggestion-files').remove([path]);
-          if (removeError) {
-            alert(`刪除失敗：${removeError.message}`);
-            return;
-          }
-          const remainingPaths = (s.reply_attachment_paths ?? []).filter((p: string) => p !== path);
-          const { error: updateError } = await supabase
-            .from('student_suggestions')
-            .update({ reply_attachment_paths: remainingPaths.length ? remainingPaths : null })
             .eq('id', s.id);
           if (updateError) {
             alert(`更新失敗：${updateError.message}`);
@@ -919,14 +933,13 @@ import BaseLayout from '../layouts/BaseLayout.astro';
           replyText += '\n\n附件（連結 7 天內有效）：\n' + links.join('\n');
         }
 
-        const { error } = await supabase
-          .from('student_suggestions')
-          .update({
-            admin_reply: replyText,
-            reply_status: 'pending',
-            reply_attachment_paths: attachmentPaths.length ? attachmentPaths : null,
-          })
-          .eq('id', s.id);
+        const { error } = await supabase.from('suggestion_messages').insert({
+          suggestion_id: s.id,
+          direction: 'outbound',
+          body: replyText,
+          attachment_paths: attachmentPaths.length ? attachmentPaths : null,
+          status: 'pending',
+        });
         if (error) {
           alert(`寄送失敗：${error.message}`);
         } else {

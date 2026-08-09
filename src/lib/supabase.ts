@@ -65,6 +65,17 @@ export interface StudentSuggestion {
   created_at: string;
 }
 
+export interface SuggestionMessage {
+  id: string;
+  suggestion_id: string;
+  direction: 'outbound' | 'inbound';
+  body: string;
+  attachment_paths: string[] | null;
+  status: 'pending' | 'sent';
+  sent_at: string | null;
+  created_at: string;
+}
+
 export interface AppSetting {
   key: string;
   value: string;
