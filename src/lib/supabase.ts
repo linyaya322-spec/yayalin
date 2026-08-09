@@ -148,5 +148,6 @@ export interface Newsletter {
   status: 'draft' | 'sending' | 'sent';
   sent_at: string | null;
   recipient_count: number | null;
+  target_emails: string[] | null;
   created_at: string;
 }

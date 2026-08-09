@@ -539,3 +539,59 @@ create policy "only admin can upload to timeline-files"
 create policy "only admin can delete from timeline-files"
   on storage.objects for delete
   using (bucket_id = 'timeline-files' and auth.jwt() ->> 'email' = 'yayalin322@gmail.com');
+
+-- ---------- 電子報 ----------
+create table if not exists newsletter_subscribers (
+  id uuid primary key default gen_random_uuid(),
+  email text not null unique,
+  unsubscribe_token uuid not null default gen_random_uuid(),
+  subscribed_at timestamptz not null default now(),
+  unsubscribed_at timestamptz
+);
+
+alter table newsletter_subscribers enable row level security;
+
+create policy "anyone can subscribe to the newsletter"
+  on newsletter_subscribers for insert
+  with check (true);
+
+create policy "only admin can read newsletter_subscribers"
+  on newsletter_subscribers for select
+  using (auth.jwt() ->> 'email' = 'yayalin322@gmail.com');
+
+create policy "only admin can delete newsletter_subscribers"
+  on newsletter_subscribers for delete
+  using (auth.jwt() ->> 'email' = 'yayalin322@gmail.com');
+
+create or replace function unsubscribe_newsletter(p_token uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  update newsletter_subscribers
+  set unsubscribed_at = now()
+  where unsubscribe_token = p_token and unsubscribed_at is null;
+end;
+$$;
+
+grant execute on function unsubscribe_newsletter(uuid) to anon, authenticated;
+
+create table if not exists newsletters (
+  id uuid primary key default gen_random_uuid(),
+  subject text not null,
+  content text not null,
+  status text not null default 'draft' check (status in ('draft', 'sending', 'sent')),
+  sent_at timestamptz,
+  recipient_count integer,
+  target_emails text[],
+  created_at timestamptz not null default now()
+);
+
+alter table newsletters enable row level security;
+
+create policy "only admin can access newsletters"
+  on newsletters for all
+  using (auth.jwt() ->> 'email' = 'yayalin322@gmail.com')
+  with check (auth.jwt() ->> 'email' = 'yayalin322@gmail.com');
