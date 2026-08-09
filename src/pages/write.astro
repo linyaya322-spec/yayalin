@@ -863,17 +863,22 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         }
         if (!confirm(`確定要把這則回覆寄給 ${s.contact_email} 嗎？`)) return;
 
-        const attachmentPaths: string[] = [];
-        for (const file of files) {
-          if (fileStatusEl) fileStatusEl.textContent = `上傳中：${file.name}...`;
-          const path = `reply-${crypto.randomUUID()}__${sanitizeFilename(file.name)}`;
-          const { error: uploadError } = await supabase.storage.from('suggestion-files').upload(path, file);
-          if (uploadError) {
-            alert(`附件上傳失敗：${uploadError.message}`);
-            return;
-          }
-          attachmentPaths.push(path);
+        if (fileStatusEl && files.length) fileStatusEl.textContent = `上傳中：${files.length} 個檔案...`;
+        const uploadResults = await Promise.all(
+          files.map((file) => {
+            const path = `reply-${crypto.randomUUID()}__${sanitizeFilename(file.name)}`;
+            return supabase.storage
+              .from('suggestion-files')
+              .upload(path, file)
+              .then(({ error }) => ({ path, error }));
+          })
+        );
+        const failedUpload = uploadResults.find((r) => r.error);
+        if (failedUpload) {
+          alert(`附件上傳失敗：${failedUpload.error!.message}`);
+          return;
         }
+        const attachmentPaths = uploadResults.map((r) => r.path);
         if (fileStatusEl) fileStatusEl.textContent = '';
 
         if (attachmentPaths.length) {

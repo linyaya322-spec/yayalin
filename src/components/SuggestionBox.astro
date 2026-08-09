@@ -147,18 +147,23 @@ const collectContact = settings?.find((s) => s.key === 'suggestion_box_collect_c
     if (submitBtn) submitBtn.disabled = true;
     if (status) status.textContent = '送出中...';
 
-    const attachmentPaths: string[] = [];
-    for (const file of files) {
-      if (fileStatus) fileStatus.textContent = `上傳中：${file.name}...`;
-      const path = `${crypto.randomUUID()}-${sanitizeFilename(file.name)}`;
-      const { error: uploadError } = await supabase.storage.from('suggestion-files').upload(path, file);
-      if (uploadError) {
-        if (status) status.textContent = `檔案上傳失敗：${uploadError.message}`;
-        if (submitBtn) submitBtn.disabled = false;
-        return;
-      }
-      attachmentPaths.push(path);
+    if (fileStatus && files.length) fileStatus.textContent = `上傳中：${files.length} 個檔案...`;
+    const uploadResults = await Promise.all(
+      files.map((file) => {
+        const path = `${crypto.randomUUID()}-${sanitizeFilename(file.name)}`;
+        return supabase.storage
+          .from('suggestion-files')
+          .upload(path, file)
+          .then(({ error }) => ({ path, error }));
+      })
+    );
+    const failed = uploadResults.find((r) => r.error);
+    if (failed) {
+      if (status) status.textContent = `檔案上傳失敗：${failed.error!.message}`;
+      if (submitBtn) submitBtn.disabled = false;
+      return;
     }
+    const attachmentPaths = uploadResults.map((r) => r.path);
     if (fileStatus) fileStatus.textContent = '';
 
     const { error } = await supabase.from('student_suggestions').insert({
