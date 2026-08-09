@@ -842,8 +842,9 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     (data ?? []).forEach((n) => {
       const li = document.createElement('li');
       li.className = 'border-2 border-ink bg-cream p-4 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3';
+      const canAct = n.status !== 'sending';
       const meta = n.status === 'sent'
-        ? `已於 ${fmtDate(n.sent_at)} 寄給 ${n.recipient_count ?? 0} 位收件人`
+        ? `上次於 ${fmtDate(n.sent_at)} 寄給 ${n.recipient_count ?? 0} 位收件人`
         : `${fmtDate(n.created_at)} · ${newsletterStatusLabel[n.status] ?? n.status}${n.target_emails?.length ? ` · 指定 ${n.target_emails.length} 位收件人` : ''}`;
       li.innerHTML = `
         <div class="min-w-0">
@@ -851,8 +852,8 @@ import BaseLayout from '../layouts/BaseLayout.astro';
           <p class="font-semibold text-ink">${esc(n.subject)}</p>
         </div>
         <div class="flex gap-2 shrink-0">
-          ${n.status === 'draft' ? '<button data-edit class="px-3 py-1 text-xs font-semibold border-2 border-ink hover:bg-ink hover:text-cream transition-colors">編輯</button>' : ''}
-          ${n.status === 'draft' ? '<button data-send class="px-3 py-1 text-xs font-semibold border-2 border-sage-dark text-sage-dark hover:bg-sage-dark hover:text-cream transition-colors">寄出</button>' : ''}
+          ${canAct ? '<button data-edit class="px-3 py-1 text-xs font-semibold border-2 border-ink hover:bg-ink hover:text-cream transition-colors">編輯</button>' : ''}
+          ${canAct ? `<button data-send class="px-3 py-1 text-xs font-semibold border-2 border-sage-dark text-sage-dark hover:bg-sage-dark hover:text-cream transition-colors">${n.status === 'sent' ? '再次寄出' : '寄出'}</button>` : ''}
           <button data-delete class="px-3 py-1 text-xs font-semibold border-2 border-clay text-clay hover:bg-clay hover:text-cream transition-colors">刪除</button>
         </div>
       `;
@@ -868,7 +869,8 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         const recipientDesc = n.target_emails?.length
           ? `指定的 ${n.target_emails.length} 位收件人`
           : `目前 ${activeSubscriberCount} 位訂閱者`;
-        if (!confirm(`確定要把「${n.subject}」寄給${recipientDesc}嗎？寄出後無法收回。`)) return;
+        const resendNote = n.status === 'sent' ? '（這封之前已經寄過一次，這是再寄一次）' : '';
+        if (!confirm(`確定要把「${n.subject}」寄給${recipientDesc}嗎？${resendNote}寄出後無法收回。`)) return;
         const { error } = await supabase.from('newsletters').update({ status: 'sending' }).eq('id', n.id);
         if (error) {
           alert(`寄送失敗：${error.message}`);

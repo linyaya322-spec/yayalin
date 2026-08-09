@@ -15,6 +15,8 @@ const {
   description = '新竹縣兒少委員 yaya 的個人網站，記錄生活、公共參與與興趣分享。',
   noindex = false,
 } = Astro.props;
+
+const ogImageUrl = new URL('/og-image.png', Astro.site ?? 'https://yayalin.com').toString();
 ---
 
 <!doctype html>
@@ -23,9 +25,20 @@ const {
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/avatar.png" />
     <meta name="description" content={description} />
     {noindex && <meta name="robots" content="noindex, nofollow" />}
     <title>{title} · yaya 林</title>
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="yaya 林" />
+    <meta property="og:title" content={`${title} · yaya 林`} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={ogImageUrl} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={`${title} · yaya 林`} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImageUrl} />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
