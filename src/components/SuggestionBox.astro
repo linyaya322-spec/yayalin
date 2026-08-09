@@ -101,6 +101,11 @@ const collectContact = settings?.find((s) => s.key === 'suggestion_box_collect_c
   const MAX_FILES = 5;
   const MAX_FILE_BYTES = 25 * 1024 * 1024;
 
+  function sanitizeFilename(name: string): string {
+    const cleaned = name.replace(/[\/\\?%*:|"<>]/g, '_').trim();
+    return cleaned || 'file';
+  }
+
   const form = document.getElementById('suggestion-form') as HTMLFormElement | null;
   const status = document.getElementById('suggestion-status');
   const filesInput = document.getElementById('suggestion-files') as HTMLInputElement | null;
@@ -145,7 +150,7 @@ const collectContact = settings?.find((s) => s.key === 'suggestion_box_collect_c
     const attachmentPaths: string[] = [];
     for (const file of files) {
       if (fileStatus) fileStatus.textContent = `上傳中：${file.name}...`;
-      const path = `${crypto.randomUUID()}-${file.name}`;
+      const path = `${crypto.randomUUID()}-${sanitizeFilename(file.name)}`;
       const { error: uploadError } = await supabase.storage.from('suggestion-files').upload(path, file);
       if (uploadError) {
         if (status) status.textContent = `檔案上傳失敗：${uploadError.message}`;

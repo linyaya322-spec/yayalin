@@ -282,6 +282,11 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     return div.innerHTML;
   }
 
+  function sanitizeFilename(name: string): string {
+    const cleaned = name.replace(/[\/\\?%*:|"<>]/g, '_').trim();
+    return cleaned || 'file';
+  }
+
   // ---------- 圖片上傳 ----------
   const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 
@@ -756,7 +761,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
             ${replyAttachmentsHtml ? `<div class="flex flex-wrap gap-2">${replyAttachmentsHtml}</div>` : ''}
             <textarea data-reply-text placeholder="輸入回覆內容（純文字）..." rows="3" class="border-2 border-ink bg-cream px-3 py-2 text-sm focus:outline-none resize-none">${esc(s.admin_reply ?? '')}</textarea>
             <div class="grid gap-1">
-              <label class="text-xs text-ink-light">附件（選填，會附上下載連結，最多 5 個檔案）</label>
+              <label class="text-xs text-ink-light">附件（選填，會附上下載連結，最多 5 個檔案、總大小 3MB）</label>
               <input type="file" data-reply-files multiple accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx" class="text-xs" />
               <p data-reply-file-status class="text-xs text-ink-light min-h-4"></p>
             </div>
@@ -851,12 +856,17 @@ import BaseLayout from '../layouts/BaseLayout.astro';
           alert('附件最多只能選 5 個檔案。');
           return;
         }
+        const totalBytes = files.reduce((sum, f) => sum + f.size, 0);
+        if (totalBytes > 3 * 1024 * 1024) {
+          alert('附件總大小最多 3MB，請減少或壓縮檔案。');
+          return;
+        }
         if (!confirm(`確定要把這則回覆寄給 ${s.contact_email} 嗎？`)) return;
 
         const attachmentPaths: string[] = [];
         for (const file of files) {
           if (fileStatusEl) fileStatusEl.textContent = `上傳中：${file.name}...`;
-          const path = `reply-${crypto.randomUUID()}__${file.name}`;
+          const path = `reply-${crypto.randomUUID()}__${sanitizeFilename(file.name)}`;
           const { error: uploadError } = await supabase.storage.from('suggestion-files').upload(path, file);
           if (uploadError) {
             alert(`附件上傳失敗：${uploadError.message}`);
