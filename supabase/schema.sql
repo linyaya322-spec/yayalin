@@ -184,7 +184,7 @@ insert into site_pages (slug, title, content) values
 依照你使用的功能不同，我們蒐集的資料也不同：
 
 - **聯絡表單**：你填寫的姓名、Email、訊息內容。這些資料完全不公開，只有站長看得到，僅用於回覆你的訊息，不會用於其他目的。
-- **學生意見箱**：你填寫的建議內容，以及選填的學校、年級資訊（是否需要填寫由站長設定）。這些資料完全不公開，只有站長看得到，會作為爭取校園權益、向縣政府等單位提案的參考。
+- **學生意見箱**：你填寫的建議內容，以及選填的學校、年級、姓名、Email 資訊（是否顯示由站長設定），還有你選擇上傳的附件（例如照片、影片、錄音、PDF、Word、Excel 等檔案）。附件會存放在不公開的儲存空間，只有站長能夠查看；如果你留下 Email，站長可能會就你的建議回覆一封純文字信件給你。這些資料完全不公開，只有站長看得到，會作為爭取校園權益、向縣政府等單位提案的參考。
 - **問卷**：
   - 你填寫的問卷回覆內容，只有站長看得到，用於了解大家的想法、統計分析，並可能提供給相關單位（例如縣政府）參考。
   - 如果問卷開啟「Gmail 白名單」存取模式，你輸入的 Gmail 信箱會跟你的回覆一起被記錄，用來確認填寫資格與計算已填寫次數。
@@ -213,7 +213,7 @@ insert into site_pages (slug, title, content) values
 為了讓這個網站能夠運作，我們使用以下第三方服務來儲存或處理資料，這些服務都有各自的隱私權政策：
 
 - **[Supabase](https://supabase.com)**：本網站的資料庫、檔案儲存與登入驗證服務，所有上述提到的資料都儲存在 Supabase 提供的雲端資料庫中。
-- **[Resend](https://resend.com)**：用於寄送站長的登入連結信件、當有人送出聯絡表單／學生意見箱建議／問卷回覆時通知站長的信件，以及寄送你主動訂閱的電子報內容給你；我們不會透過 Resend 寄送你未曾同意訂閱的行銷信件。
+- **[Resend](https://resend.com)**：用於寄送站長的登入連結信件、當有人送出聯絡表單／學生意見箱建議／問卷回覆時通知站長的信件、站長回覆學生意見箱時寄出的信件，以及寄送你主動訂閱的電子報內容給你；我們不會透過 Resend 寄送你未曾同意訂閱的行銷信件。
 - **QR Code 產生服務（api.qrserver.com）**：如果問卷開啟「限時 QR Code」存取模式，站長在後台產生 QR Code 圖片時，問卷連結會短暫傳送到這個第三方服務以產生圖片，這個動作只有站長操作後台時才會發生，一般訪客填寫問卷不會觸發。
 
 ## 資料保留期限
@@ -322,7 +322,8 @@ create policy "only admin can write app_settings"
   with check (auth.jwt() ->> 'email' = 'yayalin322@gmail.com');
 
 insert into app_settings (key, value) values
-  ('suggestion_box_collect_school', 'false')
+  ('suggestion_box_collect_school', 'false'),
+  ('suggestion_box_collect_contact', 'false')
 on conflict (key) do nothing;
 
 -- ---------- 學生意見箱（完全私密，只有你在 /write 看得到） ----------
@@ -331,6 +332,12 @@ create table if not exists student_suggestions (
   message text not null,
   school text,
   grade text,
+  contact_name text,
+  contact_email text,
+  attachment_paths text[],
+  admin_reply text,
+  reply_status text check (reply_status in ('pending', 'sent')),
+  reply_sent_at timestamptz,
   created_at timestamptz not null default now()
 );
 
@@ -344,9 +351,27 @@ create policy "only admin can read student_suggestions"
   on student_suggestions for select
   using (auth.jwt() ->> 'email' = 'yayalin322@gmail.com');
 
+create policy "only admin can update student_suggestions"
+  on student_suggestions for update
+  using (auth.jwt() ->> 'email' = 'yayalin322@gmail.com')
+  with check (auth.jwt() ->> 'email' = 'yayalin322@gmail.com');
+
 create policy "only admin can delete student_suggestions"
   on student_suggestions for delete
   using (auth.jwt() ->> 'email' = 'yayalin322@gmail.com');
+
+-- ---------- 意見箱附件（儲存桶 suggestion-files，私人，只有站長看得到） ----------
+create policy "anyone can upload to suggestion-files"
+  on storage.objects for insert
+  with check (bucket_id = 'suggestion-files');
+
+create policy "only admin can view suggestion-files"
+  on storage.objects for select
+  using (bucket_id = 'suggestion-files' and auth.jwt() ->> 'email' = 'yayalin322@gmail.com');
+
+create policy "only admin can delete from suggestion-files"
+  on storage.objects for delete
+  using (bucket_id = 'suggestion-files' and auth.jwt() ->> 'email' = 'yayalin322@gmail.com');
 
 -- ---------- 問卷系統 ----------
 create table if not exists surveys (

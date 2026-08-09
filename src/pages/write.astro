@@ -141,10 +141,16 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 
       <!-- 學生意見箱 -->
       <section data-panel="suggestions" class="hidden">
-        <label class="flex items-center gap-2 mb-6 bg-cream border-2 border-ink p-4 max-w-md">
-          <input type="checkbox" id="suggestion-collect-school" class="w-4 h-4" />
-          <span class="text-sm text-ink">意見箱表單顯示「學校/年級」欄位（選填）</span>
-        </label>
+        <div class="grid gap-2 mb-6 max-w-md">
+          <label class="flex items-center gap-2 bg-cream border-2 border-ink p-4">
+            <input type="checkbox" id="suggestion-collect-school" class="w-4 h-4" />
+            <span class="text-sm text-ink">意見箱表單顯示「學校/年級」欄位（選填）</span>
+          </label>
+          <label class="flex items-center gap-2 bg-cream border-2 border-ink p-4">
+            <input type="checkbox" id="suggestion-collect-contact" class="w-4 h-4" />
+            <span class="text-sm text-ink">意見箱表單顯示「姓名/Email」欄位（選填，方便你回覆）</span>
+          </label>
+        </div>
         <ul id="suggestion-list" class="grid gap-3"></ul>
       </section>
 
@@ -700,6 +706,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
   // ---------- 學生意見箱 ----------
   const suggestionList = document.getElementById('suggestion-list')!;
   const suggestionCollectSchool = document.getElementById('suggestion-collect-school') as HTMLInputElement;
+  const suggestionCollectContact = document.getElementById('suggestion-collect-contact') as HTMLInputElement;
 
   suggestionCollectSchool.addEventListener('change', async () => {
     await supabase
@@ -707,13 +714,19 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       .upsert({ key: 'suggestion_box_collect_school', value: String(suggestionCollectSchool.checked) });
   });
 
+  suggestionCollectContact.addEventListener('change', async () => {
+    await supabase
+      .from('app_settings')
+      .upsert({ key: 'suggestion_box_collect_contact', value: String(suggestionCollectContact.checked) });
+  });
+
   async function loadSuggestions() {
-    const { data: setting } = await supabase
+    const { data: settingsData } = await supabase
       .from('app_settings')
       .select('*')
-      .eq('key', 'suggestion_box_collect_school')
-      .maybeSingle();
-    suggestionCollectSchool.checked = setting?.value === 'true';
+      .in('key', ['suggestion_box_collect_school', 'suggestion_box_collect_contact']);
+    suggestionCollectSchool.checked = settingsData?.find((s) => s.key === 'suggestion_box_collect_school')?.value === 'true';
+    suggestionCollectContact.checked = settingsData?.find((s) => s.key === 'suggestion_box_collect_contact')?.value === 'true';
 
     const { data } = await supabase
       .from('student_suggestions')
@@ -722,15 +735,66 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     suggestionList.innerHTML = '';
     (data ?? []).forEach((s) => {
       const li = document.createElement('li');
-      li.className = 'border-2 border-ink bg-cream p-4 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3';
-      const meta = [fmtDate(s.created_at), s.school, s.grade].filter(Boolean).map(esc).join(' · ');
+      li.className = 'border-2 border-ink bg-cream p-4 grid gap-3';
+      const meta = [fmtDate(s.created_at), s.school, s.grade, s.contact_name].filter(Boolean).map(esc).join(' · ');
+      const attachmentsHtml = (s.attachment_paths ?? [])
+        .map(
+          (path: string, i: number) =>
+            `<button type="button" data-view-attachment="${esc(path)}" class="px-2.5 py-1 text-xs font-semibold border-2 border-ink hover:bg-ink hover:text-cream transition-colors">📎 附件 ${i + 1}</button>`
+        )
+        .join('');
+      const replyHtml = s.contact_email
+        ? `
+          <div class="border-t-2 border-ink/10 pt-3 grid gap-2">
+            <p class="text-xs text-ink-light">回覆給：${esc(s.contact_email)}${s.reply_status === 'sent' ? `（已於 ${fmtDate(s.reply_sent_at)} 寄出）` : ''}</p>
+            <textarea data-reply-text placeholder="輸入回覆內容（純文字）..." rows="3" class="border-2 border-ink bg-cream px-3 py-2 text-sm focus:outline-none resize-none">${esc(s.admin_reply ?? '')}</textarea>
+            <button type="button" data-send-reply class="justify-self-start px-4 py-1.5 text-xs font-semibold border-2 border-sage-dark text-sage-dark hover:bg-sage-dark hover:text-cream transition-colors">✉️ 寄出回覆</button>
+          </div>
+        `
+        : '';
       li.innerHTML = `
-        <div class="min-w-0">
-          <p class="text-xs text-ink-light mb-1">${meta}</p>
-          <p class="text-ink whitespace-pre-wrap break-words">${esc(s.message)}</p>
+        <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+          <div class="min-w-0">
+            <p class="text-xs text-ink-light mb-1">${meta}</p>
+            <p class="text-ink whitespace-pre-wrap break-words">${esc(s.message)}</p>
+          </div>
+          <button data-delete class="px-3 py-1 text-xs font-semibold border-2 border-clay text-clay hover:bg-clay hover:text-cream transition-colors shrink-0">刪除</button>
         </div>
-        <button data-delete class="px-3 py-1 text-xs font-semibold border-2 border-clay text-clay hover:bg-clay hover:text-cream transition-colors shrink-0">刪除</button>
+        ${attachmentsHtml ? `<div class="flex flex-wrap gap-2">${attachmentsHtml}</div>` : ''}
+        ${replyHtml}
       `;
+      li.querySelectorAll<HTMLButtonElement>('[data-view-attachment]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const path = btn.dataset.viewAttachment!;
+          const { data: signed, error } = await supabase.storage
+            .from('suggestion-files')
+            .createSignedUrl(path, 300);
+          if (error || !signed) {
+            alert(`無法取得附件連結：${error?.message ?? '未知錯誤'}`);
+            return;
+          }
+          window.open(signed.signedUrl, '_blank');
+        });
+      });
+      li.querySelector('[data-send-reply]')?.addEventListener('click', async () => {
+        const textarea = li.querySelector<HTMLTextAreaElement>('[data-reply-text]')!;
+        const replyText = textarea.value.trim();
+        if (!replyText) {
+          alert('請先輸入回覆內容。');
+          return;
+        }
+        if (!confirm(`確定要把這則回覆寄給 ${s.contact_email} 嗎？`)) return;
+        const { error } = await supabase
+          .from('student_suggestions')
+          .update({ admin_reply: replyText, reply_status: 'pending' })
+          .eq('id', s.id);
+        if (error) {
+          alert(`寄送失敗：${error.message}`);
+        } else {
+          alert('已開始寄送，稍後重新整理這頁查看寄送結果。');
+        }
+        loadSuggestions();
+      });
       li.querySelector('[data-delete]')?.addEventListener('click', async () => {
         if (!confirm('確定要刪除這則意見嗎？')) return;
         await supabase.from('student_suggestions').delete().eq('id', s.id);

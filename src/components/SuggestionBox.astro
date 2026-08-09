@@ -1,13 +1,13 @@
 ---
 import { supabase } from '../lib/supabase';
 
-const { data: setting } = await supabase
+const { data: settings } = await supabase
   .from('app_settings')
   .select('*')
-  .eq('key', 'suggestion_box_collect_school')
-  .maybeSingle();
+  .in('key', ['suggestion_box_collect_school', 'suggestion_box_collect_contact']);
 
-const collectSchool = setting?.value === 'true';
+const collectSchool = settings?.find((s) => s.key === 'suggestion_box_collect_school')?.value === 'true';
+const collectContact = settings?.find((s) => s.key === 'suggestion_box_collect_contact')?.value === 'true';
 ---
 
 <div class="reveal bg-clay-light border-2 border-ink p-8">
@@ -48,6 +48,41 @@ const collectSchool = setting?.value === 'true';
         />
       </div>
     )}
+    {collectContact && (
+      <div class="grid grid-cols-2 gap-3">
+        <input
+          type="text"
+          id="suggestion-contact-name"
+          name="contact_name"
+          placeholder="姓名（選填）"
+          aria-label="姓名"
+          class="border-2 border-ink bg-cream px-4 py-2.5 text-ink placeholder:text-ink-light/70 focus:outline-none focus:bg-sage-light"
+        />
+        <input
+          type="email"
+          id="suggestion-contact-email"
+          name="contact_email"
+          placeholder="Email（選填，方便我回覆你）"
+          aria-label="Email，方便我回覆你"
+          class="border-2 border-ink bg-cream px-4 py-2.5 text-ink placeholder:text-ink-light/70 focus:outline-none focus:bg-sage-light"
+        />
+      </div>
+    )}
+
+    <div class="grid gap-1.5">
+      <label for="suggestion-files" class="text-xs text-ink-light">附件（選填，照片、影片、錄音、PDF、Word、Excel 等，最多 5 個檔案）</label>
+      <input
+        type="file"
+        id="suggestion-files"
+        name="files"
+        multiple
+        accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx"
+        aria-label="上傳附件"
+        class="text-sm"
+      />
+      <p id="suggestion-file-status" class="text-xs text-ink-light min-h-4"></p>
+    </div>
+
     <button
       type="submit"
       data-magnetic
@@ -62,8 +97,13 @@ const collectSchool = setting?.value === 'true';
 <script>
   import { supabase } from '../lib/supabase';
 
+  const MAX_FILES = 5;
+  const MAX_FILE_BYTES = 25 * 1024 * 1024;
+
   const form = document.getElementById('suggestion-form') as HTMLFormElement | null;
   const status = document.getElementById('suggestion-status');
+  const filesInput = document.getElementById('suggestion-files') as HTMLInputElement | null;
+  const fileStatus = document.getElementById('suggestion-file-status');
 
   form?.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -72,15 +112,44 @@ const collectSchool = setting?.value === 'true';
     const message = String(formData.get('message') ?? '').trim();
     const school = String(formData.get('school') ?? '').trim();
     const grade = String(formData.get('grade') ?? '').trim();
+    const contactName = String(formData.get('contact_name') ?? '').trim();
+    const contactEmail = String(formData.get('contact_email') ?? '').trim();
     if (!message) return;
+
+    const files = Array.from(filesInput?.files ?? []);
+    if (files.length > MAX_FILES) {
+      if (status) status.textContent = `最多只能上傳 ${MAX_FILES} 個檔案。`;
+      return;
+    }
+    if (files.some((f) => f.size > MAX_FILE_BYTES)) {
+      if (status) status.textContent = '有檔案超過 25MB，請壓縮後再上傳。';
+      return;
+    }
 
     if (submitBtn) submitBtn.disabled = true;
     if (status) status.textContent = '送出中...';
+
+    const attachmentPaths: string[] = [];
+    for (const file of files) {
+      if (fileStatus) fileStatus.textContent = `上傳中：${file.name}...`;
+      const path = `${crypto.randomUUID()}-${file.name}`;
+      const { error: uploadError } = await supabase.storage.from('suggestion-files').upload(path, file);
+      if (uploadError) {
+        if (status) status.textContent = `檔案上傳失敗：${uploadError.message}`;
+        if (submitBtn) submitBtn.disabled = false;
+        return;
+      }
+      attachmentPaths.push(path);
+    }
+    if (fileStatus) fileStatus.textContent = '';
 
     const { error } = await supabase.from('student_suggestions').insert({
       message,
       school: school || null,
       grade: grade || null,
+      contact_name: contactName || null,
+      contact_email: contactEmail || null,
+      attachment_paths: attachmentPaths.length ? attachmentPaths : null,
     });
 
     if (error) {

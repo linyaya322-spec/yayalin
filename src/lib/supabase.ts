@@ -55,6 +55,12 @@ export interface StudentSuggestion {
   message: string;
   school: string | null;
   grade: string | null;
+  contact_name: string | null;
+  contact_email: string | null;
+  attachment_paths: string[] | null;
+  admin_reply: string | null;
+  reply_status: 'pending' | 'sent' | null;
+  reply_sent_at: string | null;
   created_at: string;
 }
 
