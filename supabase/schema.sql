@@ -393,6 +393,7 @@ create table if not exists surveys (
   title text not null,
   description text not null default '',
   is_active boolean not null default true,
+  theme text not null default 'clay' check (theme in ('clay', 'sage', 'butter', 'ink')),
   link_url text,
   pdf_url text,
   opens_at timestamptz,

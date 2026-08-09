@@ -84,6 +84,7 @@ export interface Survey {
   title: string;
   description: string;
   is_active: boolean;
+  theme: 'clay' | 'sage' | 'butter' | 'ink';
   link_url: string | null;
   pdf_url: string | null;
   opens_at: string | null;

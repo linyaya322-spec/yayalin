@@ -54,6 +54,16 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
             <span class="text-sm text-ink">啟用（顯示在首頁與可公開填寫）</span>
           </label>
 
+          <label class="grid gap-1 text-xs text-ink-light max-w-xs">
+            填寫頁風格（影響按鈕、進度條顏色）
+            <select id="survey-theme" class="border-2 border-ink bg-cream px-4 py-2 text-sm focus:outline-none">
+              <option value="clay">磚紅（預設）</option>
+              <option value="sage">草綠</option>
+              <option value="butter">奶油黃</option>
+              <option value="ink">沉穩黑</option>
+            </select>
+          </label>
+
           <div class="grid sm:grid-cols-2 gap-3">
             <label class="grid gap-1 text-xs text-ink-light">
               開放時間（選填，未到時間前訪客會看到「尚未開放」）
@@ -346,6 +356,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
   const surveyTitleInput = document.getElementById('survey-title') as HTMLInputElement;
   const surveyDescriptionInput = document.getElementById('survey-description') as HTMLTextAreaElement;
   const surveyActiveInput = document.getElementById('survey-active') as HTMLInputElement;
+  const surveyThemeSelect = document.getElementById('survey-theme') as HTMLSelectElement;
   const surveyOpensAtInput = document.getElementById('survey-opens-at') as HTMLInputElement;
   const surveyClosesAtInput = document.getElementById('survey-closes-at') as HTMLInputElement;
   const surveyLinkInput = document.getElementById('survey-link') as HTMLInputElement;
@@ -647,6 +658,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     questionList.innerHTML = '';
     removedQuestionIds = [];
     clearSurveyPdf();
+    surveyThemeSelect.value = 'clay';
     surveyAccessModeSelect.value = 'public';
     accessGmailList.innerHTML = '';
     accessQrDisplay.classList.add('hidden');
@@ -665,6 +677,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     surveyTitleInput.value = survey.title;
     surveyDescriptionInput.value = survey.description ?? '';
     surveyActiveInput.checked = survey.is_active;
+    surveyThemeSelect.value = survey.theme ?? 'clay';
     surveyOpensAtInput.value = toLocalInputValue(survey.opens_at);
     surveyClosesAtInput.value = toLocalInputValue(survey.closes_at);
     surveyLinkInput.value = survey.link_url ?? '';
@@ -707,6 +720,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       title: surveyTitleInput.value.trim(),
       description: surveyDescriptionInput.value.trim(),
       is_active: surveyActiveInput.checked,
+      theme: surveyThemeSelect.value,
       opens_at: surveyOpensAtInput.value ? new Date(surveyOpensAtInput.value).toISOString() : null,
       closes_at: surveyClosesAtInput.value ? new Date(surveyClosesAtInput.value).toISOString() : null,
       access_mode: surveyAccessModeSelect.value,
