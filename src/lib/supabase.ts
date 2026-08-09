@@ -144,9 +144,7 @@ export interface NewsletterSubscriber {
 export interface Newsletter {
   id: string;
   subject: string;
-  body: string;
   content: string;
-  type: 'news' | 'issue' | 'survey';
   status: 'draft' | 'sending' | 'sent';
   sent_at: string | null;
   recipient_count: number | null;
