@@ -70,8 +70,8 @@ const collectContact = settings?.find((s) => s.key === 'suggestion_box_collect_c
       </div>
     )}
 
-    <div class="grid gap-1.5">
-      <label for="suggestion-files" class="text-xs text-ink-light">附件（選填，照片、影片、錄音、PDF、Word、Excel 等，最多 5 個檔案）</label>
+    <div class="grid gap-2 bg-cream border-2 border-ink p-3">
+      <label for="suggestion-files" class="text-xs font-semibold text-ink-light">附件（選填，照片、影片、錄音、PDF、Word、Excel 等，最多 5 個檔案）</label>
       <input
         type="file"
         id="suggestion-files"
@@ -79,7 +79,7 @@ const collectContact = settings?.find((s) => s.key === 'suggestion_box_collect_c
         multiple
         accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx"
         aria-label="上傳附件"
-        class="text-sm"
+        class="text-sm max-w-full"
       />
       <p id="suggestion-file-status" class="text-xs text-ink-light min-h-4"></p>
     </div>
@@ -105,6 +105,18 @@ const collectContact = settings?.find((s) => s.key === 'suggestion_box_collect_c
   const status = document.getElementById('suggestion-status');
   const filesInput = document.getElementById('suggestion-files') as HTMLInputElement | null;
   const fileStatus = document.getElementById('suggestion-file-status');
+
+  filesInput?.addEventListener('change', () => {
+    const count = filesInput.files?.length ?? 0;
+    if (!fileStatus) return;
+    if (count === 0) {
+      fileStatus.textContent = '';
+    } else if (count > MAX_FILES) {
+      fileStatus.textContent = `最多只能選 ${MAX_FILES} 個檔案，目前選了 ${count} 個。`;
+    } else {
+      fileStatus.textContent = `已選擇：${Array.from(filesInput.files ?? []).map((f) => f.name).join('、')}`;
+    }
+  });
 
   form?.addEventListener('submit', async (e) => {
     e.preventDefault();
