@@ -172,7 +172,7 @@ const theme = THEMES[survey.theme] ?? THEMES.clay;
               style="display: none;"
             >
               <p class="font-semibold text-ink mb-4 text-lg">
-                {q.question_text}
+                <span class="text-ink-light font-normal">{`Q${i + 1}.`}</span> {q.question_text}
                 {q.required && <span class="text-clay ml-1">*</span>}
               </p>
               {q.type === 'text' && (
