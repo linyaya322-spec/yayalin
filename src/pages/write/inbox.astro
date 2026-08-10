@@ -47,7 +47,10 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       <div id="thread-view" class="hidden">
         <div class="flex items-center justify-between mb-6">
           <button id="thread-back-btn" data-magnetic class="text-sm font-semibold text-clay hover:text-ink transition-colors">← 回收件匣</button>
-          <button id="delete-thread-btn" type="button" class="hidden px-3 py-1 text-xs font-semibold border-2 border-clay text-clay hover:bg-clay hover:text-cream transition-colors">刪除整個對話</button>
+          <div class="flex flex-wrap gap-2">
+            <button id="toggle-closed-btn" type="button" class="hidden px-3 py-1 text-xs font-semibold border-2 border-ink-light text-ink-light hover:bg-ink-light hover:text-cream transition-colors"></button>
+            <button id="delete-thread-btn" type="button" class="hidden px-3 py-1 text-xs font-semibold border-2 border-clay text-clay hover:bg-clay hover:text-cream transition-colors">刪除整個對話</button>
+          </div>
         </div>
 
         <div class="border-2 border-ink bg-cream p-4 grid gap-4">
@@ -57,6 +60,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
             <input type="text" id="compose-subject" placeholder="主旨" class="border-2 border-ink bg-cream px-3 py-2 text-sm focus:outline-none" />
           </div>
           <p id="thread-heading" class="hidden text-sm text-ink-light"></p>
+          <p id="thread-closed-badge" class="hidden text-xs text-clay"></p>
 
           <div id="thread-messages" class="grid gap-3"></div>
 
@@ -80,7 +84,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 
 <script>
   import { supabase } from '../../lib/supabase';
-  import type { InboxMessage } from '../../lib/supabase';
+  import type { InboxMessage, InboxThread } from '../../lib/supabase';
 
   const ADMIN_EMAIL = 'yayalin322@gmail.com';
 
@@ -154,7 +158,9 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
   const composeTo = document.getElementById('compose-to') as HTMLInputElement;
   const composeSubject = document.getElementById('compose-subject') as HTMLInputElement;
   const threadHeading = document.getElementById('thread-heading')!;
+  const threadClosedBadge = document.getElementById('thread-closed-badge')!;
   const deleteThreadBtn = document.getElementById('delete-thread-btn')!;
+  const toggleClosedBtn = document.getElementById('toggle-closed-btn')!;
   const threadMessages = document.getElementById('thread-messages')!;
   const replyText = document.getElementById('reply-text') as HTMLTextAreaElement;
   const replyFileInput = document.getElementById('reply-files') as HTMLInputElement;
@@ -163,8 +169,27 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
   const sendBtn = document.getElementById('send-btn')!;
 
   let allMessages: InboxMessage[] = [];
+  let threadStates = new Map<string, InboxThread>();
   let currentEmail: string | null = null; // null + composeFields visible = 新信
   let stagedFiles: File[] = [];
+
+  const fmtDate = (d: string) => new Date(d).toLocaleDateString('zh-Hant-TW');
+
+  // 結案 30 天後，這個對話串會被自動刪除（含附件），撤銷結案就會繼續保留。
+  function renderCloseControls(email: string) {
+    const state = threadStates.get(email.toLowerCase());
+    if (state?.case_closed_at) {
+      toggleClosedBtn.textContent = '撤銷結案';
+      toggleClosedBtn.className = 'px-3 py-1 text-xs font-semibold border-2 border-sage-dark text-sage-dark hover:bg-sage-dark hover:text-cream transition-colors';
+      const deleteDate = new Date(new Date(state.case_closed_at).getTime() + 30 * 24 * 60 * 60 * 1000);
+      threadClosedBadge.textContent = `已結案，將於 ${fmtDate(deleteDate.toISOString())} 自動刪除（含附件），如需保留請按「撤銷結案」`;
+      threadClosedBadge.classList.remove('hidden');
+    } else {
+      toggleClosedBtn.textContent = '結案';
+      toggleClosedBtn.className = 'px-3 py-1 text-xs font-semibold border-2 border-ink-light text-ink-light hover:bg-ink-light hover:text-cream transition-colors';
+      threadClosedBadge.classList.add('hidden');
+    }
+  }
 
   function threadsByEmail() {
     const map = new Map<string, InboxMessage[]>();
@@ -178,10 +203,17 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
   }
 
   async function loadThreads() {
-    const { data } = await supabase.from('inbox_messages').select('*').order('created_at', { ascending: true });
+    const [{ data }, { data: states }] = await Promise.all([
+      supabase.from('inbox_messages').select('*').order('created_at', { ascending: true }),
+      supabase.from('inbox_threads').select('*'),
+    ]);
     allMessages = (data ?? []) as InboxMessage[];
+    threadStates = new Map((states ?? []).map((s: InboxThread) => [s.contact_email.toLowerCase(), s]));
     renderList();
-    if (currentEmail) renderThread(currentEmail);
+    if (currentEmail) {
+      renderThread(currentEmail);
+      renderCloseControls(currentEmail);
+    }
   }
 
   function renderList() {
@@ -194,12 +226,13 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     groups.forEach(([email, msgs]) => {
       const last = msgs[msgs.length - 1];
       const subject = [...msgs].reverse().find((m) => m.subject)?.subject ?? '（無主旨）';
+      const isClosed = !!threadStates.get(email)?.case_closed_at;
       const li = document.createElement('li');
       li.className = 'border-2 border-ink bg-cream p-4 cursor-pointer hover:bg-sage-light transition-colors';
       li.innerHTML = `
         <div class="flex items-start justify-between gap-3">
           <div class="min-w-0">
-            <p class="text-xs text-ink-light">${esc(last.case_number ?? '')}</p>
+            <p class="text-xs text-ink-light">${esc(last.case_number ?? '')}${isClosed ? ' · 已結案' : ''}</p>
             <p class="font-semibold text-ink truncate">${esc(email)}</p>
             <p class="text-xs text-ink-light mt-0.5">${esc(subject)}</p>
             <p class="text-sm text-ink-light mt-1 truncate">${last.direction === 'outbound' ? '你：' : ''}${esc(last.body.slice(0, 60))}</p>
@@ -228,8 +261,10 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     currentEmail = email;
     composeFields.classList.add('hidden');
     deleteThreadBtn.classList.remove('hidden');
+    toggleClosedBtn.classList.remove('hidden');
     resetComposer();
     renderThread(email);
+    renderCloseControls(email);
     showView('thread');
   }
 
@@ -237,6 +272,8 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     currentEmail = null;
     composeFields.classList.remove('hidden');
     deleteThreadBtn.classList.add('hidden');
+    toggleClosedBtn.classList.add('hidden');
+    threadClosedBadge.classList.add('hidden');
     composeTo.value = '';
     composeSubject.value = '';
     threadHeading.classList.add('hidden');
@@ -336,6 +373,19 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     showView('list');
   });
 
+  toggleClosedBtn.addEventListener('click', async () => {
+    if (!currentEmail) return;
+    const isClosed = !!threadStates.get(currentEmail.toLowerCase())?.case_closed_at;
+    const { error } = await supabase
+      .from('inbox_threads')
+      .upsert({ contact_email: currentEmail.toLowerCase(), case_closed_at: isClosed ? null : new Date().toISOString() });
+    if (error) {
+      alert(`操作失敗：${error.message}`);
+      return;
+    }
+    await loadThreads();
+  });
+
   deleteThreadBtn.addEventListener('click', async () => {
     if (!currentEmail) return;
     if (!confirm(`確定要刪除跟 ${currentEmail} 的整個對話嗎？無法復原。`)) return;
@@ -349,6 +399,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       alert(`刪除失敗：${error.message}`);
       return;
     }
+    await supabase.from('inbox_threads').delete().eq('contact_email', currentEmail.toLowerCase());
     currentEmail = null;
     await loadThreads();
     showView('list');

@@ -48,6 +48,7 @@ export interface ContactSubmission {
   email: string;
   message: string;
   case_number: string | null;
+  case_closed_at: string | null;
   created_at: string;
 }
 
@@ -64,6 +65,7 @@ export interface StudentSuggestion {
   reply_sent_at: string | null;
   reply_attachment_paths: string[] | null;
   case_number: string | null;
+  case_closed_at: string | null;
   created_at: string;
 }
 
@@ -89,6 +91,11 @@ export interface InboxMessage {
   sent_at: string | null;
   case_number: string | null;
   created_at: string;
+}
+
+export interface InboxThread {
+  contact_email: string;
+  case_closed_at: string | null;
 }
 
 export interface AppSetting {
@@ -119,6 +126,7 @@ export interface Survey {
   access_password_expires_at: string | null;
   qr_token: string | null;
   qr_token_expires_at: string | null;
+  case_closed_at: string | null;
   created_at: string;
 }
 

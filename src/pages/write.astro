@@ -283,6 +283,19 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     return div.innerHTML;
   }
 
+  // 結案 30 天後會被自動清除（含附件），撤銷結案就會繼續保留。
+  function closeToggleHtml(caseClosedAt: string | null) {
+    return caseClosedAt
+      ? `<button type="button" data-toggle-closed class="px-3 py-1 text-xs font-semibold border-2 border-sage-dark text-sage-dark hover:bg-sage-dark hover:text-cream transition-colors">撤銷結案</button>`
+      : `<button type="button" data-toggle-closed class="px-3 py-1 text-xs font-semibold border-2 border-ink-light text-ink-light hover:bg-ink-light hover:text-cream transition-colors">結案</button>`;
+  }
+
+  function closedBadgeHtml(caseClosedAt: string | null) {
+    if (!caseClosedAt) return '';
+    const deleteDate = new Date(new Date(caseClosedAt).getTime() + 30 * 24 * 60 * 60 * 1000);
+    return `<p class="text-xs text-clay">已結案，將於 ${fmtDate(deleteDate.toISOString())} 自動刪除（含附件），如需保留請按「撤銷結案」</p>`;
+  }
+
   // Supabase Storage object keys only accept ASCII, so the original filename
   // (often in Chinese) can't be part of the storage path — keep the path to
   // a UUID + a safe extension, and use the real filename separately wherever
@@ -650,9 +663,18 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         <div class="min-w-0">
           <p class="text-xs text-ink-light mb-1">${[c.case_number, fmtDate(c.created_at), c.name, c.email].filter(Boolean).map(esc).join(' · ')}</p>
           <p class="text-ink whitespace-pre-wrap break-words">${esc(c.message)}</p>
+          ${closedBadgeHtml(c.case_closed_at)}
         </div>
-        <button data-delete class="px-3 py-1 text-xs font-semibold border-2 border-clay text-clay hover:bg-clay hover:text-cream transition-colors shrink-0">刪除</button>
+        <div class="flex flex-wrap gap-2 shrink-0">
+          ${closeToggleHtml(c.case_closed_at)}
+          <button data-delete class="px-3 py-1 text-xs font-semibold border-2 border-clay text-clay hover:bg-clay hover:text-cream transition-colors">刪除</button>
+        </div>
       `;
+      li.querySelector('[data-toggle-closed]')?.addEventListener('click', async () => {
+        const nextValue = c.case_closed_at ? null : new Date().toISOString();
+        await supabase.from('contact_submissions').update({ case_closed_at: nextValue }).eq('id', c.id);
+        loadContact();
+      });
       li.querySelector('[data-delete]')?.addEventListener('click', async () => {
         if (!confirm('確定要刪除這則訊息嗎？')) return;
         await supabase.from('contact_submissions').delete().eq('id', c.id);
@@ -816,11 +838,20 @@ import BaseLayout from '../layouts/BaseLayout.astro';
             <p class="text-xs text-ink-light mb-1">${meta}</p>
             <p class="text-ink whitespace-pre-wrap break-words">${esc(s.message)}</p>
           </div>
-          <button data-delete class="px-3 py-1 text-xs font-semibold border-2 border-clay text-clay hover:bg-clay hover:text-cream transition-colors shrink-0">刪除</button>
+          <div class="flex flex-wrap gap-2 shrink-0">
+            ${closeToggleHtml(s.case_closed_at)}
+            <button data-delete class="px-3 py-1 text-xs font-semibold border-2 border-clay text-clay hover:bg-clay hover:text-cream transition-colors">刪除</button>
+          </div>
         </div>
+        ${closedBadgeHtml(s.case_closed_at)}
         ${attachmentsHtml ? `<div class="flex flex-wrap gap-2">${attachmentsHtml}</div>` : ''}
         ${replyHtml}
       `;
+      li.querySelector('[data-toggle-closed]')?.addEventListener('click', async () => {
+        const nextValue = s.case_closed_at ? null : new Date().toISOString();
+        await supabase.from('student_suggestions').update({ case_closed_at: nextValue }).eq('id', s.id);
+        loadSuggestions();
+      });
       li.querySelectorAll<HTMLButtonElement>('[data-view-attachment]').forEach((btn) => {
         btn.addEventListener('click', async () => {
           const path = btn.dataset.viewAttachment!;

@@ -76,6 +76,7 @@ create table if not exists contact_submissions (
   email text not null,
   message text not null,
   case_number text unique,
+  case_closed_at timestamptz,
   created_at timestamptz not null default now()
 );
 
@@ -341,6 +342,7 @@ create table if not exists student_suggestions (
   reply_sent_at timestamptz,
   reply_attachment_paths text[],
   case_number text unique,
+  case_closed_at timestamptz,
   created_at timestamptz not null default now()
 );
 

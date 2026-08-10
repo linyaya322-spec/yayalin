@@ -298,6 +298,19 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 
   const fmtDate = (d: string) => new Date(d).toLocaleDateString('zh-Hant-TW');
 
+  // 結案 30 天後，這份問卷的所有回覆會被自動清空（問卷本身跟題目會保留），撤銷結案就會繼續保留。
+  function closeToggleHtml(caseClosedAt: string | null) {
+    return caseClosedAt
+      ? `<button type="button" data-toggle-closed class="px-3 py-1 text-xs font-semibold border-2 border-sage-dark text-sage-dark hover:bg-sage-dark hover:text-cream transition-colors">撤銷結案</button>`
+      : `<button type="button" data-toggle-closed class="px-3 py-1 text-xs font-semibold border-2 border-ink-light text-ink-light hover:bg-ink-light hover:text-cream transition-colors">結案</button>`;
+  }
+
+  function closedBadgeHtml(caseClosedAt: string | null) {
+    if (!caseClosedAt) return '';
+    const deleteDate = new Date(new Date(caseClosedAt).getTime() + 30 * 24 * 60 * 60 * 1000);
+    return `<p class="text-xs text-clay mt-1">已結案，將於 ${fmtDate(deleteDate.toISOString())} 自動清空所有回覆，如需保留請按「撤銷結案」</p>`;
+  }
+
   function toLocalInputValue(iso: string | null) {
     if (!iso) return '';
     const d = new Date(iso);
@@ -340,16 +353,23 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
         <div class="min-w-0">
           <p class="text-xs text-ink-light mb-1">${fmtDate(survey.created_at)} · ${scheduleLabel}</p>
           <p class="font-semibold text-ink">${esc(survey.title)}</p>
+          ${closedBadgeHtml(survey.case_closed_at)}
         </div>
         <div class="flex flex-wrap gap-2 shrink-0">
           <button data-stats class="px-3 py-1 text-xs font-semibold border-2 border-sage-dark text-sage-dark hover:bg-sage-dark hover:text-cream transition-colors">回覆統計</button>
           <button data-edit class="px-3 py-1 text-xs font-semibold border-2 border-ink hover:bg-ink hover:text-cream transition-colors">編輯</button>
+          ${closeToggleHtml(survey.case_closed_at)}
           <button data-clear class="px-3 py-1 text-xs font-semibold border-2 border-butter text-clay hover:bg-butter hover:text-ink transition-colors">清空回覆</button>
           <button data-delete class="px-3 py-1 text-xs font-semibold border-2 border-clay text-clay hover:bg-clay hover:text-cream transition-colors">刪除問卷</button>
         </div>
       `;
       li.querySelector('[data-edit]')?.addEventListener('click', () => openEditView(survey));
       li.querySelector('[data-stats]')?.addEventListener('click', () => openStatsView(survey));
+      li.querySelector('[data-toggle-closed]')?.addEventListener('click', async () => {
+        const nextValue = survey.case_closed_at ? null : new Date().toISOString();
+        await supabase.from('surveys').update({ case_closed_at: nextValue }).eq('id', survey.id);
+        loadSurveyList();
+      });
       li.querySelector('[data-clear]')?.addEventListener('click', async () => {
         if (!confirm(`確定要清空「${survey.title}」的所有填答資料嗎？問卷本身跟題目會保留，只刪除回覆紀錄，無法復原。`)) return;
         await supabase.from('survey_responses').delete().eq('survey_id', survey.id);
