@@ -641,6 +641,8 @@ create table if not exists case_number_counters (
 create or replace function generate_case_number(p_day date default current_date)
 returns text
 language plpgsql
+security definer
+set search_path = public
 as $$
 declare
   v_seq integer;
@@ -655,6 +657,8 @@ $$;
 create or replace function assign_case_number_new_case()
 returns trigger
 language plpgsql
+security definer
+set search_path = public
 as $$
 begin
   if new.case_number is null then
@@ -676,6 +680,8 @@ create trigger contact_submissions_case_number
 create or replace function assign_inbox_case_number()
 returns trigger
 language plpgsql
+security definer
+set search_path = public
 as $$
 declare
   v_existing text;
