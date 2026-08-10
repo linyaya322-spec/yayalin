@@ -280,6 +280,10 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     threadMessages.querySelectorAll<HTMLButtonElement>('[data-delete-message]').forEach((btn) => {
       btn.addEventListener('click', async () => {
         if (!confirm('確定要刪除這則訊息嗎？無法復原。')) return;
+        const target = msgs.find((m) => m.id === btn.dataset.deleteMessage);
+        if (target?.attachment_paths?.length) {
+          await supabase.storage.from('suggestion-files').remove(target.attachment_paths);
+        }
         const { error } = await supabase.from('inbox_messages').delete().eq('id', btn.dataset.deleteMessage);
         if (error) {
           alert(`刪除失敗：${error.message}`);
@@ -335,6 +339,11 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
   deleteThreadBtn.addEventListener('click', async () => {
     if (!currentEmail) return;
     if (!confirm(`確定要刪除跟 ${currentEmail} 的整個對話嗎？無法復原。`)) return;
+    const threadMsgs = threadsByEmail().get(currentEmail.toLowerCase()) ?? [];
+    const allPaths = threadMsgs.flatMap((m) => m.attachment_paths ?? []);
+    if (allPaths.length) {
+      await supabase.storage.from('suggestion-files').remove(allPaths);
+    }
     const { error } = await supabase.from('inbox_messages').delete().ilike('contact_email', currentEmail);
     if (error) {
       alert(`刪除失敗：${error.message}`);

@@ -950,6 +950,10 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       });
       li.querySelector('[data-delete]')?.addEventListener('click', async () => {
         if (!confirm('確定要刪除這則意見嗎？')) return;
+        const allPaths = [...(s.attachment_paths ?? []), ...thread.flatMap((m: any) => m.attachment_paths ?? [])];
+        if (allPaths.length) {
+          await supabase.storage.from('suggestion-files').remove(allPaths);
+        }
         await supabase.from('student_suggestions').delete().eq('id', s.id);
         loadSuggestions();
       });
