@@ -58,12 +58,16 @@
     if (submitBtn) submitBtn.disabled = true;
     if (status) status.textContent = '送出中...';
 
-    const { error } = await supabase.from('contact_submissions').insert({ name, email, message });
+    const { data: caseNumber, error } = await supabase.rpc('submit_contact', {
+      p_name: name,
+      p_email: email,
+      p_message: message,
+    });
 
     if (error) {
       if (status) status.textContent = '送出失敗，請稍後再試一次，或直接寄 Email 給我。';
     } else {
-      if (status) status.textContent = '已收到你的訊息，我會盡快回覆！';
+      if (status) status.textContent = `已收到你的訊息，我會盡快回覆！你的案件編號是 ${caseNumber}，也會寄一封確認信到你的信箱。`;
       form.reset();
     }
     if (submitBtn) submitBtn.disabled = false;

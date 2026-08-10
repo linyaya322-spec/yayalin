@@ -705,3 +705,51 @@ $$;
 create trigger inbox_messages_case_number
   before insert on inbox_messages
   for each row execute function assign_inbox_case_number();
+
+-- ---------- 送出用的 RPC（讓訪客送出後能拿到案件編號） ----------
+create or replace function submit_suggestion(
+  p_message text,
+  p_school text,
+  p_grade text,
+  p_contact_name text,
+  p_contact_email text,
+  p_attachment_paths text[]
+)
+returns text
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_case_number text;
+begin
+  insert into student_suggestions (message, school, grade, contact_name, contact_email, attachment_paths)
+  values (p_message, p_school, p_grade, p_contact_name, p_contact_email, p_attachment_paths)
+  returning case_number into v_case_number;
+  return v_case_number;
+end;
+$$;
+
+grant execute on function submit_suggestion(text, text, text, text, text, text[]) to anon, authenticated;
+
+create or replace function submit_contact(
+  p_name text,
+  p_email text,
+  p_message text
+)
+returns text
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_case_number text;
+begin
+  insert into contact_submissions (name, email, message)
+  values (p_name, p_email, p_message)
+  returning case_number into v_case_number;
+  return v_case_number;
+end;
+$$;
+
+grant execute on function submit_contact(text, text, text) to anon, authenticated;

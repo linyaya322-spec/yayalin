@@ -191,19 +191,19 @@ const collectContact = settings?.find((s) => s.key === 'suggestion_box_collect_c
     const attachmentPaths = uploadResults.map((r) => r.path);
     if (fileStatus) fileStatus.textContent = '';
 
-    const { error } = await supabase.from('student_suggestions').insert({
-      message,
-      school: school || null,
-      grade: grade || null,
-      contact_name: contactName || null,
-      contact_email: contactEmail || null,
-      attachment_paths: attachmentPaths.length ? attachmentPaths : null,
+    const { data: caseNumber, error } = await supabase.rpc('submit_suggestion', {
+      p_message: message,
+      p_school: school || null,
+      p_grade: grade || null,
+      p_contact_name: contactName || null,
+      p_contact_email: contactEmail || null,
+      p_attachment_paths: attachmentPaths.length ? attachmentPaths : null,
     });
 
     if (error) {
       if (status) status.textContent = '送出失敗，請稍後再試一次。';
     } else {
-      if (status) status.textContent = '已送出，謝謝你的意見！';
+      if (status) status.textContent = `已送出，謝謝你的意見！你的案件編號是 ${caseNumber}，請留存以便之後查詢${contactEmail ? '（也會寄一封確認信到你的信箱）' : ''}。`;
       form.reset();
       stagedFiles = [];
       renderStagedFiles();
