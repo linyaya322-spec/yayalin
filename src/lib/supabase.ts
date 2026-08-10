@@ -47,6 +47,7 @@ export interface ContactSubmission {
   name: string;
   email: string;
   message: string;
+  case_number: string | null;
   created_at: string;
 }
 
@@ -62,6 +63,7 @@ export interface StudentSuggestion {
   reply_status: 'pending' | 'sent' | null;
   reply_sent_at: string | null;
   reply_attachment_paths: string[] | null;
+  case_number: string | null;
   created_at: string;
 }
 
@@ -85,6 +87,7 @@ export interface InboxMessage {
   attachment_paths: string[] | null;
   status: 'pending' | 'sent';
   sent_at: string | null;
+  case_number: string | null;
   created_at: string;
 }
 

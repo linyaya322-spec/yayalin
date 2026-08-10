@@ -648,7 +648,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       li.className = 'border-2 border-ink bg-cream p-4 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3';
       li.innerHTML = `
         <div class="min-w-0">
-          <p class="text-xs text-ink-light mb-1">${fmtDate(c.created_at)} · ${esc(c.name)} · ${esc(c.email)}</p>
+          <p class="text-xs text-ink-light mb-1">${[c.case_number, fmtDate(c.created_at), c.name, c.email].filter(Boolean).map(esc).join(' · ')}</p>
           <p class="text-ink whitespace-pre-wrap break-words">${esc(c.message)}</p>
         </div>
         <button data-delete class="px-3 py-1 text-xs font-semibold border-2 border-clay text-clay hover:bg-clay hover:text-cream transition-colors shrink-0">刪除</button>
@@ -756,7 +756,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     (data ?? []).forEach((s) => {
       const li = document.createElement('li');
       li.className = 'border-2 border-ink bg-cream p-4 grid gap-3';
-      const meta = [fmtDate(s.created_at), s.school, s.grade, s.contact_name].filter(Boolean).map(esc).join(' · ');
+      const meta = [s.case_number, fmtDate(s.created_at), s.school, s.grade, s.contact_name].filter(Boolean).map(esc).join(' · ');
       const attachmentChip = (path: string, label: string, deleteAttr?: string) => `
         <span class="inline-flex border-2 border-ink">
           <button type="button" data-view-attachment="${esc(path)}" class="px-2.5 py-1 text-xs font-semibold hover:bg-ink hover:text-cream transition-colors">📎 ${label}</button>

@@ -75,6 +75,7 @@ create table if not exists contact_submissions (
   name text not null,
   email text not null,
   message text not null,
+  case_number text unique,
   created_at timestamptz not null default now()
 );
 
@@ -339,6 +340,7 @@ create table if not exists student_suggestions (
   reply_status text check (reply_status in ('pending', 'sent')),
   reply_sent_at timestamptz,
   reply_attachment_paths text[],
+  case_number text unique,
   created_at timestamptz not null default now()
 );
 
@@ -619,6 +621,7 @@ create table if not exists inbox_messages (
   attachment_paths text[],
   status text not null default 'sent' check (status in ('pending', 'sent')),
   sent_at timestamptz,
+  case_number text,
   created_at timestamptz not null default now()
 );
 
@@ -628,3 +631,71 @@ create policy "only admin can access inbox_messages"
   on inbox_messages for all
   using (auth.jwt() ->> 'email' = 'yayalin322@gmail.com')
   with check (auth.jwt() ->> 'email' = 'yayalin322@gmail.com');
+
+-- ---------- 案件編號（學生意見箱、聯絡訊息、收件匣） ----------
+create table if not exists case_number_counters (
+  day date primary key,
+  seq integer not null default 0
+);
+
+create or replace function generate_case_number(p_day date default current_date)
+returns text
+language plpgsql
+as $$
+declare
+  v_seq integer;
+begin
+  insert into case_number_counters (day, seq) values (p_day, 1)
+  on conflict (day) do update set seq = case_number_counters.seq + 1
+  returning seq into v_seq;
+  return to_char(p_day, 'YYYYMMDD') || '-' || lpad(v_seq::text, 3, '0');
+end;
+$$;
+
+create or replace function assign_case_number_new_case()
+returns trigger
+language plpgsql
+as $$
+begin
+  if new.case_number is null then
+    new.case_number := generate_case_number(coalesce(new.created_at::date, current_date));
+  end if;
+  return new;
+end;
+$$;
+
+create trigger student_suggestions_case_number
+  before insert on student_suggestions
+  for each row execute function assign_case_number_new_case();
+
+create trigger contact_submissions_case_number
+  before insert on contact_submissions
+  for each row execute function assign_case_number_new_case();
+
+-- 收件匣是同一個對話串（同一個 email）共用一個案件編號，不是每筆訊息各給一個
+create or replace function assign_inbox_case_number()
+returns trigger
+language plpgsql
+as $$
+declare
+  v_existing text;
+begin
+  if new.case_number is null then
+    select case_number into v_existing
+    from inbox_messages
+    where lower(contact_email) = lower(new.contact_email) and case_number is not null
+    order by created_at asc
+    limit 1;
+    if v_existing is not null then
+      new.case_number := v_existing;
+    else
+      new.case_number := generate_case_number(coalesce(new.created_at::date, current_date));
+    end if;
+  end if;
+  return new;
+end;
+$$;
+
+create trigger inbox_messages_case_number
+  before insert on inbox_messages
+  for each row execute function assign_inbox_case_number();
