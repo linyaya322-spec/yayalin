@@ -76,6 +76,18 @@ export interface SuggestionMessage {
   created_at: string;
 }
 
+export interface InboxMessage {
+  id: string;
+  contact_email: string;
+  subject: string | null;
+  direction: 'outbound' | 'inbound';
+  body: string;
+  attachment_paths: string[] | null;
+  status: 'pending' | 'sent';
+  sent_at: string | null;
+  created_at: string;
+}
+
 export interface AppSetting {
   key: string;
   value: string;

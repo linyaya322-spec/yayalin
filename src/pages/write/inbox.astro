@@ -1,0 +1,376 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="收件匣" description="站長專用收件匣" noindex>
+  <section class="max-w-3xl mx-auto px-6 pt-16 pb-24">
+    <div id="login-view">
+      <p class="inline-block bg-ink text-cream text-sm font-medium px-3 py-1 mb-6">收件匣</p>
+      <h1 class="font-display text-3xl text-ink mb-6">登入管理後台</h1>
+      <form id="login-form" class="grid gap-3 max-w-sm">
+        <input
+          type="email"
+          id="login-email"
+          required
+          placeholder="yayalin322@gmail.com"
+          class="border-2 border-ink bg-cream px-4 py-2.5 text-ink placeholder:text-ink-light/70 focus:outline-none focus:bg-sage-light"
+        />
+        <button type="submit" class="px-6 py-2.5 bg-clay text-cream text-sm font-semibold hover:bg-ink transition-colors">
+          寄送登入連結
+        </button>
+        <p id="login-status" class="text-sm min-h-5 text-ink-light"></p>
+      </form>
+    </div>
+
+    <div id="admin-view" class="hidden">
+      <div class="flex items-center justify-between mb-8">
+        <div>
+          <a href="/write" data-magnetic class="text-sm font-semibold text-clay hover:text-ink transition-colors">← 回主控台</a>
+          <h1 class="font-display text-3xl text-ink mt-2">收件匣</h1>
+          <p class="text-sm text-ink-light mt-1">寄到 contact@yayalin.com、但沒有意見箱編號的信，以及你主動寄出的信</p>
+        </div>
+        <button id="logout-btn" class="px-4 py-1.5 border-2 border-ink text-sm font-semibold hover:bg-ink hover:text-cream transition-colors">
+          登出
+        </button>
+      </div>
+
+      <!-- 對話串列表 -->
+      <div id="list-view">
+        <button id="compose-btn" data-magnetic class="mb-6 px-6 py-2.5 bg-clay text-cream text-sm font-semibold hover:bg-ink transition-colors">
+          ✉️ 寫新信
+        </button>
+        <ul id="thread-list" class="grid gap-3"></ul>
+        <p id="empty-hint" class="hidden text-sm text-ink-light">目前沒有信件。</p>
+      </div>
+
+      <!-- 對話串詳細內容 -->
+      <div id="thread-view" class="hidden">
+        <button id="thread-back-btn" data-magnetic class="mb-6 text-sm font-semibold text-clay hover:text-ink transition-colors">← 回收件匣</button>
+
+        <div class="border-2 border-ink bg-cream p-4 grid gap-4">
+          <!-- 新信才會顯示，既有對話串則顯示收件人 -->
+          <div id="compose-fields" class="hidden grid gap-2">
+            <input type="email" id="compose-to" placeholder="收件人 email" class="border-2 border-ink bg-cream px-3 py-2 text-sm focus:outline-none" />
+            <input type="text" id="compose-subject" placeholder="主旨" class="border-2 border-ink bg-cream px-3 py-2 text-sm focus:outline-none" />
+          </div>
+          <p id="thread-heading" class="hidden text-sm text-ink-light"></p>
+
+          <div id="thread-messages" class="grid gap-3"></div>
+
+          <div class="border-t-2 border-ink/10 pt-3 grid gap-2">
+            <textarea id="reply-text" placeholder="輸入內容（純文字）..." rows="4" class="border-2 border-ink bg-cream px-3 py-2 text-sm focus:outline-none resize-none"></textarea>
+            <div class="grid gap-1.5 bg-cream border-2 border-ink p-3">
+              <label class="text-xs font-semibold text-ink-light">附件（選填，會附上下載連結，最多 5 個檔案、總大小 3MB，可以分次選取）</label>
+              <div id="reply-staged-list" class="flex flex-wrap gap-2"></div>
+              <input type="file" id="reply-files" multiple accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx" class="text-xs" />
+              <p id="reply-file-status" class="text-xs text-ink-light min-h-4"></p>
+            </div>
+            <button id="send-btn" type="button" class="justify-self-start px-5 py-2 text-sm font-semibold border-2 border-sage-dark text-sage-dark hover:bg-sage-dark hover:text-cream transition-colors">
+              ✉️ 寄出
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+
+<script>
+  import { supabase } from '../../lib/supabase';
+  import type { InboxMessage } from '../../lib/supabase';
+
+  const ADMIN_EMAIL = 'yayalin322@gmail.com';
+
+  const loginView = document.getElementById('login-view')!;
+  const adminView = document.getElementById('admin-view')!;
+  const loginForm = document.getElementById('login-form') as HTMLFormElement;
+  const loginEmail = document.getElementById('login-email') as HTMLInputElement;
+  const loginStatus = document.getElementById('login-status')!;
+  const logoutBtn = document.getElementById('logout-btn')!;
+
+  loginForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    loginStatus.textContent = '寄送中...';
+    const { error } = await supabase.auth.signInWithOtp({
+      email: loginEmail.value.trim(),
+      options: { shouldCreateUser: false, emailRedirectTo: window.location.origin + '/write/inbox' },
+    });
+    loginStatus.textContent = error
+      ? '寄送失敗，請確認 Email 是否正確。'
+      : '登入連結已寄出，請到信箱點連結（可能在垃圾信件夾）。';
+  });
+
+  logoutBtn.addEventListener('click', async () => {
+    await supabase.auth.signOut();
+  });
+
+  async function renderForSession() {
+    const { data } = await supabase.auth.getSession();
+    const email = data.session?.user.email;
+    if (email === ADMIN_EMAIL) {
+      loginView.classList.add('hidden');
+      adminView.classList.remove('hidden');
+      loadThreads();
+    } else {
+      loginView.classList.remove('hidden');
+      adminView.classList.add('hidden');
+    }
+  }
+
+  supabase.auth.onAuthStateChange(() => renderForSession());
+  renderForSession();
+
+  function esc(value: string) {
+    const div = document.createElement('div');
+    div.textContent = value ?? '';
+    return div.innerHTML;
+  }
+
+  function safeExt(name: string): string {
+    const match = name.match(/\.([a-zA-Z0-9]{1,10})$/);
+    return match ? `.${match[1].toLowerCase()}` : '';
+  }
+
+  const fmtDateTime = (d: string) =>
+    new Date(d).toLocaleString('zh-Hant-TW', { dateStyle: 'medium', timeStyle: 'short' });
+
+  function attachmentChip(path: string, label: string) {
+    return `
+      <span class="inline-flex border-2 border-ink">
+        <button type="button" data-view-attachment="${esc(path)}" class="px-2.5 py-1 text-xs font-semibold hover:bg-ink hover:text-cream transition-colors">📎 ${label}</button>
+      </span>
+    `;
+  }
+
+  // ---------- 視圖切換 + 資料 ----------
+  const listView = document.getElementById('list-view')!;
+  const threadView = document.getElementById('thread-view')!;
+  const threadList = document.getElementById('thread-list')!;
+  const emptyHint = document.getElementById('empty-hint')!;
+  const composeFields = document.getElementById('compose-fields')!;
+  const composeTo = document.getElementById('compose-to') as HTMLInputElement;
+  const composeSubject = document.getElementById('compose-subject') as HTMLInputElement;
+  const threadHeading = document.getElementById('thread-heading')!;
+  const threadMessages = document.getElementById('thread-messages')!;
+  const replyText = document.getElementById('reply-text') as HTMLTextAreaElement;
+  const replyFileInput = document.getElementById('reply-files') as HTMLInputElement;
+  const replyStagedList = document.getElementById('reply-staged-list')!;
+  const replyFileStatus = document.getElementById('reply-file-status')!;
+  const sendBtn = document.getElementById('send-btn')!;
+
+  let allMessages: InboxMessage[] = [];
+  let currentEmail: string | null = null; // null + composeFields visible = 新信
+  let stagedFiles: File[] = [];
+
+  function threadsByEmail() {
+    const map = new Map<string, InboxMessage[]>();
+    allMessages.forEach((m) => {
+      const key = m.contact_email.toLowerCase();
+      const arr = map.get(key) ?? [];
+      arr.push(m);
+      map.set(key, arr);
+    });
+    return map;
+  }
+
+  async function loadThreads() {
+    const { data } = await supabase.from('inbox_messages').select('*').order('created_at', { ascending: true });
+    allMessages = (data ?? []) as InboxMessage[];
+    renderList();
+    if (currentEmail) renderThread(currentEmail);
+  }
+
+  function renderList() {
+    const map = threadsByEmail();
+    const groups = Array.from(map.entries()).sort(
+      (a, b) => new Date(b[1][b[1].length - 1].created_at).getTime() - new Date(a[1][a[1].length - 1].created_at).getTime()
+    );
+    threadList.innerHTML = '';
+    emptyHint.classList.toggle('hidden', groups.length > 0);
+    groups.forEach(([email, msgs]) => {
+      const last = msgs[msgs.length - 1];
+      const subject = [...msgs].reverse().find((m) => m.subject)?.subject ?? '（無主旨）';
+      const li = document.createElement('li');
+      li.className = 'border-2 border-ink bg-cream p-4 cursor-pointer hover:bg-sage-light transition-colors';
+      li.innerHTML = `
+        <div class="flex items-start justify-between gap-3">
+          <div class="min-w-0">
+            <p class="font-semibold text-ink truncate">${esc(email)}</p>
+            <p class="text-xs text-ink-light mt-0.5">${esc(subject)}</p>
+            <p class="text-sm text-ink-light mt-1 truncate">${last.direction === 'outbound' ? '你：' : ''}${esc(last.body.slice(0, 60))}</p>
+          </div>
+          <p class="text-xs text-ink-light shrink-0">${fmtDateTime(last.created_at)}</p>
+        </div>
+      `;
+      li.addEventListener('click', () => openThread(email));
+      threadList.appendChild(li);
+    });
+  }
+
+  function showView(view: 'list' | 'thread') {
+    listView.classList.toggle('hidden', view !== 'list');
+    threadView.classList.toggle('hidden', view !== 'thread');
+  }
+
+  function resetComposer() {
+    replyText.value = '';
+    stagedFiles = [];
+    renderStagedFiles();
+    replyFileStatus.textContent = '';
+  }
+
+  function openThread(email: string) {
+    currentEmail = email;
+    composeFields.classList.add('hidden');
+    resetComposer();
+    renderThread(email);
+    showView('thread');
+  }
+
+  function openCompose() {
+    currentEmail = null;
+    composeFields.classList.remove('hidden');
+    composeTo.value = '';
+    composeSubject.value = '';
+    threadHeading.classList.add('hidden');
+    threadMessages.innerHTML = '';
+    resetComposer();
+    showView('thread');
+  }
+
+  function renderThread(email: string) {
+    const msgs = threadsByEmail().get(email.toLowerCase()) ?? [];
+    threadHeading.classList.remove('hidden');
+    threadHeading.textContent = `與 ${email} 的對話`;
+    threadMessages.innerHTML = msgs
+      .map((m) => {
+        const isOut = m.direction === 'outbound';
+        const atts = (m.attachment_paths ?? []).map((p, i) => attachmentChip(p, `附件 ${i + 1}`)).join('');
+        return `
+        <div class="border-2 border-ink p-3 text-sm ${isOut ? 'bg-sage-light' : 'bg-butter-light'}">
+          <p class="text-xs text-ink-light mb-1">${isOut ? '你' : '對方'} · ${fmtDateTime(m.created_at)}${m.status === 'pending' ? '（寄送中...）' : ''}</p>
+          <p class="text-ink break-words">${isOut ? m.body.replace(/\n/g, '<br>') : esc(m.body).replace(/\n/g, '<br>')}</p>
+          ${atts ? `<div class="flex flex-wrap gap-2 mt-2">${atts}</div>` : ''}
+        </div>
+      `;
+      })
+      .join('');
+    threadMessages.querySelectorAll<HTMLButtonElement>('[data-view-attachment]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const path = btn.dataset.viewAttachment!;
+        const { data: signed, error } = await supabase.storage.from('suggestion-files').createSignedUrl(path, 300);
+        if (error || !signed) {
+          alert(`無法取得附件連結：${error?.message ?? '未知錯誤'}`);
+          return;
+        }
+        window.open(signed.signedUrl, '_blank');
+      });
+    });
+  }
+
+  function renderStagedFiles() {
+    replyStagedList.innerHTML = stagedFiles
+      .map(
+        (f, i) => `
+        <span class="inline-flex items-center gap-1.5 border-2 border-ink px-2 py-1 text-xs">
+          ${esc(f.name)}
+          <button type="button" data-remove-staged="${i}" class="text-clay font-bold hover:underline">✕</button>
+        </span>
+      `
+      )
+      .join('');
+    replyStagedList.querySelectorAll<HTMLButtonElement>('[data-remove-staged]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        stagedFiles.splice(Number(btn.dataset.removeStaged), 1);
+        renderStagedFiles();
+      });
+    });
+  }
+
+  replyFileInput.addEventListener('change', () => {
+    const newFiles = Array.from(replyFileInput.files ?? []);
+    if (stagedFiles.length + newFiles.length > 5) {
+      alert('附件最多只能選 5 個檔案。');
+    } else {
+      stagedFiles.push(...newFiles);
+    }
+    replyFileInput.value = '';
+    renderStagedFiles();
+  });
+
+  document.getElementById('compose-btn')?.addEventListener('click', openCompose);
+  document.getElementById('thread-back-btn')?.addEventListener('click', () => {
+    currentEmail = null;
+    showView('list');
+  });
+
+  sendBtn.addEventListener('click', async () => {
+    const isNew = !currentEmail;
+    const toEmail = (isNew ? composeTo.value : currentEmail!).trim();
+    const subject = isNew ? composeSubject.value.trim() || null : null;
+    const body = replyText.value.trim();
+
+    if (isNew && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(toEmail)) {
+      alert('請輸入正確的收件人 email。');
+      return;
+    }
+    if (!body) {
+      alert('請先輸入內容。');
+      return;
+    }
+    const totalBytes = stagedFiles.reduce((sum, f) => sum + f.size, 0);
+    if (totalBytes > 3 * 1024 * 1024) {
+      alert('附件總大小最多 3MB，請減少或壓縮檔案。');
+      return;
+    }
+    if (!confirm(`確定要把這封信寄給 ${toEmail} 嗎？`)) return;
+
+    let finalBody = body;
+    if (stagedFiles.length) replyFileStatus.textContent = `上傳中：${stagedFiles.length} 個檔案...`;
+    const uploadResults = await Promise.all(
+      stagedFiles.map((file) => {
+        const path = `inbox-${crypto.randomUUID()}${safeExt(file.name)}`;
+        return supabase.storage
+          .from('suggestion-files')
+          .upload(path, file)
+          .then(({ error }) => ({ path, name: file.name, error }));
+      })
+    );
+    const failedUpload = uploadResults.find((r) => r.error);
+    if (failedUpload) {
+      alert(`附件上傳失敗：${failedUpload.error!.message}`);
+      replyFileStatus.textContent = '';
+      return;
+    }
+    const attachmentPaths = uploadResults.map((r) => r.path);
+    replyFileStatus.textContent = '';
+
+    if (uploadResults.length) {
+      const links = await Promise.all(
+        uploadResults.map(async ({ path, name }) => {
+          const { data: signed } = await supabase.storage.from('suggestion-files').createSignedUrl(path, 60 * 60 * 24 * 7);
+          return `<a href="${signed?.signedUrl ?? '#'}">${esc(name)}</a>`;
+        })
+      );
+      finalBody += '\n\n附件（連結 7 天內有效）：\n' + links.join('\n');
+    }
+
+    const { error } = await supabase.from('inbox_messages').insert({
+      contact_email: toEmail,
+      subject,
+      direction: 'outbound',
+      body: finalBody,
+      attachment_paths: attachmentPaths.length ? attachmentPaths : null,
+      status: 'pending',
+    });
+    if (error) {
+      alert(`寄送失敗：${error.message}`);
+      return;
+    }
+    alert('已開始寄送，稍後重新整理這頁查看寄送結果。');
+    currentEmail = toEmail;
+    composeFields.classList.add('hidden');
+    await loadThreads();
+    openThread(toEmail);
+  });
+</script>

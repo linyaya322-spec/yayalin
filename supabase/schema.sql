@@ -608,3 +608,23 @@ create policy "only admin can access newsletters"
   on newsletters for all
   using (auth.jwt() ->> 'email' = 'yayalin322@gmail.com')
   with check (auth.jwt() ->> 'email' = 'yayalin322@gmail.com');
+
+-- ---------- 後台一般收件匣 ----------
+create table if not exists inbox_messages (
+  id uuid primary key default gen_random_uuid(),
+  contact_email text not null,
+  subject text,
+  direction text not null check (direction in ('outbound', 'inbound')),
+  body text not null,
+  attachment_paths text[],
+  status text not null default 'sent' check (status in ('pending', 'sent')),
+  sent_at timestamptz,
+  created_at timestamptz not null default now()
+);
+
+alter table inbox_messages enable row level security;
+
+create policy "only admin can access inbox_messages"
+  on inbox_messages for all
+  using (auth.jwt() ->> 'email' = 'yayalin322@gmail.com')
+  with check (auth.jwt() ->> 'email' = 'yayalin322@gmail.com');
