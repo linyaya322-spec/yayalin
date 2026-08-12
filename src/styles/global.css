@@ -148,7 +148,9 @@ body {
    include the site chrome — just the content the print button was for. */
 @media print {
   body > header,
-  body > footer {
+  body > footer,
+  #cursor-dot,
+  #cursor-ring {
     display: none !important;
   }
 }
