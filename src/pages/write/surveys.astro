@@ -179,6 +179,24 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
         </div>
         <p id="copy-link-status" class="text-sm text-ink-light mb-4 no-print"></p>
 
+        <div class="flex gap-2 mb-6 no-print">
+          <button id="stats-tab-summary" class="stats-tab-btn px-4 py-1.5 text-sm font-semibold border-2 border-ink bg-ink text-cream">摘要統計</button>
+          <button id="stats-tab-individual" class="stats-tab-btn px-4 py-1.5 text-sm font-semibold border-2 border-ink bg-cream text-ink">個別查看</button>
+        </div>
+
+        <!-- 個別查看：一次看一筆回覆，像 Google 表單一樣可以上一筆／下一筆瀏覽 -->
+        <div id="individual-view" class="hidden">
+          <div class="flex items-center justify-between gap-3 mb-4 no-print">
+            <button id="individual-prev" class="px-3 py-1.5 border-2 border-ink text-sm font-semibold hover:bg-ink hover:text-cream transition-colors">← 上一筆</button>
+            <span id="individual-counter" class="text-sm text-ink-light"></span>
+            <div class="flex gap-2">
+              <button id="individual-print" class="px-3 py-1.5 border-2 border-ink text-sm font-semibold hover:bg-ink hover:text-cream transition-colors">🖨️ 列印這筆</button>
+              <button id="individual-next" class="px-3 py-1.5 border-2 border-ink text-sm font-semibold hover:bg-ink hover:text-cream transition-colors">下一筆 →</button>
+            </div>
+          </div>
+          <div id="individual-card" class="border-2 border-ink bg-cream p-6 grid gap-5 max-w-2xl"></div>
+        </div>
+
         <div id="stats-report">
           <h2 id="stats-report-title" class="font-display text-2xl text-ink mb-1 print-only"></h2>
           <p id="stats-count" class="text-ink-light mb-6"></p>
@@ -973,6 +991,91 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
   let currentStatsResponses: { id: string; answers: Record<string, string | string[]>; submitted_at: string }[] = [];
   let currentStatsProgress: { furthest_position: number; status: string }[] = [];
 
+  // ---------- 個別查看 ----------
+  const statsTabSummaryBtn = document.getElementById('stats-tab-summary')!;
+  const statsTabIndividualBtn = document.getElementById('stats-tab-individual')!;
+  const individualView = document.getElementById('individual-view')!;
+  const individualCard = document.getElementById('individual-card')!;
+  const individualCounter = document.getElementById('individual-counter')!;
+  const individualPrevBtn = document.getElementById('individual-prev') as HTMLButtonElement;
+  const individualNextBtn = document.getElementById('individual-next') as HTMLButtonElement;
+  const individualPrintBtn = document.getElementById('individual-print')!;
+  let individualIndex = 0;
+
+  function resolveAnswerText(q: SurveyQuestion, v: string) {
+    if (v.startsWith('other:')) return `其他：${v.slice('other:'.length)}`;
+    return q.options.find((o) => o.id === v)?.text ?? v;
+  }
+
+  function renderIndividualResponse() {
+    if (!currentStatsResponses.length) {
+      individualCard.innerHTML = `<p class="text-ink-light">目前沒有回覆。</p>`;
+      individualCounter.textContent = '';
+      individualPrevBtn.disabled = true;
+      individualNextBtn.disabled = true;
+      return;
+    }
+    individualIndex = Math.max(0, Math.min(individualIndex, currentStatsResponses.length - 1));
+    const r = currentStatsResponses[individualIndex];
+    individualCounter.textContent = `第 ${individualIndex + 1} 筆，共 ${currentStatsResponses.length} 筆`;
+    individualPrevBtn.disabled = individualIndex === 0;
+    individualNextBtn.disabled = individualIndex === currentStatsResponses.length - 1;
+
+    const rows = currentStatsQuestions
+      .map((q, i) => {
+        const value = r.answers[q.id];
+        let answerHtml = '<span class="text-ink-light">（未作答）</span>';
+        if (value !== undefined) {
+          if (Array.isArray(value)) {
+            answerHtml = esc(value.map((v) => resolveAnswerText(q, v)).join('、'));
+          } else if (q.type === 'text') {
+            answerHtml = esc(value).replace(/\n/g, '<br>');
+          } else {
+            answerHtml = esc(resolveAnswerText(q, value));
+          }
+        }
+        return `
+          <div class="border-t-2 border-ink/10 pt-4 first:border-t-0 first:pt-0">
+            <p class="text-xs text-ink-light mb-1">Q${i + 1}.</p>
+            <p class="font-semibold text-ink mb-2">${esc(q.question_text)}</p>
+            <p class="text-ink">${answerHtml}</p>
+          </div>
+        `;
+      })
+      .join('');
+
+    individualCard.innerHTML = `
+      <p class="text-xs text-ink-light">送出時間：${new Date(r.submitted_at).toLocaleString('zh-Hant-TW')}</p>
+      ${rows}
+    `;
+  }
+
+  statsTabSummaryBtn.addEventListener('click', () => {
+    statsTabSummaryBtn.className = 'stats-tab-btn px-4 py-1.5 text-sm font-semibold border-2 border-ink bg-ink text-cream';
+    statsTabIndividualBtn.className = 'stats-tab-btn px-4 py-1.5 text-sm font-semibold border-2 border-ink bg-cream text-ink';
+    document.getElementById('stats-report')!.classList.remove('hidden');
+    individualView.classList.add('hidden');
+  });
+
+  statsTabIndividualBtn.addEventListener('click', () => {
+    statsTabIndividualBtn.className = 'stats-tab-btn px-4 py-1.5 text-sm font-semibold border-2 border-ink bg-ink text-cream';
+    statsTabSummaryBtn.className = 'stats-tab-btn px-4 py-1.5 text-sm font-semibold border-2 border-ink bg-cream text-ink';
+    document.getElementById('stats-report')!.classList.add('hidden');
+    individualView.classList.remove('hidden');
+    individualIndex = 0;
+    renderIndividualResponse();
+  });
+
+  individualPrevBtn.addEventListener('click', () => {
+    individualIndex--;
+    renderIndividualResponse();
+  });
+  individualNextBtn.addEventListener('click', () => {
+    individualIndex++;
+    renderIndividualResponse();
+  });
+  individualPrintBtn.addEventListener('click', () => window.print());
+
   const DONUT_PALETTE = ['#e2481f', '#3f7a4a', '#f2b705', '#2c5a35', '#b8360f', '#c79a00', '#5a5952', '#1c1c1a'];
 
   function buildDonutHtml(labels: string[], counts: number[], total: number) {
@@ -1210,6 +1313,8 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     statsReportTitle.textContent = `${survey.title}｜問卷統計報告`;
     statsContent.innerHTML = '';
     copyLinkStatus.textContent = '';
+    individualIndex = 0;
+    statsTabSummaryBtn.click();
 
     const { data: questions } = await supabase
       .from('survey_questions')
