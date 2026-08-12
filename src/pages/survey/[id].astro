@@ -294,7 +294,20 @@ const theme = THEMES[survey.theme] ?? THEMES.clay;
   </section>
 </BaseLayout>
 
-<style define:vars={{ accent: theme.accent, accentDark: theme.accentDark, onAccent: theme.onAccent }}>
+<style define:vars={{ accent: theme.accent, accentDark: theme.accentDark, onAccent: theme.onAccent }} is:global>
+  /* 填問卷時用一般滑鼠游標就好，不要跟著滑鼠跑的自訂游標特效，填表單時反而干擾。 */
+  html.has-custom-cursor {
+    cursor: auto !important;
+  }
+  html.has-custom-cursor a,
+  html.has-custom-cursor button {
+    cursor: pointer !important;
+  }
+  #cursor-dot,
+  #cursor-ring {
+    display: none !important;
+  }
+
   .survey-accent-btn {
     background-color: var(--accent);
     color: var(--onAccent);

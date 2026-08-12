@@ -191,6 +191,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
             <span id="individual-counter" class="text-sm text-ink-light"></span>
             <div class="flex gap-2">
               <button id="individual-print" class="px-3 py-1.5 border-2 border-ink text-sm font-semibold hover:bg-ink hover:text-cream transition-colors">🖨️ 列印這筆</button>
+              <button id="individual-delete" class="px-3 py-1.5 border-2 border-clay text-clay text-sm font-semibold hover:bg-clay hover:text-cream transition-colors">刪除這筆</button>
               <button id="individual-next" class="px-3 py-1.5 border-2 border-ink text-sm font-semibold hover:bg-ink hover:text-cream transition-colors">下一筆 →</button>
             </div>
           </div>
@@ -666,6 +667,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
         <button type="button" data-add-option class="justify-self-start text-sm font-semibold text-clay">+ 新增選項</button>
         <p class="text-xs text-ink-light">「標準答案」選填，設定後統計顯示答對率；「跳題」只在單選題生效。</p>
       </div>
+      <button type="button" data-add-question-after class="justify-self-start text-xs font-semibold text-ink-light hover:text-clay">+ 在這一題後面新增一題</button>
     `;
 
     const typeSelect = block.querySelector('[data-question-type]') as HTMLSelectElement;
@@ -697,6 +699,11 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     block.querySelector('[data-remove-question]')?.addEventListener('click', () => {
       if (block.dataset.existing === 'true') removedQuestionIds.push(block.dataset.questionId!);
       block.remove();
+      refreshAllGotoSelects();
+    });
+
+    block.querySelector('[data-add-question-after]')?.addEventListener('click', () => {
+      block.after(createQuestionBlock());
       refreshAllGotoSelects();
     });
 
@@ -1000,6 +1007,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
   const individualPrevBtn = document.getElementById('individual-prev') as HTMLButtonElement;
   const individualNextBtn = document.getElementById('individual-next') as HTMLButtonElement;
   const individualPrintBtn = document.getElementById('individual-print')!;
+  const individualDeleteBtn = document.getElementById('individual-delete')!;
   let individualIndex = 0;
 
   function resolveAnswerText(q: SurveyQuestion, v: string) {
@@ -1075,6 +1083,20 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     renderIndividualResponse();
   });
   individualPrintBtn.addEventListener('click', () => window.print());
+
+  individualDeleteBtn.addEventListener('click', async () => {
+    if (!currentStatsResponses.length) return;
+    const r = currentStatsResponses[individualIndex];
+    if (!confirm('確定要刪除這筆回覆嗎？無法復原。')) return;
+    const { error } = await supabase.from('survey_responses').delete().eq('id', r.id);
+    if (error) {
+      alert(`刪除失敗：${error.message}`);
+      return;
+    }
+    currentStatsResponses.splice(individualIndex, 1);
+    statsCount.textContent = `共 ${currentStatsResponses.length} 筆回覆`;
+    renderIndividualResponse();
+  });
 
   const DONUT_PALETTE = ['#e2481f', '#3f7a4a', '#f2b705', '#2c5a35', '#b8360f', '#c79a00', '#5a5952', '#1c1c1a'];
 
