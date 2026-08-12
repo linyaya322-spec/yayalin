@@ -17,6 +17,18 @@ const {
 } = Astro.props;
 
 const ogImageUrl = new URL('/og-image.png', Astro.site ?? 'https://yayalin.com').toString();
+const canonicalUrl = new URL(Astro.url.pathname, Astro.site ?? 'https://yayalin.com').toString();
+
+const personJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Person',
+  name: 'yaya 林',
+  url: 'https://yayalin.com',
+  image: new URL('/avatar.png', Astro.site ?? 'https://yayalin.com').toString(),
+  jobTitle: '新竹縣兒少委員',
+  description: '新竹縣兒少委員 yaya 的個人網站，記錄生活、公共參與與興趣分享。',
+  sameAs: ['https://www.instagram.com/yaya.__.lin/'],
+};
 ---
 
 <!doctype html>
@@ -28,7 +40,10 @@ const ogImageUrl = new URL('/og-image.png', Astro.site ?? 'https://yayalin.com')
     <link rel="apple-touch-icon" href="/avatar.png" />
     <meta name="description" content={description} />
     {noindex && <meta name="robots" content="noindex, nofollow" />}
+    <link rel="canonical" href={canonicalUrl} />
     <title>{title} · yaya 林</title>
+
+    <script type="application/ld+json" set:html={JSON.stringify(personJsonLd)} />
 
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="yaya 林" />
