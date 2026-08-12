@@ -144,6 +144,15 @@ body {
   z-index: -1;
 }
 
+/* Printing any page (survey stats, individual responses, etc.) should never
+   include the site chrome — just the content the print button was for. */
+@media print {
+  body > header,
+  body > footer {
+    display: none !important;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .reveal {
     opacity: 1;
