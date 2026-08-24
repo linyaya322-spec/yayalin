@@ -144,7 +144,7 @@ export interface SurveyQuestion {
   survey_id: string;
   position: number;
   question_text: string;
-  type: 'text' | 'single' | 'multiple' | 'page_break';
+  type: 'text' | 'single' | 'multiple';
   required: boolean;
   options: SurveyOption[];
   created_at: string;
