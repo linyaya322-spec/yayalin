@@ -22,6 +22,23 @@ export async function getStaticPaths() {
 
 const { survey, questions } = Astro.props;
 
+// Group questions by page_break
+const pages: SurveyQuestion[][] = [];
+let currentPage: SurveyQuestion[] = [];
+for (const q of questions) {
+  if (q.type === 'page_break') {
+    if (currentPage.length > 0) {
+      pages.push(currentPage);
+      currentPage = [];
+    }
+  } else {
+    currentPage.push(q);
+  }
+}
+if (currentPage.length > 0) {
+  pages.push(currentPage);
+}
+
 const THEMES: Record<string, { accent: string; accentDark: string; onAccent: string }> = {
   clay: { accent: '#e2481f', accentDark: '#b8360f', onAccent: '#f5f1e8' },
   sage: { accent: '#3f7a4a', accentDark: '#2c5a35', onAccent: '#f5f1e8' },
@@ -162,92 +179,99 @@ const theme = THEMES[survey.theme] ?? THEMES.clay;
         </div>
 
         <div id="survey-questions">
-          {questions.map((q, i) => (
-            <div
-              class="survey-question bg-cream border-2 border-ink p-6"
-              data-question-id={q.id}
-              data-question-type={q.type}
-              data-required={q.required ? 'true' : 'false'}
-              data-index={i}
-              style="display: none;"
-            >
-              <p class="font-semibold text-ink mb-4 text-lg">
-                <span class="text-ink-light font-normal">{`Q${i + 1}.`}</span> {q.question_text}
-                {q.required && <span class="text-clay ml-1">*</span>}
-              </p>
-              {q.type === 'text' && (
-                <textarea
-                  id={`answer-${q.id}`}
-                  name={`answer-${q.id}`}
-                  data-answer-text
-                  aria-label={q.question_text}
-                  rows="4"
-                  class="w-full border-2 border-ink bg-cream px-4 py-2 focus:outline-none focus:bg-sage-light resize-none"
-                ></textarea>
-              )}
-              {q.type === 'single' && (
-                <div class="grid gap-2">
-                  {q.options.map((opt) => (
-                    <div class="option-row">
-                      <label class="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="radio"
-                          id={`opt-${opt.id}`}
-                          name={`q-${q.id}`}
-                          value={opt.id}
-                          data-answer-option
-                          data-goto={opt.goto ?? ''}
-                          data-other={opt.isOther ? 'true' : 'false'}
-                          class="w-4 h-4"
-                        />
-                        <span class="text-ink-light">{opt.text}</span>
-                      </label>
-                      {opt.isOther && (
-                        <input
-                          type="text"
-                          id={`other-text-${opt.id}`}
-                          name={`other-text-${opt.id}`}
-                          data-other-text-for={opt.id}
-                          placeholder="請輸入..."
-                          aria-label={`${opt.text}：請輸入內容`}
-                          class="hidden mt-2 ml-6 border-2 border-ink bg-cream px-3 py-1.5 focus:outline-none w-[calc(100%-1.5rem)]"
-                        />
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-              {q.type === 'multiple' && (
-                <div class="grid gap-2">
-                  {q.options.map((opt) => (
-                    <div class="option-row">
-                      <label class="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          id={`opt-${opt.id}`}
-                          name={`q-${q.id}[]`}
-                          value={opt.id}
-                          data-answer-option
-                          data-other={opt.isOther ? 'true' : 'false'}
-                          class="w-4 h-4"
-                        />
-                        <span class="text-ink-light">{opt.text}</span>
-                      </label>
-                      {opt.isOther && (
-                        <input
-                          type="text"
-                          id={`other-text-${opt.id}`}
-                          name={`other-text-${opt.id}`}
-                          data-other-text-for={opt.id}
-                          placeholder="請輸入..."
-                          aria-label={`${opt.text}：請輸入內容`}
-                          class="hidden mt-2 ml-6 border-2 border-ink bg-cream px-3 py-1.5 focus:outline-none w-[calc(100%-1.5rem)]"
-                        />
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
+          {pages.map((page, pageIndex) => (
+            <div class="survey-page" data-page-index={pageIndex} style="display: none;">
+              {page.map((q, i) => {
+                // Calculate absolute index for Q1, Q2 etc display
+                const absoluteIndex = questions.filter(qu => qu.type !== 'page_break').findIndex(qu => qu.id === q.id);
+                return (
+                  <div
+                    class="survey-question bg-cream border-2 border-ink p-6 mb-6 last:mb-0"
+                    data-question-id={q.id}
+                    data-question-type={q.type}
+                    data-required={q.required ? 'true' : 'false'}
+                    data-index={absoluteIndex}
+                  >
+                    <p class="font-semibold text-ink mb-4 text-lg">
+                      <span class="text-ink-light font-normal">{`Q${absoluteIndex + 1}.`}</span> {q.question_text}
+                      {q.required && <span class="text-clay ml-1">*</span>}
+                    </p>
+                    {q.type === 'text' && (
+                      <textarea
+                        id={`answer-${q.id}`}
+                        name={`answer-${q.id}`}
+                        data-answer-text
+                        aria-label={q.question_text}
+                        rows="4"
+                        class="w-full border-2 border-ink bg-cream px-4 py-2 focus:outline-none focus:bg-sage-light resize-none"
+                      ></textarea>
+                    )}
+                    {q.type === 'single' && (
+                      <div class="grid gap-2">
+                        {q.options.map((opt) => (
+                          <div class="option-row">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                              <input
+                                type="radio"
+                                id={`opt-${opt.id}`}
+                                name={`q-${q.id}`}
+                                value={opt.id}
+                                data-answer-option
+                                data-goto={opt.goto ?? ''}
+                                data-other={opt.isOther ? 'true' : 'false'}
+                                class="w-4 h-4"
+                              />
+                              <span class="text-ink-light">{opt.text}</span>
+                            </label>
+                            {opt.isOther && (
+                              <input
+                                type="text"
+                                id={`other-text-${opt.id}`}
+                                name={`other-text-${opt.id}`}
+                                data-other-text-for={opt.id}
+                                placeholder="請輸入..."
+                                aria-label={`${opt.text}：請輸入內容`}
+                                class="hidden mt-2 ml-6 border-2 border-ink bg-cream px-3 py-1.5 focus:outline-none w-[calc(100%-1.5rem)]"
+                              />
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {q.type === 'multiple' && (
+                      <div class="grid gap-2">
+                        {q.options.map((opt) => (
+                          <div class="option-row">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                id={`opt-${opt.id}`}
+                                name={`q-${q.id}[]`}
+                                value={opt.id}
+                                data-answer-option
+                                data-other={opt.isOther ? 'true' : 'false'}
+                                class="w-4 h-4"
+                              />
+                              <span class="text-ink-light">{opt.text}</span>
+                            </label>
+                            {opt.isOther && (
+                              <input
+                                type="text"
+                                id={`other-text-${opt.id}`}
+                                name={`other-text-${opt.id}`}
+                                data-other-text-for={opt.id}
+                                placeholder="請輸入..."
+                                aria-label={`${opt.text}：請輸入內容`}
+                                class="hidden mt-2 ml-6 border-2 border-ink bg-cream px-3 py-1.5 focus:outline-none w-[calc(100%-1.5rem)]"
+                              />
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           ))}
         </div>
@@ -552,26 +576,26 @@ const theme = THEMES[survey.theme] ?? THEMES.clay;
 
     function updateNextButtonLabel() {
       if (!nextBtn) return;
-      const target = getNextTarget(currentId);
+      const target = getNextTarget(currentPageIndex);
       if (target === '__end__') nextBtn.textContent = '送出問卷';
       else if (target === '__close__') nextBtn.textContent = '結束填答';
-      else nextBtn.textContent = '下一題';
+      else nextBtn.textContent = '下一頁';
     }
 
-    function showQuestion(id: string) {
-      questionEls.forEach((q) => {
-        const match = q.dataset.questionId === id;
-        q.style.display = match ? '' : 'none';
+    function showPage(pageIndex: number) {
+      pageEls.forEach((p, i) => {
+        const match = i === pageIndex;
+        p.style.display = match ? '' : 'none';
         if (match) {
-          q.classList.remove('q-enter');
-          void q.offsetWidth;
-          q.classList.add('q-enter');
+          p.classList.remove('q-enter');
+          void p.offsetWidth;
+          p.classList.add('q-enter');
         }
       });
       validationMessage.textContent = '';
       const visitedCount = history.length + 1;
-      progress.textContent = `第 ${visitedCount} 題`;
-      progressBar.style.width = `${Math.min(100, Math.round((visitedCount / totalCount) * 100))}%`;
+      progress.textContent = `第 ${visitedCount} 頁 / 共 ${totalPages} 頁`;
+      progressBar.style.width = `${Math.min(100, Math.round((visitedCount / totalPages) * 100))}%`;
       prevBtn?.classList.toggle('hidden', history.length === 0);
       updateNextButtonLabel();
     }
@@ -615,18 +639,31 @@ const theme = THEMES[survey.theme] ?? THEMES.clay;
       return { ok: true, value: values };
     }
 
-    function getNextTarget(fromId: string): string {
-      const q = getQuestionEl(fromId);
-      if (q.dataset.questionType === 'single') {
-        const checked = q.querySelector<HTMLInputElement>('[data-answer-option]:checked');
-        const goto = checked?.dataset.goto;
-        if (goto === '__submit__') return '__end__';
-        if (goto === '__close__') return '__close__';
-        if (goto) return goto;
+    function getPageIdxForQuestion(qId: string): number {
+      const qEl = getQuestionEl(qId);
+      if (!qEl) return -1;
+      const pageEl = qEl.closest('.survey-page') as HTMLElement;
+      return parseInt(pageEl.dataset.pageIndex!, 10);
+    }
+
+    function getNextTarget(pageIndex: number): string | number {
+      const page = pageEls[pageIndex];
+      if (!page) return '__end__';
+      const qEls = Array.from(page.querySelectorAll('.survey-question')) as HTMLElement[];
+      for (const q of qEls) {
+        if (q.dataset.questionType === 'single') {
+          const checked = q.querySelector<HTMLInputElement>('[data-answer-option]:checked');
+          const goto = checked?.dataset.goto;
+          if (goto === '__submit__') return '__end__';
+          if (goto === '__close__') return '__close__';
+          if (goto) {
+            const targetIdx = getPageIdxForQuestion(goto);
+            if (targetIdx !== -1) return targetIdx;
+          }
+        }
       }
-      const index = questionEls.indexOf(q);
-      const next = questionEls[index + 1];
-      return next ? next.dataset.questionId! : '__end__';
+      const nextIdx = pageIndex + 1;
+      return nextIdx < totalPages ? nextIdx : '__end__';
     }
 
     async function submitSurvey() {
@@ -667,19 +704,37 @@ const theme = THEMES[survey.theme] ?? THEMES.clay;
     }
 
     nextBtn.addEventListener('click', async () => {
-      const currentQ = getQuestionEl(currentId);
-      const result = collectAnswer(currentQ);
-      if (!result.ok) {
-        validationMessage.textContent = '這題是必填，請完成後再繼續。';
-        return;
-      }
-      if (result.value !== '' && !(Array.isArray(result.value) && result.value.length === 0)) {
-        answers[currentId] = result.value as string | string[];
-      } else {
-        delete answers[currentId];
+      const page = pageEls[currentPageIndex];
+      const qEls = Array.from(page.querySelectorAll('.survey-question')) as HTMLElement[];
+      
+      let allValid = true;
+      for (const q of qEls) {
+        const result = collectAnswer(q);
+        if (!result.ok) {
+          allValid = false;
+          // Optionally scroll to the invalid question
+          q.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          break; // Stop at first error
+        }
       }
 
-      const target = getNextTarget(currentId);
+      if (!allValid) {
+        validationMessage.textContent = '本頁尚有必填題未完成，請完成後再繼續。';
+        return;
+      }
+
+      // Collect valid answers
+      for (const q of qEls) {
+        const result = collectAnswer(q);
+        const qId = q.dataset.questionId!;
+        if (result.ok && result.value !== '' && !(Array.isArray(result.value) && result.value.length === 0)) {
+          answers[qId] = result.value as string | string[];
+        } else {
+          delete answers[qId];
+        }
+      }
+
+      const target = getNextTarget(currentPageIndex);
       if (target === '__end__') {
         await submitSurvey();
         return;
@@ -688,17 +743,20 @@ const theme = THEMES[survey.theme] ?? THEMES.clay;
         closeSurvey();
         return;
       }
-      history.push(currentId);
-      currentId = target;
-      showQuestion(currentId);
-      trackAdvance(getQuestionEl(currentId).dataset.index ? Number(getQuestionEl(currentId).dataset.index) : 0);
+      
+      history.push(currentPageIndex);
+      currentPageIndex = target as number;
+      showPage(currentPageIndex);
+      trackAdvance(currentPageIndex);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     });
 
     prevBtn?.addEventListener('click', () => {
       const prev = history.pop();
-      if (prev) {
-        currentId = prev;
-        showQuestion(currentId);
+      if (prev !== undefined) {
+        currentPageIndex = prev;
+        showPage(currentPageIndex);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     });
 
@@ -714,8 +772,12 @@ const theme = THEMES[survey.theme] ?? THEMES.clay;
     startBtn?.addEventListener('click', async () => {
       consentBlock?.classList.add('hidden');
       quizBody?.classList.remove('hidden');
-      showQuestion(currentId);
+      if (pageEls.length > 0) {
+        showPage(currentPageIndex);
+      }
       await trackStart(surveyId!);
     });
   }
+
+  initSurvey();
 </script>

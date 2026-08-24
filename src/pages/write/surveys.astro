@@ -138,8 +138,11 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 
           <div>
             <div class="flex items-center justify-between mb-3">
-              <p class="font-semibold text-ink">題目</p>
-              <button type="button" id="add-question-btn" class="px-4 py-1.5 border-2 border-ink text-sm font-semibold hover:bg-ink hover:text-cream transition-colors">+ 新增題目</button>
+              <p class="font-semibold text-ink">題目與分頁</p>
+              <div class="flex gap-2">
+                <button type="button" id="add-page-break-btn" class="px-4 py-1.5 border-2 border-clay text-clay text-sm font-semibold hover:bg-clay hover:text-cream transition-colors">+ 新增分頁</button>
+                <button type="button" id="add-question-btn" class="px-4 py-1.5 border-2 border-ink text-sm font-semibold hover:bg-ink hover:text-cream transition-colors">+ 新增題目</button>
+              </div>
             </div>
             <div id="question-list" class="grid gap-4"></div>
           </div>
@@ -641,60 +644,76 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     });
   }
 
-  function createQuestionBlock(question?: SurveyQuestion) {
+  function createQuestionBlock(question?: SurveyQuestion, forceType?: string) {
     const block = document.createElement('div');
-    block.className = 'border-2 border-ink bg-cream p-4 grid gap-3';
+    const isPageBreak = question?.type === 'page_break' || forceType === 'page_break';
+    block.className = isPageBreak 
+      ? 'border-2 border-clay border-dashed bg-cream-dark p-3 grid gap-2 text-center relative'
+      : 'border-2 border-ink bg-cream p-4 grid gap-3 relative';
     block.dataset.questionId = question?.id ?? crypto.randomUUID();
     block.dataset.existing = question ? 'true' : 'false';
 
-    block.innerHTML = `
-      <div class="flex flex-wrap gap-3 items-center">
-        <span data-question-number class="shrink-0 w-7 h-7 grid place-items-center bg-ink text-cream text-xs font-semibold rounded-full"></span>
-        <input type="text" data-question-text placeholder="題目內容" value="${esc(question?.question_text ?? '')}" required class="flex-1 min-w-[12rem] border-2 border-ink bg-cream px-3 py-1.5 focus:outline-none" />
-        <select data-question-type class="border-2 border-ink bg-cream px-3 py-1.5 focus:outline-none">
-          <option value="text">簡答</option>
-          <option value="single">單選</option>
-          <option value="multiple">複選</option>
-        </select>
-        <label class="flex items-center gap-1.5 text-sm">
-          <input type="checkbox" data-question-required ${question?.required ? 'checked' : ''} class="w-4 h-4" />
-          必填
-        </label>
-        <button type="button" data-remove-question class="text-clay text-sm font-semibold">刪除題目</button>
-      </div>
-      <div data-options-wrapper class="hidden grid gap-2 pl-2 border-l-4 border-ink/20">
-        <div data-options-list class="grid gap-3"></div>
-        <button type="button" data-add-option class="justify-self-start text-sm font-semibold text-clay">+ 新增選項</button>
-        <p class="text-xs text-ink-light">「標準答案」選填，設定後統計顯示答對率；「跳題」只在單選題生效。</p>
-      </div>
-      <button type="button" data-add-question-after class="justify-self-start text-xs font-semibold text-ink-light hover:text-clay">+ 在這一題後面新增一題</button>
-    `;
+    if (isPageBreak) {
+      block.innerHTML = `
+        <input type="hidden" data-question-type value="page_break" />
+        <input type="hidden" data-question-text value="" />
+        <input type="checkbox" data-question-required class="hidden" />
+        <p class="text-sm font-semibold text-clay my-1">==== 分頁符號 ====</p>
+        <p class="text-xs text-ink-light">填寫者填到這裡會出現「下一頁」按鈕</p>
+        <button type="button" data-remove-question class="absolute right-3 top-3 text-clay text-xs font-semibold underline">刪除分頁</button>
+      `;
+    } else {
+      block.innerHTML = `
+        <div class="flex flex-wrap gap-3 items-center">
+          <span data-question-number class="shrink-0 w-7 h-7 grid place-items-center bg-ink text-cream text-xs font-semibold rounded-full"></span>
+          <input type="text" data-question-text placeholder="題目內容" value="${esc(question?.question_text ?? '')}" required class="flex-1 min-w-[12rem] border-2 border-ink bg-cream px-3 py-1.5 focus:outline-none" />
+          <select data-question-type class="border-2 border-ink bg-cream px-3 py-1.5 focus:outline-none">
+            <option value="text">簡答</option>
+            <option value="single">單選</option>
+            <option value="multiple">複選</option>
+          </select>
+          <label class="flex items-center gap-1.5 text-sm">
+            <input type="checkbox" data-question-required ${question?.required ? 'checked' : ''} class="w-4 h-4" />
+            必填
+          </label>
+          <button type="button" data-remove-question class="text-clay text-sm font-semibold">刪除題目</button>
+        </div>
+        <div data-options-wrapper class="hidden grid gap-2 pl-2 border-l-4 border-ink/20">
+          <div data-options-list class="grid gap-3"></div>
+          <button type="button" data-add-option class="justify-self-start text-sm font-semibold text-clay">+ 新增選項</button>
+          <p class="text-xs text-ink-light">「標準答案」選填，設定後統計顯示答對率；「跳題」只在單選題生效。</p>
+        </div>
+        <button type="button" data-add-question-after class="justify-self-start text-xs font-semibold text-ink-light hover:text-clay">+ 在這一題後面新增一題</button>
+      `;
+    }
 
-    const typeSelect = block.querySelector('[data-question-type]') as HTMLSelectElement;
+    const typeSelect = block.querySelector('[data-question-type]') as HTMLSelectElement | HTMLInputElement;
     const optionsWrapper = block.querySelector('[data-options-wrapper]') as HTMLElement;
     const optionsList = block.querySelector('[data-options-list]') as HTMLElement;
 
-    typeSelect.value = question?.type ?? 'text';
-    const syncOptionsVisibility = () => {
-      optionsWrapper.classList.toggle('hidden', typeSelect.value === 'text');
-      block.querySelectorAll<HTMLElement>('[data-option-goto-wrapper]').forEach((w) => {
-        w.classList.toggle('hidden', typeSelect.value !== 'single');
-        w.classList.toggle('flex', typeSelect.value === 'single');
+    if (!isPageBreak) {
+      typeSelect.value = question?.type ?? 'text';
+      const syncOptionsVisibility = () => {
+        optionsWrapper.classList.toggle('hidden', typeSelect.value === 'text');
+        block.querySelectorAll<HTMLElement>('[data-option-goto-wrapper]').forEach((w) => {
+          w.classList.toggle('hidden', typeSelect.value !== 'single');
+          w.classList.toggle('flex', typeSelect.value === 'single');
+        });
+      };
+      typeSelect.addEventListener('change', syncOptionsVisibility);
+      syncOptionsVisibility();
+
+      if (question?.options?.length) {
+        question.options.forEach((opt) => optionsList.appendChild(createOptionRow(opt)));
+        syncOptionsVisibility();
+      }
+
+      block.querySelector('[data-add-option]')?.addEventListener('click', () => {
+        optionsList.appendChild(createOptionRow());
+        refreshAllGotoSelects();
+        syncOptionsVisibility();
       });
-    };
-    typeSelect.addEventListener('change', syncOptionsVisibility);
-    syncOptionsVisibility();
-
-    if (question?.options?.length) {
-      question.options.forEach((opt) => optionsList.appendChild(createOptionRow(opt)));
-      syncOptionsVisibility();
     }
-
-    block.querySelector('[data-add-option]')?.addEventListener('click', () => {
-      optionsList.appendChild(createOptionRow());
-      refreshAllGotoSelects();
-      syncOptionsVisibility();
-    });
 
     block.querySelector('[data-remove-question]')?.addEventListener('click', () => {
       if (block.dataset.existing === 'true') removedQuestionIds.push(block.dataset.questionId!);
@@ -712,6 +731,11 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 
   document.getElementById('add-question-btn')?.addEventListener('click', () => {
     questionList.appendChild(createQuestionBlock());
+    refreshAllGotoSelects();
+  });
+
+  document.getElementById('add-page-break-btn')?.addEventListener('click', () => {
+    questionList.appendChild(createQuestionBlock(undefined, 'page_break'));
     refreshAllGotoSelects();
   });
 
@@ -818,31 +842,41 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
   const previewBody = document.getElementById('survey-preview-body')!;
 
   function renderQuestionPreviewHtml(rows: ReturnType<typeof collectQuestionRows>, accent: string) {
-    return rows
-      .map((q, i) => {
-        const optionsHtml =
-          q.type === 'text'
-            ? `<textarea disabled rows="3" class="w-full border-2 border-ink bg-cream px-3 py-2 opacity-60" placeholder="（簡答題，受訪者會在這裡打字）"></textarea>`
-            : `<div class="grid gap-1.5">${q.options
-                .map(
-                  (opt) => `
-                <label class="flex items-center gap-2 text-ink-light">
-                  <input type="${q.type === 'single' ? 'radio' : 'checkbox'}" disabled class="w-4 h-4" />
-                  <span>${esc(opt.text || '（未填寫選項文字）')}${opt.isOther ? '（其他）' : ''}</span>
-                </label>`
-                )
-                .join('')}</div>`;
-        return `
-          <div class="border-2 border-ink bg-cream p-5 mb-4">
-            <p class="font-semibold text-ink mb-3">
-              <span class="text-ink-light font-normal">Q${i + 1}.</span> ${esc(q.question_text || '（尚未填寫題目）')}
-              ${q.required ? `<span style="color:${accent}" class="ml-1">*</span>` : ''}
-            </p>
-            ${optionsHtml}
-          </div>
-        `;
-      })
-      .join('');
+    let html = '';
+    let pageHasQuestions = false;
+    
+    rows.forEach((q, i) => {
+      if (q.type === 'page_break') {
+        if (pageHasQuestions) {
+          html += `<button type="button" disabled style="background-color:${accent}" class="px-7 py-3 text-cream text-sm font-semibold opacity-60 mt-2 mb-6 w-full max-w-[200px] mx-auto block">下一頁（預覽模式）</button><hr class="border-t-2 border-ink border-dashed my-8" />`;
+          pageHasQuestions = false;
+        }
+        return;
+      }
+      pageHasQuestions = true;
+      const optionsHtml =
+        q.type === 'text'
+          ? `<textarea disabled rows="3" class="w-full border-2 border-ink bg-cream px-3 py-2 opacity-60" placeholder="（簡答題，受訪者會在這裡打字）"></textarea>`
+          : `<div class="grid gap-1.5">${q.options
+              .map(
+                (opt) => `
+              <label class="flex items-center gap-2 text-ink-light">
+                <input type="${q.type === 'single' ? 'radio' : 'checkbox'}" disabled class="w-4 h-4" />
+                <span>${esc(opt.text || '（未填寫選項文字）')}${opt.isOther ? '（其他）' : ''}</span>
+              </label>`
+              )
+              .join('')}</div>`;
+      html += `
+        <div class="border-2 border-ink bg-cream p-5 mb-4">
+          <p class="font-semibold text-ink mb-3">
+            <span class="text-ink-light font-normal">Q${i + 1}.</span> ${esc(q.question_text || '（尚未填寫題目）')}
+            ${q.required ? `<span style="color:${accent}" class="ml-1">*</span>` : ''}
+          </p>
+          ${optionsHtml}
+        </div>
+      `;
+    });
+    return html;
   }
 
   document.getElementById('survey-preview-btn')?.addEventListener('click', () => {
@@ -853,7 +887,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       <h1 class="font-display text-2xl text-ink mb-2">${esc(surveyTitleInput.value.trim() || '（尚未填寫標題）')}</h1>
       ${surveyDescriptionInput.value.trim() ? `<p class="text-ink-light mb-6">${esc(surveyDescriptionInput.value.trim())}</p>` : ''}
       ${rows.length === 0 ? '<p class="text-ink-light">還沒有新增題目。</p>' : renderQuestionPreviewHtml(rows, accent)}
-      <button type="button" disabled style="background-color:${accent}" class="px-7 py-3 text-cream text-sm font-semibold opacity-60 mt-2">下一題（預覽模式無法作答）</button>
+      <button type="button" disabled style="background-color:${accent}" class="px-7 py-3 text-cream text-sm font-semibold opacity-60 mt-6 w-full max-w-[200px] mx-auto block">送出問卷（預覽）</button>
     `;
     previewModal.classList.remove('hidden');
   });
