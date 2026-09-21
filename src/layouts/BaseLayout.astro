@@ -3,18 +3,26 @@ import Nav from '../components/Nav.astro';
 import Footer from '../components/Footer.astro';
 import Interactions from '../components/Interactions.astro';
 import '../styles/global.css';
+import {
+  SITE_URL,
+  PERSON_NAME,
+  PERSON_ALTERNATE_NAMES,
+  COMMITTEE_NAME,
+  KEYWORDS,
+  KNOWS_ABOUT,
+  DEFAULT_DESCRIPTION,
+} from '../lib/seo';
 
 interface Props {
   title: string;
+  // 給定時取代「{title} · yaya 林」，用在首頁等需要完整標題的頁面
+  fullTitle?: string;
   description?: string;
   noindex?: boolean;
 }
 
-const {
-  title,
-  description = '新竹縣兒少委員 yaya 的個人網站，記錄生活、公共參與與興趣分享。',
-  noindex = false,
-} = Astro.props;
+const { title, fullTitle, description = DEFAULT_DESCRIPTION, noindex = false } = Astro.props;
+const pageTitle = fullTitle ?? `${title} · ${PERSON_NAME}`;
 
 const ogImageUrl = new URL('/og-image.png', Astro.site ?? 'https://yayalin.com').toString();
 const canonicalUrl = new URL(Astro.url.pathname, Astro.site ?? 'https://yayalin.com').toString();
@@ -22,12 +30,31 @@ const canonicalUrl = new URL(Astro.url.pathname, Astro.site ?? 'https://yayalin.
 const personJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'Person',
-  name: 'yaya 林',
-  url: 'https://yayalin.com',
-  image: new URL('/avatar.png', Astro.site ?? 'https://yayalin.com').toString(),
-  jobTitle: '新竹縣兒少委員',
-  description: '新竹縣兒少委員 yaya 的個人網站，記錄生活、公共參與與興趣分享。',
+  '@id': `${SITE_URL}/#person`,
+  name: PERSON_NAME,
+  alternateName: PERSON_ALTERNATE_NAMES,
+  url: SITE_URL,
+  image: new URL('/avatar.png', Astro.site ?? SITE_URL).toString(),
+  jobTitle: '新竹縣兒少代表（青少年代表委員）',
+  description: DEFAULT_DESCRIPTION,
+  memberOf: {
+    '@type': 'GovernmentOrganization',
+    name: COMMITTEE_NAME,
+    areaServed: '新竹縣',
+  },
+  knowsAbout: KNOWS_ABOUT,
   sameAs: ['https://www.instagram.com/yaya.__.lin/'],
+};
+
+const websiteJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  '@id': `${SITE_URL}/#website`,
+  url: SITE_URL,
+  name: `${PERSON_NAME}｜新竹縣兒少代表`,
+  alternateName: PERSON_ALTERNATE_NAMES,
+  inLanguage: 'zh-Hant',
+  about: { '@id': `${SITE_URL}/#person` },
 };
 ---
 
@@ -39,19 +66,21 @@ const personJsonLd = {
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/avatar.png" />
     <meta name="description" content={description} />
+    <meta name="keywords" content={KEYWORDS.join(',')} />
     {noindex && <meta name="robots" content="noindex, nofollow" />}
     <link rel="canonical" href={canonicalUrl} />
-    <title>{title} · yaya 林</title>
+    <title>{pageTitle}</title>
 
     <script type="application/ld+json" set:html={JSON.stringify(personJsonLd)} />
+    <script type="application/ld+json" set:html={JSON.stringify(websiteJsonLd)} />
 
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="yaya 林" />
-    <meta property="og:title" content={`${title} · yaya 林`} />
+    <meta property="og:title" content={pageTitle} />
     <meta property="og:description" content={description} />
     <meta property="og:image" content={ogImageUrl} />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content={`${title} · yaya 林`} />
+    <meta name="twitter:title" content={pageTitle} />
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={ogImageUrl} />
     <link rel="preconnect" href="https://fonts.googleapis.com" />

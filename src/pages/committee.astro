@@ -14,7 +14,11 @@ const { data: introPage } = await supabase
 const introHtml = introPage ? await marked.parse(introPage.content) : null;
 ---
 
-<BaseLayout title="兒少委員專區" description="新竹縣兒少委員 yaya 的參與紀錄與時間軸。">
+<BaseLayout
+  title="兒少委員專區"
+  fullTitle="兒少委員專區｜新竹縣兒少代表 yaya 林的提案與參與紀錄"
+  description="新竹縣兒少代表 yaya 林（lin yaya）擔任新竹縣兒童及少年福利與權益促進委員會青少年代表委員的提案、會議與政府回應時間軸，包含學生獎懲辦法修訂、兒少就學交通安全等。"
+>
   <section class="max-w-3xl mx-auto px-6 pt-16 pb-8">
     <p class="reveal inline-block bg-ink text-cream text-sm font-medium px-3 py-1 mb-6">兒少委員專區</p>
     <h1 class="font-display text-4xl sm:text-5xl text-ink mb-6">

@@ -39,7 +39,11 @@ const formatDate = (date: string) =>
   new Date(date).toLocaleDateString('zh-Hant-TW', { year: 'numeric', month: 'long', day: 'numeric' });
 ---
 
-<BaseLayout title="首頁">
+<BaseLayout
+  title="首頁"
+  fullTitle="yaya 林（lin yaya）｜新竹縣兒少代表・兒少委員"
+  description="yaya 林（lin yaya、yaya lin）是新竹縣兒少代表，2024 年起擔任新竹縣兒童及少年福利與權益促進委員會青少年代表委員，提案關注學生獎懲辦法、兒少就學交通安全，並記錄兒少參與與生活。"
+>
   <Hero />
 
   <section class="max-w-4xl mx-auto px-6 pb-20">
