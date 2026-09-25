@@ -1,0 +1,80 @@
+---
+import AppDoc from '../../components/AppDoc.astro';
+import { APP_NAME, APP_EMAIL, APP_STATUS_URL } from '../../lib/app';
+---
+
+<AppDoc title="TransitGo App" description="交通即時查 TransitGo：公車、台鐵、捷運、YouBike 即時資訊、導航與行程分享的 iPhone App。">
+  <h1>{APP_NAME}</h1>
+  <p class="meta">公車・台鐵・捷運・YouBike 的即時資訊、導航與行程分享 · iPhone / iPad · 目前測試中</p>
+
+  <p>
+    把日常搭車會用到的事放在同一個 App：查附近站牌與到站時間、規劃多種運具的路線、開車或騎車導航（含測速與科技執法照相提醒）、把行程分享給親友，
+    以及用小工具和 Siri 快速看台鐵車站的北上、南下班次。資料來自政府與營運單位的開放資料，查不到的時候會直接說「查不到」，不會編造。
+  </p>
+
+  <h2>目前提供</h2>
+  <ul>
+    <li><strong>附近</strong>：公車站牌與到站時間、YouBike 可借還、測速照相位置</li>
+    <li><strong>路線規劃</strong>：步行、公車、捷運、台鐵、高鐵、YouBike 組合的路線</li>
+    <li><strong>導航</strong>：開車、騎機車（避開國道）、步行；語音提示與測速／科技執法照相提醒</li>
+    <li><strong>行程分享</strong>：產生一個連結，親友不用安裝 App 就能看班次狀態與台鐵列車最後回報的位置（不含你的位置）</li>
+    <li><strong>小工具與 Siri</strong>：台鐵車站看板（選一個車站，看北上、南下所有列車與終點站）、「用交通即時查導航」等語音指令</li>
+  </ul>
+  <p>高鐵目前沒有公開的即時車次位置資料，所以只提供班次時間與營運公告。</p>
+
+  <h2>伺服器狀態</h2>
+  <div class="note" id="status-card" aria-live="polite">
+    <p style="margin:0;color:inherit;"><strong id="status-text">檢查中…</strong></p>
+    <p id="status-detail" style="margin:0.4em 0 0;font-size:0.9rem;color:inherit;"></p>
+  </div>
+  <p style="font-size:0.9rem;">
+    服務目前由個人電腦提供，偶爾會離線或重新啟動；離線時 App 的即時功能會暫時查不到資料。這個狀態每分鐘自動更新。
+  </p>
+
+  <h2>需要幫忙或想說些什麼</h2>
+  <p>
+    <a class="cta" href="/app/support">客服與意見回饋</a>
+  </p>
+  <ul>
+    <li><a href="/app/privacy">隱私權政策</a></li>
+    <li><a href="/app/terms">服務條款</a></li>
+    <li>信箱：<a href={`mailto:${APP_EMAIL}`}>{APP_EMAIL}</a></li>
+  </ul>
+</AppDoc>
+
+<script is:inline define:vars={{ statusUrl: APP_STATUS_URL }}>
+  // Reads the backend's tiny public status (only "up / route planner ready / uptime"). A failure is shown as
+  // "can't reach", never as a guess.
+  const text = document.getElementById('status-text');
+  const detail = document.getElementById('status-detail');
+  const card = document.getElementById('status-card');
+
+  function uptime(seconds) {
+    if (seconds < 90) return '剛啟動';
+    if (seconds < 5400) return `已連續運作約 ${Math.round(seconds / 60)} 分鐘`;
+    if (seconds < 172800) return `已連續運作約 ${Math.round(seconds / 3600)} 小時`;
+    return `已連續運作約 ${Math.round(seconds / 86400)} 天`;
+  }
+
+  async function check() {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 8000);
+    const at = new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: false });
+    try {
+      const res = await fetch(statusUrl, { cache: 'no-store', signal: controller.signal });
+      const s = await res.json();
+      if (!res.ok || s.ok !== true) throw new Error('bad status');
+      text.textContent = s.routing === 'ready' ? '運作中' : '啟動中（路線規劃準備中）';
+      detail.textContent = `${uptime(s.uptimeSeconds)} · 檢查時間 ${at}`;
+      card.style.background = '';
+    } catch {
+      text.textContent = '目前無法連線';
+      detail.textContent = `伺服器可能正在重新啟動或暫時離線 · 檢查時間 ${at}`;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  check();
+  setInterval(check, 60000);
+</script>
