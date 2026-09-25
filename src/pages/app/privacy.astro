@@ -28,8 +28,8 @@ import AppDoc from '../../components/AppDoc.astro';
 <li><strong>交通部 TDX 運輸資料流通服務平台</strong>：公車到站、台鐵、捷運、YouBike 等公開資料。查詢時 TDX 會看到查詢的路線／站牌參數與請求來源 IP，看不到你的裝置識別碼。</li>
 <li><strong>臺北市公車動態資訊中心、臺北捷運、新竹市政府等政府與營運單位的開放資料</strong>：擁擠度、到站與路線相片資料。App 會直接向這些單位的伺服器下載，對方可看到你的 IP 位址。</li>
 <li><strong>Open-Meteo</strong>：顯示目的地天氣時，會送出目的地的座標。</li>
-<li><strong>Supabase</strong>：我們用它保存你提交的內容與路線資料（資料庫與檔案儲存）；意見回饋會進到 yayalin.com 網站的收件匣（同樣由 Supabase 保存）。</li>
-<li><strong>Cloudflare</strong>：yayalin.com 網站、電子郵件轉寄（app@yayalin.com），以及行程分享頁的轉發都經由 Cloudflare，其會處理連線資訊（例如 IP 位址）。</li>
+<li><strong>Supabase</strong>：我們用它保存你提交的內容與路線資料（資料庫與檔案儲存）；意見回饋與對話會進到我們的客服收件匣（同樣由 Supabase 保存）。</li>
+<li><strong>Cloudflare</strong>：本說明網頁、客服電子郵件（app&#64;yayalin.com）的轉寄，以及行程分享頁的轉發都經由 Cloudflare，其會處理連線資訊（例如 IP 位址）。</li>
 <li><strong>Tailscale</strong>：我們的伺服器經由其網路服務對外提供連線，連線內容會經過其中繼設備（傳輸皆為加密）。</li>
 </ul>
 <p>上述部分服務位於台灣以外的地區，你的資料可能因此傳輸到境外。除上述與法律要求外，我們不會把你的資料提供給第三方。</p>
