@@ -125,6 +125,46 @@ body {
     border: 1px solid rgba(29, 39, 66, 0.15);
   }
 
+  /* 紙上的填寫欄：只有一條底線，像手寫填空 */
+  .paper-field {
+    width: 100%;
+    background: transparent;
+    border: 0;
+    border-bottom: 2px solid var(--color-ink);
+    border-radius: 0;
+    padding: 0.65rem 0.3rem;
+    color: var(--color-ink);
+    outline: none;
+    transition: background-color 0.2s ease;
+  }
+  .paper-field:focus {
+    background-color: rgba(255, 233, 74, 0.35);
+  }
+  .paper-field::placeholder {
+    color: rgba(88, 98, 126, 0.75);
+  }
+
+  /* 橫線稿紙的文字框 */
+  .paper-lines {
+    width: 100%;
+    background-color: #fffefa;
+    background-image: repeating-linear-gradient(to bottom, transparent 0 31px, rgba(120, 150, 210, 0.4) 31px 32px);
+    background-attachment: local;
+    border: 2px solid var(--color-ink);
+    border-radius: 10px 4px 12px 5px / 5px 12px 4px 10px;
+    line-height: 32px;
+    padding: 0 0.9rem;
+    color: var(--color-ink);
+    outline: none;
+    resize: none;
+  }
+  .paper-lines:focus {
+    box-shadow: 3px 3px 0 var(--color-butter);
+  }
+  .paper-lines::placeholder {
+    color: rgba(88, 98, 126, 0.75);
+  }
+
   /* 螢光筆：捲到畫面時從左往右劃過 */
   .marker {
     background-image: linear-gradient(transparent 55%, var(--color-butter) 55%, var(--color-butter) 92%, transparent 92%);
