@@ -1,0 +1,29 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="驗證 Email" description="驗證學生意見箱的 Email。" noindex>
+  <section class="max-w-lg mx-auto px-6 pt-24 pb-24 text-center">
+    <h1 class="font-display text-3xl text-ink mb-4">驗證 Email</h1>
+    <p id="verify-message" class="text-ink-light">驗證中...</p>
+  </section>
+</BaseLayout>
+
+<script>
+  import { supabase } from '../lib/supabase';
+
+  const message = document.getElementById('verify-message')!;
+  const token = new URLSearchParams(window.location.search).get('t');
+
+  if (!token) {
+    message.textContent = '連結無效，找不到驗證碼。';
+  } else {
+    supabase.rpc('verify_suggestion_email', { p_token: token }).then(({ data, error }) => {
+      if (error || !data) {
+        message.textContent = '驗證失敗，連結可能已失效，請重新送出一次意見。';
+      } else {
+        message.textContent = `Email 驗證完成！你的案件編號是 ${data}，我會盡速處理，回覆會寄到這個信箱。`;
+      }
+    });
+  }
+</script>

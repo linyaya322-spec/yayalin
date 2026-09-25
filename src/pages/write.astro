@@ -778,7 +778,8 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     (data ?? []).forEach((s) => {
       const li = document.createElement('li');
       li.className = 'border-2 border-ink bg-cream p-4 grid gap-3';
-      const meta = [s.case_number, fmtDate(s.created_at), s.school, s.grade, s.contact_name].filter(Boolean).map(esc).join(' · ');
+      const meta = [s.case_number, fmtDate(s.created_at), s.school, s.grade, s.contact_name].filter(Boolean).map(esc).join(' · ')
+        + (s.contact_email ? ` · <span class="font-bold ${s.email_verified_at ? 'text-sage' : 'text-clay'}">${s.email_verified_at ? 'Email 已驗證' : 'Email 未驗證'}</span>` : '');
       const attachmentChip = (path: string, label: string, deleteAttr?: string) => `
         <span class="inline-flex border-2 border-ink">
           <button type="button" data-view-attachment="${esc(path)}" class="px-2.5 py-1 text-xs font-semibold hover:bg-ink hover:text-cream transition-colors">${label}</button>

@@ -222,7 +222,7 @@ const collectContact = settings?.find((s) => s.key === 'suggestion_box_collect_c
     if (error) {
       if (status) status.textContent = '送出失敗，請稍後再試一次。';
     } else {
-      if (status) status.textContent = `已送出，謝謝你的意見！你的案件編號是 ${caseNumber}，請留存以便之後查詢${contactEmail ? '（也會寄一封確認信到你的信箱）' : ''}。`;
+      if (status) status.textContent = `已送出，謝謝你的意見！你的案件編號是 ${caseNumber}，請留存以便之後查詢${contactEmail ? '。請到信箱點擊驗證連結完成 Email 驗證（沒收到請看垃圾信件匣）' : ''}。`;
       form.reset();
       stagedFiles = [];
       renderStagedFiles();

@@ -66,6 +66,7 @@ export interface StudentSuggestion {
   reply_attachment_paths: string[] | null;
   case_number: string | null;
   case_closed_at: string | null;
+  email_verified_at: string | null;
   created_at: string;
 }
 

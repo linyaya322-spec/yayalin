@@ -9,7 +9,7 @@ export default defineConfig({
   site: 'https://yayalin.com',
   integrations: [
     sitemap({
-      filter: (page) => !page.includes('/write') && !page.includes('/survey/') && !page.includes('/unsubscribe'),
+      filter: (page) => !page.includes('/write') && !page.includes('/survey/') && !page.includes('/unsubscribe') && !page.includes('/verify'),
     }),
   ],
   vite: {
