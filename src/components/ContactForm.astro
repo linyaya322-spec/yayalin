@@ -21,11 +21,28 @@ import Icon from './Icon.astro';
     type="email"
     id="contact-email"
     name="email"
-    placeholder="你的 Email，方便我回覆你"
-    aria-label="你的 Email"
+    placeholder="你的 Email，方便我回覆你（需驗證）"
+    aria-label="你的 Email，需要驗證"
     required
     class="paper-field"
   />
+  <div class="grid gap-2 sm:grid-cols-[auto_1fr] items-center">
+    <button type="button" id="contact-send-code" class="btn-pop px-4 py-2 text-sm disabled:opacity-50">寄驗證碼</button>
+    <input
+      type="text"
+      id="contact-code"
+      name="code"
+      inputmode="numeric"
+      autocomplete="one-time-code"
+      maxlength="6"
+      placeholder="輸入 6 位數驗證碼"
+      aria-label="Email 驗證碼"
+      required
+      disabled
+      class="paper-field"
+    />
+  </div>
+  <p id="contact-code-status" class="text-xs text-ink-light min-h-4 -mt-2"></p>
   <textarea
     id="contact-message"
     name="message"
@@ -49,9 +66,18 @@ import Icon from './Icon.astro';
 
 <script>
   import { supabase } from '../lib/supabase';
+  import { wireEmailCode } from '../lib/emailCode';
 
   const form = document.getElementById('contact-form') as HTMLFormElement | null;
   const status = document.getElementById('contact-status');
+
+  const emailInput = document.getElementById('contact-email') as HTMLInputElement | null;
+  const codeInput = document.getElementById('contact-code') as HTMLInputElement | null;
+  const sendBtn = document.getElementById('contact-send-code') as HTMLButtonElement | null;
+  const codeStatus = document.getElementById('contact-code-status');
+  if (emailInput && codeInput && sendBtn && codeStatus) {
+    wireEmailCode({ emailInput, sendBtn, codeInput, statusEl: codeStatus, purpose: 'contact' });
+  }
 
   form?.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -60,7 +86,12 @@ import Icon from './Icon.astro';
     const name = String(formData.get('name') ?? '').trim();
     const email = String(formData.get('email') ?? '').trim();
     const message = String(formData.get('message') ?? '').trim();
+    const code = String(formData.get('code') ?? '').trim();
     if (!name || !email || !message) return;
+    if (!/^\d{6}$/.test(code)) {
+      if (status) status.textContent = '請先按「寄驗證碼」，並輸入信箱收到的 6 位數驗證碼。';
+      return;
+    }
 
     if (submitBtn) submitBtn.disabled = true;
     if (status) status.textContent = '送出中...';
@@ -69,13 +100,17 @@ import Icon from './Icon.astro';
       p_name: name,
       p_email: email,
       p_message: message,
+      p_code: code,
     });
 
     if (error) {
       if (status) status.textContent = '送出失敗，請稍後再試一次，或直接寄 Email 給我。';
+    } else if (!caseNumber) {
+      if (status) status.textContent = '驗證碼不正確或已過期，請重新按「寄驗證碼」。你的內容還在，不用重打。';
     } else {
       if (status) status.textContent = `已收到你的訊息，我會盡快回覆！你的案件編號是 ${caseNumber}，也會寄一封確認信到你的信箱。`;
       form.reset();
+      if (codeInput) codeInput.disabled = true;
     }
     if (submitBtn) submitBtn.disabled = false;
   });

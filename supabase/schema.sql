@@ -756,6 +756,6 @@ $$;
 
 grant execute on function submit_contact(text, text, text) to anon, authenticated;
 
--- 學生意見箱 Email 驗證（詳見 add_suggestion_email_verification.sql）
-alter table student_suggestions add column if not exists verify_token uuid not null default gen_random_uuid();
+-- Email 驗證碼（詳見 add_email_code_verification.sql）
 alter table student_suggestions add column if not exists email_verified_at timestamptz;
+alter table contact_submissions add column if not exists email_verified_at timestamptz;

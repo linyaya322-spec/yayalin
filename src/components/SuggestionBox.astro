@@ -65,12 +65,29 @@ const collectContact = settings?.find((s) => s.key === 'suggestion_box_collect_c
           type="email"
           id="suggestion-contact-email"
           name="contact_email"
-          placeholder="Email（必填，方便我回覆你）"
-          aria-label="Email，方便我回覆你"
+          placeholder="Email（必填，需驗證）"
+          aria-label="Email，需要驗證"
           required
           class="paper-field"
         />
       </div>
+      <div class="grid gap-2 sm:grid-cols-[auto_1fr] items-center">
+        <button type="button" id="suggestion-send-code" class="btn-pop px-4 py-2 text-sm disabled:opacity-50">寄驗證碼</button>
+        <input
+          type="text"
+          id="suggestion-code"
+          name="code"
+          inputmode="numeric"
+          autocomplete="one-time-code"
+          maxlength="6"
+          placeholder="輸入 6 位數驗證碼"
+          aria-label="Email 驗證碼"
+          required
+          disabled
+          class="paper-field"
+        />
+      </div>
+      <p id="suggestion-code-status" class="text-xs text-ink-light min-h-4"></p>
     )}
 
     <div class="grid gap-2 bg-sage-light/50 border-2 border-ink border-dashed p-3">
@@ -117,6 +134,7 @@ const collectContact = settings?.find((s) => s.key === 'suggestion_box_collect_c
 
 <script>
   import { supabase } from '../lib/supabase';
+  import { wireEmailCode } from '../lib/emailCode';
 
   const MAX_FILES = 5;
   const MAX_FILE_BYTES = 25 * 1024 * 1024;
@@ -135,6 +153,14 @@ const collectContact = settings?.find((s) => s.key === 'suggestion_box_collect_c
   const filesInput = document.getElementById('suggestion-files') as HTMLInputElement | null;
   const fileStatus = document.getElementById('suggestion-file-status');
   const stagedList = document.getElementById('suggestion-staged-list');
+
+  const emailInput = document.getElementById('suggestion-contact-email') as HTMLInputElement | null;
+  const codeInput = document.getElementById('suggestion-code') as HTMLInputElement | null;
+  const sendBtn = document.getElementById('suggestion-send-code') as HTMLButtonElement | null;
+  const codeStatus = document.getElementById('suggestion-code-status');
+  if (emailInput && codeInput && sendBtn && codeStatus) {
+    wireEmailCode({ emailInput, sendBtn, codeInput, statusEl: codeStatus, purpose: 'suggestion' });
+  }
 
   let stagedFiles: File[] = [];
 
@@ -180,7 +206,12 @@ const collectContact = settings?.find((s) => s.key === 'suggestion_box_collect_c
     const grade = String(formData.get('grade') ?? '').trim();
     const contactName = String(formData.get('contact_name') ?? '').trim();
     const contactEmail = String(formData.get('contact_email') ?? '').trim();
+    const code = String(formData.get('code') ?? '').trim();
     if (!message) return;
+    if (contactEmail && !/^\d{6}$/.test(code)) {
+      if (status) status.textContent = '請先按「寄驗證碼」，並輸入信箱收到的 6 位數驗證碼。';
+      return;
+    }
 
     const files = stagedFiles;
     if (files.some((f) => f.size > MAX_FILE_BYTES)) {
@@ -217,13 +248,17 @@ const collectContact = settings?.find((s) => s.key === 'suggestion_box_collect_c
       p_contact_name: contactName || null,
       p_contact_email: contactEmail || null,
       p_attachment_paths: attachmentPaths.length ? attachmentPaths : null,
+      p_code: contactEmail ? code : null,
     });
 
     if (error) {
       if (status) status.textContent = '送出失敗，請稍後再試一次。';
+    } else if (!caseNumber) {
+      if (status) status.textContent = '驗證碼不正確或已過期，請重新按「寄驗證碼」。你的內容還在，不用重打。';
     } else {
-      if (status) status.textContent = `已送出，謝謝你的意見！你的案件編號是 ${caseNumber}，請留存以便之後查詢${contactEmail ? '。請到信箱點擊驗證連結完成 Email 驗證（沒收到請看垃圾信件匣）' : ''}。`;
+      if (status) status.textContent = `已送出，謝謝你的意見！你的案件編號是 ${caseNumber}，請留存以便之後查詢${contactEmail ? '（Email 已驗證，也會寄一封確認信到你的信箱）' : ''}。`;
       form.reset();
+      if (codeInput) codeInput.disabled = true;
       stagedFiles = [];
       renderStagedFiles();
     }
