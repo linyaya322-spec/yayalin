@@ -1,4 +1,5 @@
 ---
+import Icon from './Icon.astro';
 import { supabase } from '../lib/supabase';
 
 const { data: quotes } = await supabase.from('quotes').select('text');
@@ -7,14 +8,14 @@ const quoteTexts = (quotes ?? []).map((q) => q.text);
 
 <div
   id="quote-card"
-  class="reveal relative max-w-lg mx-auto text-center p-8 sm:p-10 rounded-3xl overflow-hidden bg-white/80 backdrop-blur-md border border-white/70"
-  style="box-shadow: 0 30px 60px -30px rgba(23,23,22,0.35);"
+  class="reveal relative max-w-lg mx-auto text-center p-8 sm:p-10 bg-butter-light border-2 border-ink -rotate-1"
+  style="box-shadow: 4px 6px 0 rgba(29,39,66,0.18);"
 >
-  <div id="quote-glow" class="pointer-events-none absolute -top-10 left-1/2 -translate-x-1/2 w-56 h-56 rounded-full bg-butter/30 blur-3xl" aria-hidden="true"></div>
+  <div id="quote-glow" class="hidden" aria-hidden="true"></div>
 
   <div class="relative">
-    <p class="inline-flex items-center gap-1.5 bg-cream text-ink text-xs font-semibold px-3 py-1.5 rounded-full mb-6">
-      <span aria-hidden="true">☀️</span> 今日小語
+    <p class="inline-flex items-center gap-1.5 bg-white border-2 border-ink text-ink text-xs font-bold px-3 py-1 mb-6">
+      <Icon name="sun" size={16} /> 今日小語
     </p>
     <p
       id="quote-text"
@@ -25,9 +26,9 @@ const quoteTexts = (quotes ?? []).map((q) => q.text);
     <button
       id="quote-btn"
       data-magnetic
-      class="mt-8 px-7 py-3 rounded-full bg-ink text-cream text-sm font-semibold hover:bg-clay active:scale-95 transition-all"
+      class="btn-pop mt-8 px-7 py-3 text-sm"
     >
-      抽一句話 🫶
+      抽一句話
     </button>
   </div>
 </div>

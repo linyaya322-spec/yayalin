@@ -1,32 +1,50 @@
 ---
+import Icon from './Icon.astro';
 ---
 <section class="relative overflow-hidden">
-  <!-- 左上角的彩虹弧線 -->
-  <div class="rainbow" aria-hidden="true"></div>
+  <!-- 桌上的文具：麥克風、筆記本、鉛筆 -->
+  <div class="deco deco-mic" aria-hidden="true">
+    <Icon name="mic" size={96} />
+  </div>
+  <div class="deco deco-notebook" aria-hidden="true">
+    <Icon name="notebook" size={104} />
+  </div>
+  <div class="deco deco-pencil" aria-hidden="true">
+    <Icon name="pencil" size={84} />
+  </div>
+  <div class="deco deco-highlighter" aria-hidden="true">
+    <Icon name="highlighter" size={72} />
+  </div>
 
-  <div class="relative max-w-5xl mx-auto px-6 pt-16 pb-14 sm:pt-24 sm:pb-16 text-center">
+  <div class="relative max-w-5xl mx-auto px-6 pt-20 pb-14 sm:pt-28 sm:pb-16 text-center">
     <p
-      class="reveal inline-flex items-center gap-2 bg-clay-light border-2 border-ink text-ink text-xs sm:text-sm font-semibold px-4 py-1.5 rounded-full mb-8"
+      class="reveal inline-block bg-butter border-2 border-ink text-ink text-xs sm:text-sm font-bold px-4 py-1.5 mb-8 -rotate-2 shadow-[2px_2px_0_var(--color-ink)]"
       style="animation-delay: 0.05s;"
     >
-      <span class="w-2 h-2 rounded-full bg-clay" aria-hidden="true"></span>
       學生 &middot; 新竹縣兒少委員
     </p>
 
-    <h1 class="font-display text-6xl sm:text-8xl text-ink mb-8 leading-[1.05] tracking-tight">
-      <span class="marker px-3"><span data-text-reveal>yaya 林</span></span>
+    <h1 class="font-display font-bold text-6xl sm:text-8xl text-ink mb-8 leading-[1.15] tracking-tight">
+      <span class="marker px-3" style="transition-delay: 2s;">
+        <span class="write">
+          <span class="write-text">yaya 林</span>
+          <svg class="write-pencil" viewBox="0 0 48 48" width="44" height="44" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M9 39l2-9L32 9a3.2 3.2 0 0 1 4.5 0l2.5 2.5a3.2 3.2 0 0 1 0 4.5L18 37z" fill="#fff"/><path d="M28 13l7 7M9 39l9-2"/>
+          </svg>
+        </span>
+      </span>
     </h1>
 
     <p class="reveal text-lg sm:text-xl text-ink-light max-w-md mx-auto leading-relaxed" style="animation-delay: 0.3s;">
       這裡記錄我的生活、公共參與的觀察，還有一些讓我開心的小事。
     </p>
 
-    <div class="reveal mt-9 flex flex-wrap justify-center gap-4" style="animation-delay: 0.45s;">
-      <a href="/blog" data-magnetic class="btn-pop px-7 py-3 text-sm">看看部落格 &nearr;</a>
+    <div class="reveal mt-10 flex flex-wrap justify-center gap-4" style="animation-delay: 0.45s;">
+      <a href="/blog" data-magnetic class="btn-pop px-7 py-3 text-sm">看看部落格</a>
       <a
         href="/committee"
         data-magnetic
-        class="px-7 py-3 rounded-full border-2 border-ink bg-white text-ink text-sm font-semibold hover:bg-sage-light transition-colors"
+        class="px-7 py-3 border-2 border-ink bg-white text-ink text-sm font-bold hover:bg-butter-light transition-colors"
       >
         兒少委員專區
       </a>
@@ -35,29 +53,62 @@
 </section>
 
 <style>
-  .rainbow {
+  .deco {
     position: absolute;
-    top: -9rem;
-    left: -9rem;
-    width: 22rem;
-    height: 22rem;
-    border-radius: 9999px;
-    background: radial-gradient(
-      circle at center,
-      transparent 0 44%,
-      var(--color-butter) 44% 58%,
-      var(--color-clay-light) 58% 72%,
-      var(--color-sage-light) 72% 86%,
-      transparent 86%
-    );
+    color: var(--color-ink);
+    pointer-events: none;
     opacity: 0.9;
   }
+  .deco::before {
+    content: "";
+    position: absolute;
+    inset: 12% 8% 6% 12%;
+    background: var(--color-butter-light);
+    border-radius: 60% 40% 55% 45% / 45% 55% 45% 55%;
+    z-index: -1;
+  }
+  .deco-mic { top: 2.2rem; left: 1rem; transform: rotate(-14deg); }
+  .deco-notebook { top: 3rem; right: 0.6rem; transform: rotate(9deg); }
+  .deco-pencil { bottom: 1.5rem; left: 8%; transform: rotate(18deg); display: none; }
+  .deco-highlighter { bottom: 2rem; right: 9%; transform: rotate(-12deg); display: none; }
+  .deco :global(svg) { width: 3.6rem; height: 3.6rem; }
   @media (min-width: 640px) {
-    .rainbow {
-      top: -8rem;
-      left: -8rem;
-      width: 30rem;
-      height: 30rem;
-    }
+    .deco-mic { top: 4rem; left: 6%; }
+    .deco-notebook { top: 5rem; right: 6%; }
+    .deco-pencil, .deco-highlighter { display: block; }
+    .deco :global(svg) { width: 6rem; height: 6rem; }
+  }
+
+  .write {
+    position: relative;
+    display: inline-block;
+  }
+  .write-pencil {
+    display: none;
+    position: absolute;
+    left: 0;
+    top: 62%;
+    color: var(--color-ink);
+    transform: translate(-40%, -70%) rotate(-8deg);
+    pointer-events: none;
+  }
+  :global(html.js-anim) .write-text {
+    display: inline-block;
+    clip-path: inset(-15% 100% -15% -2%);
+    animation: write-in 1.5s steps(16) 0.3s forwards;
+  }
+  :global(html.js-anim) .write-pencil {
+    display: block;
+    opacity: 0;
+    animation: pencil-move 1.5s steps(16) 0.3s forwards;
+  }
+  @keyframes write-in {
+    to { clip-path: inset(-15% -2% -15% -2%); }
+  }
+  @keyframes pencil-move {
+    0% { left: 0; opacity: 0; }
+    4% { opacity: 1; }
+    92% { opacity: 1; }
+    100% { left: 100%; opacity: 0; }
   }
 </style>

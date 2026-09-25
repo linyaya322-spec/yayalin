@@ -51,7 +51,7 @@ const theme = THEMES[survey.theme] ?? THEMES.clay;
             data-magnetic
             class="inline-flex items-center gap-1.5 px-3 py-1.5 border-2 border-ink text-sm font-semibold text-ink hover:bg-ink hover:text-cream transition-colors"
           >
-            📄 相關文件 PDF
+            相關文件 PDF
           </a>
         )}
         {survey.link_url && (
@@ -62,7 +62,7 @@ const theme = THEMES[survey.theme] ?? THEMES.clay;
             data-magnetic
             class="inline-flex items-center gap-1.5 px-3 py-1.5 border-2 border-ink text-sm font-semibold text-ink hover:bg-ink hover:text-cream transition-colors"
           >
-            🔗 相關連結
+            相關連結
           </a>
         )}
       </div>
@@ -322,8 +322,46 @@ const theme = THEMES[survey.theme] ?? THEMES.clay;
     background-color: var(--accent);
   }
 
+  /* 紙本表單的感覺：橫線紙、左邊紅色邊界線、選中的選項被螢光筆劃過 */
   .survey-question {
+    position: relative;
+    padding-left: 2.6rem !important;
+    background-color: #fffefa;
+    background-image: repeating-linear-gradient(to bottom, transparent 0 31px, rgba(120, 150, 210, 0.22) 31px 32px);
+    box-shadow: 3px 4px 0 rgba(29, 39, 66, 0.16);
     transition: opacity 0.25s ease, transform 0.25s ease;
+  }
+  .survey-question::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 1.6rem;
+    width: 2px;
+    background: rgba(214, 58, 58, 0.4);
+  }
+  .survey-question input[type='radio'],
+  .survey-question input[type='checkbox'] {
+    accent-color: var(--color-ink);
+    width: 1.1rem;
+    height: 1.1rem;
+  }
+  .option-row label {
+    padding: 0.2rem 0.4rem;
+    background-image: linear-gradient(transparent 50%, transparent 50%);
+    background-repeat: no-repeat;
+    background-size: 0% 100%;
+    transition: background-size 0.35s ease;
+  }
+  .option-row:has(input:checked) label {
+    background-image: linear-gradient(transparent 28%, var(--color-butter) 28%, var(--color-butter) 82%, transparent 82%);
+    background-size: 100% 100%;
+    font-weight: 600;
+  }
+
+  .survey-question p.font-semibold {
+    font-family: var(--font-display);
+    font-weight: 700;
   }
   .survey-question.q-enter {
     animation: surveyQuestionIn 0.35s ease;

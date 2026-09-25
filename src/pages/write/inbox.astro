@@ -37,7 +37,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       <!-- 對話串列表 -->
       <div id="list-view">
         <button id="compose-btn" data-magnetic class="mb-6 px-6 py-2.5 bg-clay text-cream text-sm font-semibold hover:bg-ink transition-colors">
-          ✉️ 寫新信
+          寫新信
         </button>
         <ul id="thread-list" class="grid gap-3"></ul>
         <p id="empty-hint" class="hidden text-sm text-ink-light">目前沒有信件。</p>
@@ -73,7 +73,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
               <p id="reply-file-status" class="text-xs text-ink-light min-h-4"></p>
             </div>
             <button id="send-btn" type="button" class="justify-self-start px-5 py-2 text-sm font-semibold border-2 border-sage-dark text-sage-dark hover:bg-sage-dark hover:text-cream transition-colors">
-              ✉️ 寄出
+              寄出
             </button>
           </div>
         </div>
@@ -144,7 +144,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
   function attachmentChip(path: string, label: string) {
     return `
       <span class="inline-flex border-2 border-ink">
-        <button type="button" data-view-attachment="${esc(path)}" class="px-2.5 py-1 text-xs font-semibold hover:bg-ink hover:text-cream transition-colors">📎 ${label}</button>
+        <button type="button" data-view-attachment="${esc(path)}" class="px-2.5 py-1 text-xs font-semibold hover:bg-ink hover:text-cream transition-colors">${label}</button>
       </span>
     `;
   }

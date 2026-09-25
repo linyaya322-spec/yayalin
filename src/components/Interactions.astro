@@ -8,7 +8,8 @@
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   // ---------- block-level scroll reveal ----------
-  const revealEls = document.querySelectorAll('.reveal');
+  if (!reduceMotion) document.documentElement.classList.add('js-anim');
+  const revealEls = document.querySelectorAll('.reveal, .marker, .pen-underline');
   const revealObserver = new IntersectionObserver(
     (entries) => {
       for (const entry of entries) {

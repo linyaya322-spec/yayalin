@@ -781,7 +781,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       const meta = [s.case_number, fmtDate(s.created_at), s.school, s.grade, s.contact_name].filter(Boolean).map(esc).join(' · ');
       const attachmentChip = (path: string, label: string, deleteAttr?: string) => `
         <span class="inline-flex border-2 border-ink">
-          <button type="button" data-view-attachment="${esc(path)}" class="px-2.5 py-1 text-xs font-semibold hover:bg-ink hover:text-cream transition-colors">📎 ${label}</button>
+          <button type="button" data-view-attachment="${esc(path)}" class="px-2.5 py-1 text-xs font-semibold hover:bg-ink hover:text-cream transition-colors">${label}</button>
           ${deleteAttr ? `<button type="button" ${deleteAttr}="${esc(path)}" title="刪除這個附件" class="px-2 py-1 text-xs font-semibold border-l-2 border-ink text-clay hover:bg-clay hover:text-cream transition-colors">✕</button>` : ''}
         </span>
       `;
@@ -828,7 +828,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
               <input type="file" data-reply-files multiple accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx" class="text-xs" />
               <p data-reply-file-status class="text-xs text-ink-light min-h-4"></p>
             </div>
-            <button type="button" data-send-reply class="justify-self-start px-4 py-1.5 text-xs font-semibold border-2 border-sage-dark text-sage-dark hover:bg-sage-dark hover:text-cream transition-colors">✉️ 寄出</button>
+            <button type="button" data-send-reply class="justify-self-start px-4 py-1.5 text-xs font-semibold border-2 border-sage-dark text-sage-dark hover:bg-sage-dark hover:text-cream transition-colors">寄出</button>
           </div>
         `
         : '';

@@ -1,0 +1,55 @@
+---
+// 手繪風的單線圖示（取代 emoji）：政府工作會用到的文具與工具。
+interface Props {
+  name:
+    | 'mic'
+    | 'notebook'
+    | 'pencil'
+    | 'paper'
+    | 'clipboard'
+    | 'bubble'
+    | 'mouth'
+    | 'mail'
+    | 'highlighter'
+    | 'link'
+    | 'sun';
+  class?: string;
+  size?: number;
+}
+
+const { name, class: className = '', size = 48 } = Astro.props;
+
+const shapes: Record<string, string> = {
+  mic: '<rect x="18" y="5" width="12" height="22" rx="6"/><path d="M12 22c0 7 5 12 12 12s12-5 12-12"/><path d="M24 34v8M16 42h16"/><path d="M18 14h5M18 19h5" stroke-width="1.6"/>',
+  notebook:
+    '<rect x="11" y="6" width="28" height="36" rx="2"/><path d="M17 6v36"/><path d="M6 12h8M6 20h8M6 28h8M6 36h8"/><path d="M23 16h12M23 23h12M23 30h8"/>',
+  pencil: '<path d="M9 39l2-9L32 9a3.2 3.2 0 0 1 4.5 0l2.5 2.5a3.2 3.2 0 0 1 0 4.5L18 37z"/><path d="M28 13l7 7M9 39l9-2"/>',
+  paper: '<path d="M12 6h18l8 8v28H12z"/><path d="M30 6v8h8"/><path d="M18 22h14M18 29h14M18 36h9"/>',
+  clipboard:
+    '<rect x="10" y="9" width="28" height="34" rx="2"/><path d="M18 9V7a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v2"/><path d="M17 22h14M17 29h14M17 36h8"/><path d="M15 19l2 2 3-4" stroke-width="1.6"/>',
+  bubble:
+    '<path d="M8 13a4 4 0 0 1 4-4h24a4 4 0 0 1 4 4v15a4 4 0 0 1-4 4H23l-8 8v-8h-3a4 4 0 0 1-4-4z"/><path d="M16 17h16M16 24h10"/>',
+  mouth:
+    '<path d="M8 26c5-9 27-9 32 0-5 11-27 11-32 0z"/><path d="M9 26h30"/><path d="M14 33c3 2 17 2 20 0" stroke-width="1.6"/><path d="M5 14l4 3M43 14l-4 3M24 6v5" stroke-width="1.6"/>',
+  mail: '<rect x="7" y="11" width="34" height="26" rx="2"/><path d="M8 13l16 13 16-13"/>',
+  highlighter:
+    '<path d="M15 28l15-15 8 8-15 15z"/><path d="M15 28l-5 10 10-2"/><path d="M8 42h22"/><path d="M24 19l8 8" stroke-width="1.6"/>',
+  link: '<path d="M20 28a7 7 0 0 0 10 0l6-6a7 7 0 0 0-10-10l-2 2"/><path d="M28 20a7 7 0 0 0-10 0l-6 6a7 7 0 0 0 10 10l2-2"/>',
+  sun: '<circle cx="24" cy="24" r="8"/><path d="M24 6v6M24 36v6M6 24h6M36 24h6M11 11l4 4M33 33l4 4M37 11l-4 4M15 33l-4 4"/>',
+};
+---
+
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 48 48"
+  width={size}
+  height={size}
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2.2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  class={className}
+  aria-hidden="true"
+  set:html={shapes[name]}
+/>

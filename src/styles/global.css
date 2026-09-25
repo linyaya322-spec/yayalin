@@ -2,21 +2,23 @@
 
 @theme {
   --font-sans: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Fraunces", "Noto Serif TC", serif;
+  --font-display: "LXGW WenKai TC", "Fraunces", "Noto Serif TC", serif;
 
-  --color-cream: #fff6dc;
-  --color-cream-dark: #f5e6b8;
-  --color-sage: #3f86ab;
-  --color-sage-light: #d3e9f5;
-  --color-sage-dark: #245a78;
-  --color-clay: #d13a63;
-  --color-clay-light: #ffd9e3;
-  --color-clay-dark: #a82348;
-  --color-butter: #ffc800;
-  --color-butter-light: #ffe996;
-  --color-ink: #35312e;
-  --color-ink-light: #6d6660;
-  --color-wine: #6e2a35;
+  /* 白色筆記本紙 + 藍黑原子筆 + 螢光黃 + 紅筆 */
+  --color-cream: #ffffff;
+  --color-cream-dark: #eef2f9;
+  --color-sage: #2f5bd0;
+  --color-sage-light: #e6eefc;
+  --color-sage-dark: #1f3f96;
+  --color-clay: #d63a3a;
+  --color-clay-light: #fde4e2;
+  --color-clay-dark: #a82727;
+  --color-butter: #ffe94a;
+  --color-butter-light: #fff7b0;
+  --color-ink: #1d2742;
+  --color-ink-light: #58627e;
+  --color-navy: #17203a;
+  --color-wine: #17203a;
 }
 
 html {
@@ -24,58 +26,143 @@ html {
 }
 
 body {
-  background-color: var(--color-cream);
-  background-image: radial-gradient(rgba(53, 49, 46, 0.07) 1.4px, transparent 1.4px);
-  background-size: 24px 24px;
+  background-color: #fefefc;
+  /* 筆記本橫線 */
+  background-image: repeating-linear-gradient(to bottom, transparent 0 35px, rgba(120, 150, 210, 0.16) 35px 36px);
   color: var(--color-ink);
   font-family: var(--font-sans);
 }
 
+/* 筆記本左邊的紅色邊界線（寬螢幕才顯示） */
+@media (min-width: 1100px) {
+  body::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 4.5rem;
+    width: 2px;
+    background: rgba(214, 58, 58, 0.28);
+    pointer-events: none;
+    z-index: 0;
+  }
+}
+
 /* ---------- 可愛粉彩風的共用元件（參考日本校園網站） ---------- */
 @layer components {
-  /* 所有粗外框的方塊統一圓角 */
+  /* 粗外框的方塊統一成手繪感的不規則圓角 */
   .border-2.border-ink {
-    border-radius: 0.9rem;
+    border-radius: 10px 4px 12px 5px / 5px 12px 4px 10px;
   }
 
+  /* 貼在紙上的卡片：白紙、藍黑細框、微微的陰影，上方有一段膠帶 */
   .card-pop {
-    background: #fffdf5;
+    position: relative;
+    background: #ffffff;
     border: 2px solid var(--color-ink);
-    border-radius: 1.5rem;
-    box-shadow: 6px 6px 0 var(--color-butter);
+    border-radius: 12px 5px 14px 6px / 6px 14px 5px 12px;
+    box-shadow: 3px 4px 0 rgba(29, 39, 66, 0.16);
+  }
+  .card-pop::before {
+    content: "";
+    position: absolute;
+    top: -11px;
+    left: 50%;
+    width: 84px;
+    height: 22px;
+    transform: translateX(-50%) rotate(-2deg);
+    background: rgba(255, 233, 74, 0.72);
+    border-left: 2px dotted rgba(29, 39, 66, 0.25);
+    border-right: 2px dotted rgba(29, 39, 66, 0.25);
+    pointer-events: none;
   }
 
+  /* 螢光黃按鈕，像蓋章 */
   .btn-pop {
     display: inline-block;
     background: var(--color-butter);
     color: var(--color-ink);
     border: 2px solid var(--color-ink);
-    border-radius: 9999px;
-    font-weight: 600;
-    box-shadow: 0 4px 0 var(--color-ink);
-    transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+    border-radius: 10px 4px 12px 5px / 5px 12px 4px 10px;
+    font-weight: 700;
+    box-shadow: 3px 3px 0 var(--color-ink);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
   }
   .btn-pop:hover {
-    background: var(--color-clay-light);
+    transform: translate(-1px, -1px);
+    box-shadow: 4px 4px 0 var(--color-ink);
   }
   .btn-pop:active {
-    transform: translateY(3px);
-    box-shadow: 0 1px 0 var(--color-ink);
+    transform: translate(3px, 3px);
+    box-shadow: 0 0 0 var(--color-ink);
   }
 
+  /* 便利貼 */
   .tile {
     position: relative;
-    border-radius: 1.25rem;
-    outline: 2px dashed rgba(53, 49, 46, 0.5);
-    outline-offset: -9px;
+    border-radius: 3px 3px 14px 3px;
+    box-shadow: 3px 5px 0 rgba(29, 39, 66, 0.16);
     transition: transform 0.2s ease;
   }
+  .tile:nth-child(odd) {
+    transform: rotate(-1.2deg);
+  }
+  .tile:nth-child(even) {
+    transform: rotate(1deg);
+  }
   .tile:hover {
-    transform: translateY(-4px);
+    transform: rotate(0deg) translateY(-4px);
+  }
+  .tile::before {
+    content: "";
+    position: absolute;
+    top: -9px;
+    left: 50%;
+    width: 56px;
+    height: 16px;
+    transform: translateX(-50%) rotate(2deg);
+    background: rgba(255, 255, 255, 0.7);
+    border: 1px solid rgba(29, 39, 66, 0.15);
   }
 
+  /* 螢光筆：捲到畫面時從左往右劃過 */
   .marker {
-    background: linear-gradient(transparent 58%, var(--color-butter) 58%, var(--color-butter) 92%, transparent 92%);
+    background-image: linear-gradient(transparent 55%, var(--color-butter) 55%, var(--color-butter) 92%, transparent 92%);
+    background-repeat: no-repeat;
+    background-size: 100% 100%;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+  }
+  html.js-anim .marker {
+    background-size: 0% 100%;
+    transition: background-size 0.9s cubic-bezier(0.65, 0, 0.35, 1) 0.2s;
+  }
+  html.js-anim .marker.is-visible {
+    background-size: 100% 100%;
+  }
+
+  /* 紅筆手繪底線 */
+  .pen-underline {
+    display: block;
+    width: 100%;
+    height: 12px;
+    color: var(--color-clay);
+    overflow: visible;
+  }
+  .pen-underline path {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 3;
+    stroke-linecap: round;
+    stroke-dasharray: 400;
+    stroke-dashoffset: 0;
+  }
+  html.js-anim .pen-underline path {
+    stroke-dashoffset: 400;
+    transition: stroke-dashoffset 1s ease 0.4s;
+  }
+  html.js-anim .pen-underline.is-visible path {
+    stroke-dashoffset: 0;
   }
 }
 
