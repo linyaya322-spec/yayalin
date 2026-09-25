@@ -27,7 +27,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
         <div>
           <a href="/write" data-magnetic class="text-sm font-semibold text-clay hover:text-ink transition-colors">← 回主控台</a>
           <h1 class="font-display text-3xl text-ink mt-2">App 回饋</h1>
-          <p class="text-sm text-ink-light mt-1">依輕重緩急排序，緊急的在最上面。回覆會寄到對方的 Email，也會出現在 App 的「我的回饋」。</p>
+          <p class="text-sm text-ink-light mt-1">依輕重緩急排序，緊急的在最上面。新回饋與對方的新訊息會寄信通知你。</p>
         </div>
         <button id="logout-btn" class="px-4 py-1.5 border-2 border-ink text-sm font-semibold hover:bg-ink hover:text-cream transition-colors">
           登出
@@ -66,23 +66,29 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
                 <option value="new">新的</option>
                 <option value="in_progress">處理中</option>
                 <option value="waiting">等對方回覆</option>
-                <option value="resolved">已解決</option>
+                <option value="resolved">已結束</option>
               </select>
             </label>
+            <button id="close-btn" type="button" class="px-4 py-1.5 text-xs font-semibold border-2 border-clay text-clay hover:bg-clay hover:text-cream transition-colors">結束對話</button>
             <p id="save-status" class="text-xs text-ink-light min-h-4"></p>
           </div>
+          <p id="closed-banner" class="hidden text-sm border-2 border-ink bg-butter-light px-3 py-2"></p>
 
           <div id="thread" class="grid gap-3"></div>
 
           <div class="border-t-2 border-ink/10 pt-3 grid gap-2">
             <textarea id="reply-text" placeholder="輸入回覆（純文字）..." rows="4" class="border-2 border-ink bg-cream px-3 py-2 text-sm focus:outline-none resize-none"></textarea>
+            <div class="grid gap-1.5">
+              <label class="text-xs font-semibold text-ink-light">照片（選填，最多 3 張、每張 5MB 內，JPG／PNG／WebP）</label>
+              <input type="file" id="reply-files" multiple accept="image/jpeg,image/png,image/webp" class="text-xs" />
+            </div>
             <div class="flex flex-wrap items-center gap-3">
               <button id="send-btn" type="button" class="px-5 py-2 text-sm font-semibold border-2 border-sage-dark text-sage-dark hover:bg-sage-dark hover:text-cream transition-colors disabled:opacity-50">
                 寄出回覆
               </button>
               <p id="send-status" class="text-xs text-ink-light min-h-4"></p>
             </div>
-            <p class="text-xs text-ink-light">回覆會寄到對方驗證過的 Email，並出現在 App 的「我的回饋」。對方直接回信會進到「收件匣」。</p>
+            <p class="text-xs text-ink-light">回覆會寄到對方驗證過的 Email，並出現在 App 的「我的回饋」（對方在 App 裡也能打字、傳照片）。對方直接回信會進到「收件匣」。你結束的對話，對方不能再回、也不能重新開啟；對方自己結束的，他可以重新開啟。</p>
           </div>
         </div>
       </div>
@@ -107,6 +113,9 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     os: string | null;
     priority: Priority;
     status: Status;
+    access_token: string;
+    closed_at: string | null;
+    closed_by: 'owner' | 'user' | null;
     created_at: string;
     updated_at: string;
     last_reply_at: string | null;
@@ -116,6 +125,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     feedback_id: string;
     direction: 'inbound' | 'outbound';
     body: string;
+    attachment_paths: string[] | null;
     created_at: string;
   }
 
@@ -127,14 +137,14 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     normal: 'bg-cream text-ink border-ink',
     low: 'bg-cream text-ink-light border-ink-light',
   };
-  const STATUS_LABEL: Record<Status, string> = { new: '新的', in_progress: '處理中', waiting: '等對方回覆', resolved: '已解決' };
+  const STATUS_LABEL: Record<Status, string> = { new: '新的', in_progress: '處理中', waiting: '等對方回覆', resolved: '已結束' };
   const KIND_LABEL = { bug: '問題回報', idea: '功能建議', other: '其他' } as const;
   const FILTERS: { key: string; label: string; test: (t: Ticket) => boolean }[] = [
     { key: 'open', label: '未結案', test: (t) => t.status !== 'resolved' },
     { key: 'new', label: '新的', test: (t) => t.status === 'new' },
     { key: 'in_progress', label: '處理中', test: (t) => t.status === 'in_progress' },
     { key: 'waiting', label: '等對方回覆', test: (t) => t.status === 'waiting' },
-    { key: 'resolved', label: '已解決', test: (t) => t.status === 'resolved' },
+    { key: 'resolved', label: '已結束', test: (t) => t.status === 'resolved' },
     { key: 'all', label: '全部', test: () => true },
   ];
 
@@ -258,6 +268,30 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
   const replyText = $('reply-text') as HTMLTextAreaElement;
   const sendBtn = $('send-btn') as HTMLButtonElement;
   const sendStatus = $('send-status');
+  const closeBtn = $('close-btn') as HTMLButtonElement;
+  const closedBanner = $('closed-banner');
+  const replyFiles = $('reply-files') as HTMLInputElement;
+  const BUCKET = 'app-feedback-files';
+
+  function paintTicketState() {
+    if (!current) return;
+    const closed = current.status === 'resolved' || !!current.closed_at;
+    statusCell.value = current.status;
+    closeBtn.textContent = closed ? '重新開啟' : '結束對話';
+    closeBtn.className = closed
+      ? 'px-4 py-1.5 text-xs font-semibold border-2 border-sage-dark text-sage-dark hover:bg-sage-dark hover:text-cream transition-colors'
+      : 'px-4 py-1.5 text-xs font-semibold border-2 border-clay text-clay hover:bg-clay hover:text-cream transition-colors';
+    closedBanner.classList.toggle('hidden', !closed);
+    if (closed) {
+      closedBanner.textContent =
+        current.closed_by === 'user'
+          ? '對方已結束這個對話（對方可以自己重新開啟）。你也可以在這裡回覆或重新開啟。'
+          : '你已結束這個對話：對方不能再回，也不能重新開啟；要有新問題，他需要重新送出回饋。';
+    }
+    replyText.disabled = closed;
+    replyFiles.disabled = closed;
+    sendBtn.disabled = closed;
+  }
 
   async function openTicket(id: string) {
     current = tickets.find((t) => t.id === id) ?? null;
@@ -267,21 +301,28 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     $('ticket-title').textContent = `${current.case_number}　${KIND_LABEL[current.kind]}`;
     $('ticket-meta').textContent = `${current.email} · ${when(current.created_at)} · App ${current.app_version ?? '?'} · ${current.os ?? '?'}`;
     priorityCell.value = current.priority;
-    statusCell.value = current.status;
     saveStatus.textContent = '';
     sendStatus.textContent = '';
     replyText.value = '';
+    replyFiles.value = '';
+    paintTicketState();
     await renderThread();
   }
+
+  const fileUrl = (path: string) => supabase.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
 
   async function renderThread() {
     if (!current) return;
     const { data } = await supabase.from('app_feedback_messages').select('*').eq('feedback_id', current.id).order('created_at', { ascending: true });
     $('thread').innerHTML = ((data ?? []) as Msg[]).map((m) => {
       const mine = m.direction === 'outbound';
-      return `<div class="${mine ? 'justify-self-end bg-butter-light' : 'justify-self-start bg-sage-light'} max-w-[85%] border-2 border-ink p-3">
-        <p class="text-xs text-ink-light mb-1">${mine ? '你' : esc(current!.email)} · ${when(m.created_at)}</p>
-        <p class="text-sm text-ink whitespace-pre-wrap">${esc(m.body)}</p>
+      const photos = (m.attachment_paths ?? [])
+        .map((p) => `<a href="${esc(fileUrl(p))}" target="_blank" rel="noopener"><img src="${esc(fileUrl(p))}" alt="照片" loading="lazy" class="max-h-48 border-2 border-ink" /></a>`)
+        .join('');
+      return `<div class="${mine ? 'justify-self-end bg-butter-light' : 'justify-self-start bg-sage-light'} max-w-[85%] border-2 border-ink p-3 grid gap-2">
+        <p class="text-xs text-ink-light">${mine ? '你' : esc(current!.email)} · ${when(m.created_at)}</p>
+        ${m.body ? `<p class="text-sm text-ink whitespace-pre-wrap">${esc(m.body)}</p>` : ''}
+        ${photos ? `<div class="flex flex-wrap gap-2">${photos}</div>` : ''}
       </div>`;
     }).join('');
   }
@@ -295,7 +336,26 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     saveStatus.textContent = '已儲存';
   }
   priorityCell.addEventListener('change', () => saveTriage({ priority: priorityCell.value as Priority }));
-  statusCell.addEventListener('change', () => saveTriage({ status: statusCell.value as Status }));
+  statusCell.addEventListener('change', async () => {
+    const status = statusCell.value as Status;
+    if (!current) return;
+    // 「已結束」= 你結束對話；其他狀態 = 重新開啟。closed_at / closed_by 一起改，App 才知道能不能回。
+    const patch: Record<string, unknown> =
+      status === 'resolved'
+        ? { status, closed_at: new Date().toISOString(), closed_by: 'owner' }
+        : { status, closed_at: null, closed_by: null };
+    await saveTriage(patch as never);
+    Object.assign(current, patch);
+    paintTicketState();
+  });
+
+  closeBtn.addEventListener('click', async () => {
+    if (!current) return;
+    const closed = current.status === 'resolved' || !!current.closed_at;
+    if (!closed && !confirm('要結束這個對話嗎？結束後對方不能再回，也不能重新開啟。')) return;
+    statusCell.value = closed ? 'in_progress' : 'resolved';
+    statusCell.dispatchEvent(new Event('change'));
+  });
 
   $('back-btn').addEventListener('click', async () => {
     ticketView.classList.add('hidden');
@@ -307,36 +367,40 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
   sendBtn.addEventListener('click', async () => {
     if (!current) return;
     const body = replyText.value.trim();
-    if (!body) { sendStatus.textContent = '請先輸入回覆內容。'; return; }
+    const files = Array.from(replyFiles.files ?? []);
+    if (!body && !files.length) { sendStatus.textContent = '請先輸入回覆內容或選擇照片。'; return; }
+    if (files.length > 3) { sendStatus.textContent = '一次最多 3 張照片。'; return; }
+    const bad = files.find((f) => !['image/jpeg', 'image/png', 'image/webp'].includes(f.type) || f.size > 5 * 1024 * 1024);
+    if (bad) { sendStatus.textContent = `「${bad.name}」不是 JPG／PNG／WebP，或超過 5MB。`; return; }
     sendBtn.disabled = true;
-    sendStatus.textContent = '送出中...';
+    sendStatus.textContent = files.length ? '上傳照片中...' : '送出中...';
     const now = new Date().toISOString();
 
-    // 1) 記進這張工單的對話（App 的「我的回饋」讀的就是這個）
-    const saved = await supabase.from('app_feedback_messages').insert({ feedback_id: current.id, direction: 'outbound', body });
+    const paths: string[] = [];
+    for (const f of files) {
+      const ext = f.type === 'image/png' ? 'png' : f.type === 'image/webp' ? 'webp' : 'jpg';
+      const path = `${current.access_token}/owner-${crypto.randomUUID()}.${ext}`;
+      const up = await supabase.storage.from(BUCKET).upload(path, f, { contentType: f.type });
+      if (up.error) { sendStatus.textContent = `照片上傳失敗：${up.error.message}`; sendBtn.disabled = false; return; }
+      paths.push(path);
+    }
+
+    // 記進對話。資料庫的觸發器會把這則回覆寄給對方（並帶照片連結），App 的「我的回饋」也會看到。
+    const saved = await supabase.from('app_feedback_messages').insert({ feedback_id: current.id, direction: 'outbound', body, attachment_paths: paths.length ? paths : null });
     if (saved.error) { sendStatus.textContent = `儲存失敗：${saved.error.message}`; sendBtn.disabled = false; return; }
 
-    // 2) 用現有的收件匣寄信機制寄給對方（status: pending → 由寄信機制寄出並標記 sent）
-    const mail = await supabase.from('inbox_messages').insert({
-      contact_email: current.email,
-      subject: `Re: 你的 TransitGo 意見回饋（案件 ${current.case_number}）`,
-      direction: 'outbound',
-      body: `${body}\n\n——\n案件編號：${current.case_number}\n你也可以在 App「設定 › 支援與法律 › 我的回饋」看到這則回覆並繼續回覆。`,
-      status: 'pending',
-    });
-
-    // 3) 工單狀態：回覆後預設「等對方回覆」；已解決的維持不動
     const nextStatus: Status = current.status === 'resolved' ? 'resolved' : 'waiting';
     await supabase.from('app_feedback').update({ status: nextStatus, last_reply_at: now, updated_at: now }).eq('id', current.id);
     current.status = nextStatus;
     current.last_reply_at = now;
-    statusCell.value = nextStatus;
 
     replyText.value = '';
-    sendStatus.textContent = mail.error
-      ? `回覆已記錄，但寄信失敗：${mail.error.message}（App 內仍看得到）`
-      : '已記錄並開始寄信；對方也會在 App 看到。';
-    sendBtn.disabled = false;
+    replyFiles.value = '';
+    sendStatus.textContent = '已送出（會寄 Email 給對方，App 也看得到）。';
+    paintTicketState();
     await renderThread();
   });
+
+  // 對話開著時，每 10 秒看看對方有沒有新訊息
+  setInterval(() => { if (current && !ticketView.classList.contains('hidden') && !document.hidden) renderThread(); }, 10000);
 </script>
