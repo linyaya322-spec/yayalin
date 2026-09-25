@@ -1,0 +1,342 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="App 回饋" description="站長專用：TransitGo App 意見回饋工單" noindex>
+  <section class="max-w-4xl mx-auto px-6 pt-16 pb-24">
+    <div id="login-view">
+      <p class="inline-block bg-ink text-cream text-sm font-medium px-3 py-1 mb-6">App 回饋</p>
+      <h1 class="font-display text-3xl text-ink mb-6">登入管理後台</h1>
+      <form id="login-form" class="grid gap-3 max-w-sm">
+        <input
+          type="email"
+          id="login-email"
+          required
+          placeholder="yayalin322@gmail.com"
+          class="border-2 border-ink bg-cream px-4 py-2.5 text-ink placeholder:text-ink-light/70 focus:outline-none focus:bg-sage-light"
+        />
+        <button type="submit" class="px-6 py-2.5 bg-clay text-cream text-sm font-semibold hover:bg-ink transition-colors">
+          寄送登入連結
+        </button>
+        <p id="login-status" class="text-sm min-h-5 text-ink-light"></p>
+      </form>
+    </div>
+
+    <div id="admin-view" class="hidden">
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <a href="/write" data-magnetic class="text-sm font-semibold text-clay hover:text-ink transition-colors">← 回主控台</a>
+          <h1 class="font-display text-3xl text-ink mt-2">App 回饋</h1>
+          <p class="text-sm text-ink-light mt-1">依輕重緩急排序，緊急的在最上面。回覆會寄到對方的 Email，也會出現在 App 的「我的回饋」。</p>
+        </div>
+        <button id="logout-btn" class="px-4 py-1.5 border-2 border-ink text-sm font-semibold hover:bg-ink hover:text-cream transition-colors">
+          登出
+        </button>
+      </div>
+
+      <!-- 列表 -->
+      <div id="list-view">
+        <div id="summary" class="flex flex-wrap gap-2 mb-4 text-sm"></div>
+        <div id="filters" class="flex flex-wrap gap-2 mb-5 text-sm"></div>
+        <ul id="ticket-list" class="grid gap-3"></ul>
+        <p id="empty-hint" class="hidden text-sm text-ink-light">這個分類目前沒有回饋。</p>
+      </div>
+
+      <!-- 單張工單 -->
+      <div id="ticket-view" class="hidden">
+        <button id="back-btn" data-magnetic class="mb-4 text-sm font-semibold text-clay hover:text-ink transition-colors">← 回列表</button>
+        <div class="border-2 border-ink bg-cream p-4 grid gap-4">
+          <div>
+            <p id="ticket-title" class="font-display text-xl text-ink"></p>
+            <p id="ticket-meta" class="text-xs text-ink-light mt-1"></p>
+          </div>
+          <div class="flex flex-wrap gap-4 items-end">
+            <label class="grid gap-1 text-xs font-semibold text-ink-light">
+              輕重緩急
+              <select id="priority-select" class="border-2 border-ink bg-cream px-3 py-1.5 text-sm text-ink">
+                <option value="urgent">緊急</option>
+                <option value="high">重要</option>
+                <option value="normal">一般</option>
+                <option value="low">不急</option>
+              </select>
+            </label>
+            <label class="grid gap-1 text-xs font-semibold text-ink-light">
+              狀態
+              <select id="status-select" class="border-2 border-ink bg-cream px-3 py-1.5 text-sm text-ink">
+                <option value="new">新的</option>
+                <option value="in_progress">處理中</option>
+                <option value="waiting">等對方回覆</option>
+                <option value="resolved">已解決</option>
+              </select>
+            </label>
+            <p id="save-status" class="text-xs text-ink-light min-h-4"></p>
+          </div>
+
+          <div id="thread" class="grid gap-3"></div>
+
+          <div class="border-t-2 border-ink/10 pt-3 grid gap-2">
+            <textarea id="reply-text" placeholder="輸入回覆（純文字）..." rows="4" class="border-2 border-ink bg-cream px-3 py-2 text-sm focus:outline-none resize-none"></textarea>
+            <div class="flex flex-wrap items-center gap-3">
+              <button id="send-btn" type="button" class="px-5 py-2 text-sm font-semibold border-2 border-sage-dark text-sage-dark hover:bg-sage-dark hover:text-cream transition-colors disabled:opacity-50">
+                寄出回覆
+              </button>
+              <p id="send-status" class="text-xs text-ink-light min-h-4"></p>
+            </div>
+            <p class="text-xs text-ink-light">回覆會寄到對方驗證過的 Email，並出現在 App 的「我的回饋」。對方直接回信會進到「收件匣」。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+
+<script>
+  import { supabase } from '../../lib/supabase';
+
+  const ADMIN_EMAIL = 'yayalin322@gmail.com';
+
+  type Priority = 'urgent' | 'high' | 'normal' | 'low';
+  type Status = 'new' | 'in_progress' | 'waiting' | 'resolved';
+  interface Ticket {
+    id: string;
+    case_number: string;
+    kind: 'bug' | 'idea' | 'other';
+    message: string;
+    email: string;
+    app_version: string | null;
+    os: string | null;
+    priority: Priority;
+    status: Status;
+    created_at: string;
+    updated_at: string;
+    last_reply_at: string | null;
+  }
+  interface Msg {
+    id: string;
+    feedback_id: string;
+    direction: 'inbound' | 'outbound';
+    body: string;
+    created_at: string;
+  }
+
+  const PRIORITY_RANK: Record<Priority, number> = { urgent: 0, high: 1, normal: 2, low: 3 };
+  const PRIORITY_LABEL: Record<Priority, string> = { urgent: '緊急', high: '重要', normal: '一般', low: '不急' };
+  const PRIORITY_CLASS: Record<Priority, string> = {
+    urgent: 'bg-clay text-cream border-clay',
+    high: 'bg-butter text-ink border-ink',
+    normal: 'bg-cream text-ink border-ink',
+    low: 'bg-cream text-ink-light border-ink-light',
+  };
+  const STATUS_LABEL: Record<Status, string> = { new: '新的', in_progress: '處理中', waiting: '等對方回覆', resolved: '已解決' };
+  const KIND_LABEL = { bug: '問題回報', idea: '功能建議', other: '其他' } as const;
+  const FILTERS: { key: string; label: string; test: (t: Ticket) => boolean }[] = [
+    { key: 'open', label: '未結案', test: (t) => t.status !== 'resolved' },
+    { key: 'new', label: '新的', test: (t) => t.status === 'new' },
+    { key: 'in_progress', label: '處理中', test: (t) => t.status === 'in_progress' },
+    { key: 'waiting', label: '等對方回覆', test: (t) => t.status === 'waiting' },
+    { key: 'resolved', label: '已解決', test: (t) => t.status === 'resolved' },
+    { key: 'all', label: '全部', test: () => true },
+  ];
+
+  const $ = (id: string) => document.getElementById(id)!;
+  const loginView = $('login-view');
+  const adminView = $('admin-view');
+  const listView = $('list-view');
+  const ticketView = $('ticket-view');
+  const ticketList = $('ticket-list');
+  const emptyHint = $('empty-hint');
+  const summaryEl = $('summary');
+  const filtersEl = $('filters');
+
+  let tickets: Ticket[] = [];
+  let lastDirection = new Map<string, 'inbound' | 'outbound'>();
+  let filter = 'open';
+  let current: Ticket | null = null;
+
+  function esc(value: string) {
+    const div = document.createElement('div');
+    div.textContent = value ?? '';
+    return div.innerHTML;
+  }
+  const when = (iso: string) => new Date(iso).toLocaleString('zh-TW', { hour12: false, timeZone: 'Asia/Taipei' });
+
+  /* ---------- 登入（跟收件匣同一套） ---------- */
+  ($('login-form') as HTMLFormElement).addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const status = $('login-status');
+    status.textContent = '寄送中...';
+    const { error } = await supabase.auth.signInWithOtp({
+      email: ($('login-email') as HTMLInputElement).value.trim(),
+      options: { shouldCreateUser: false, emailRedirectTo: window.location.origin + '/write/feedback' },
+    });
+    status.textContent = error ? '寄送失敗，請確認 Email 是否正確。' : '登入連結已寄出，請到信箱點連結（可能在垃圾信件夾）。';
+  });
+  $('logout-btn').addEventListener('click', async () => { await supabase.auth.signOut(); });
+
+  async function renderForSession() {
+    const { data } = await supabase.auth.getSession();
+    if (data.session?.user.email === ADMIN_EMAIL) {
+      loginView.classList.add('hidden');
+      adminView.classList.remove('hidden');
+      loadTickets();
+    } else {
+      loginView.classList.remove('hidden');
+      adminView.classList.add('hidden');
+    }
+  }
+  supabase.auth.onAuthStateChange(() => renderForSession());
+  renderForSession();
+
+  /* ---------- 列表 ---------- */
+  async function loadTickets() {
+    const [t, m] = await Promise.all([
+      supabase.from('app_feedback').select('*'),
+      supabase.from('app_feedback_messages').select('feedback_id,direction,created_at').order('created_at', { ascending: false }).limit(2000),
+    ]);
+    tickets = (t.data ?? []) as Ticket[];
+    lastDirection = new Map();
+    for (const row of (m.data ?? []) as Pick<Msg, 'feedback_id' | 'direction'>[]) {
+      if (!lastDirection.has(row.feedback_id)) lastDirection.set(row.feedback_id, row.direction);   // newest first
+    }
+    renderList();
+  }
+
+  // 緊急的在最上面；同級的「新的／對方剛回覆」先於「等對方回覆」，再依時間新到舊
+  function sortTickets(list: Ticket[]) {
+    const needsMe = (t: Ticket) => (t.status === 'resolved' ? 2 : lastDirection.get(t.id) === 'inbound' ? 0 : 1);
+    return [...list].sort(
+      (a, b) =>
+        (a.status === 'resolved' ? 1 : 0) - (b.status === 'resolved' ? 1 : 0) ||
+        PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority] ||
+        needsMe(a) - needsMe(b) ||
+        new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime(),
+    );
+  }
+
+  function renderList() {
+    const open = tickets.filter((t) => t.status !== 'resolved');
+    summaryEl.innerHTML = (['urgent', 'high', 'normal', 'low'] as Priority[])
+      .map((p) => `<span class="px-3 py-1 border-2 font-semibold ${PRIORITY_CLASS[p]}">${PRIORITY_LABEL[p]} ${open.filter((t) => t.priority === p).length}</span>`)
+      .join('');
+    filtersEl.innerHTML = FILTERS.map((f) => {
+      const n = tickets.filter(f.test).length;
+      const active = f.key === filter;
+      return `<button data-filter="${f.key}" class="px-3 py-1 border-2 border-ink font-semibold ${active ? 'bg-ink text-cream' : 'hover:bg-clay-light'}">${f.label} ${n}</button>`;
+    }).join('');
+    filtersEl.querySelectorAll<HTMLButtonElement>('[data-filter]').forEach((b) =>
+      b.addEventListener('click', () => { filter = b.dataset.filter!; renderList(); }),
+    );
+
+    const active = FILTERS.find((f) => f.key === filter)!;
+    const shown = sortTickets(tickets.filter(active.test));
+    emptyHint.classList.toggle('hidden', shown.length > 0);
+    ticketList.innerHTML = shown.map((t) => {
+      const waitingOnMe = t.status !== 'resolved' && lastDirection.get(t.id) === 'inbound';
+      return `<li>
+        <button data-id="${t.id}" class="w-full text-left border-2 border-ink bg-cream p-4 hover:bg-sage-light transition-colors grid gap-1.5">
+          <div class="flex flex-wrap items-center gap-2 text-xs">
+            <span class="px-2 py-0.5 border-2 font-semibold ${PRIORITY_CLASS[t.priority]}">${PRIORITY_LABEL[t.priority]}</span>
+            <span class="px-2 py-0.5 border-2 border-ink-light text-ink-light font-semibold">${STATUS_LABEL[t.status]}</span>
+            <span class="text-ink-light">${esc(t.case_number)} · ${KIND_LABEL[t.kind]}</span>
+            ${waitingOnMe ? '<span class="px-2 py-0.5 bg-clay text-cream font-semibold">待你回覆</span>' : ''}
+            <span class="ml-auto text-ink-light">${when(t.updated_at)}</span>
+          </div>
+          <p class="text-sm text-ink line-clamp-2">${esc(t.message)}</p>
+          <p class="text-xs text-ink-light">${esc(t.email)}</p>
+        </button>
+      </li>`;
+    }).join('');
+    ticketList.querySelectorAll<HTMLButtonElement>('[data-id]').forEach((b) =>
+      b.addEventListener('click', () => openTicket(b.dataset.id!)),
+    );
+  }
+
+  /* ---------- 單張工單 ---------- */
+  const priorityCell = $('priority-select') as HTMLSelectElement;
+  const statusCell = $('status-select') as HTMLSelectElement;
+  const saveStatus = $('save-status');
+  const replyText = $('reply-text') as HTMLTextAreaElement;
+  const sendBtn = $('send-btn') as HTMLButtonElement;
+  const sendStatus = $('send-status');
+
+  async function openTicket(id: string) {
+    current = tickets.find((t) => t.id === id) ?? null;
+    if (!current) return;
+    listView.classList.add('hidden');
+    ticketView.classList.remove('hidden');
+    $('ticket-title').textContent = `${current.case_number}　${KIND_LABEL[current.kind]}`;
+    $('ticket-meta').textContent = `${current.email} · ${when(current.created_at)} · App ${current.app_version ?? '?'} · ${current.os ?? '?'}`;
+    priorityCell.value = current.priority;
+    statusCell.value = current.status;
+    saveStatus.textContent = '';
+    sendStatus.textContent = '';
+    replyText.value = '';
+    await renderThread();
+  }
+
+  async function renderThread() {
+    if (!current) return;
+    const { data } = await supabase.from('app_feedback_messages').select('*').eq('feedback_id', current.id).order('created_at', { ascending: true });
+    $('thread').innerHTML = ((data ?? []) as Msg[]).map((m) => {
+      const mine = m.direction === 'outbound';
+      return `<div class="${mine ? 'justify-self-end bg-butter-light' : 'justify-self-start bg-sage-light'} max-w-[85%] border-2 border-ink p-3">
+        <p class="text-xs text-ink-light mb-1">${mine ? '你' : esc(current!.email)} · ${when(m.created_at)}</p>
+        <p class="text-sm text-ink whitespace-pre-wrap">${esc(m.body)}</p>
+      </div>`;
+    }).join('');
+  }
+
+  async function saveTriage(patch: Partial<Pick<Ticket, 'priority' | 'status'>>) {
+    if (!current) return;
+    saveStatus.textContent = '儲存中...';
+    const { error } = await supabase.from('app_feedback').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', current.id);
+    if (error) { saveStatus.textContent = `儲存失敗：${error.message}`; return; }
+    Object.assign(current, patch);
+    saveStatus.textContent = '已儲存';
+  }
+  priorityCell.addEventListener('change', () => saveTriage({ priority: priorityCell.value as Priority }));
+  statusCell.addEventListener('change', () => saveTriage({ status: statusCell.value as Status }));
+
+  $('back-btn').addEventListener('click', async () => {
+    ticketView.classList.add('hidden');
+    listView.classList.remove('hidden');
+    current = null;
+    await loadTickets();
+  });
+
+  sendBtn.addEventListener('click', async () => {
+    if (!current) return;
+    const body = replyText.value.trim();
+    if (!body) { sendStatus.textContent = '請先輸入回覆內容。'; return; }
+    sendBtn.disabled = true;
+    sendStatus.textContent = '送出中...';
+    const now = new Date().toISOString();
+
+    // 1) 記進這張工單的對話（App 的「我的回饋」讀的就是這個）
+    const saved = await supabase.from('app_feedback_messages').insert({ feedback_id: current.id, direction: 'outbound', body });
+    if (saved.error) { sendStatus.textContent = `儲存失敗：${saved.error.message}`; sendBtn.disabled = false; return; }
+
+    // 2) 用現有的收件匣寄信機制寄給對方（status: pending → 由寄信機制寄出並標記 sent）
+    const mail = await supabase.from('inbox_messages').insert({
+      contact_email: current.email,
+      subject: `Re: 你的 TransitGo 意見回饋（案件 ${current.case_number}）`,
+      direction: 'outbound',
+      body: `${body}\n\n——\n案件編號：${current.case_number}\n你也可以在 App「設定 › 支援與法律 › 我的回饋」看到這則回覆並繼續回覆。`,
+      status: 'pending',
+    });
+
+    // 3) 工單狀態：回覆後預設「等對方回覆」；已解決的維持不動
+    const nextStatus: Status = current.status === 'resolved' ? 'resolved' : 'waiting';
+    await supabase.from('app_feedback').update({ status: nextStatus, last_reply_at: now, updated_at: now }).eq('id', current.id);
+    current.status = nextStatus;
+    current.last_reply_at = now;
+    statusCell.value = nextStatus;
+
+    replyText.value = '';
+    sendStatus.textContent = mail.error
+      ? `回覆已記錄，但寄信失敗：${mail.error.message}（App 內仍看得到）`
+      : '已記錄並開始寄信；對方也會在 App 看到。';
+    sendBtn.disabled = false;
+    await renderThread();
+  });
+</script>
