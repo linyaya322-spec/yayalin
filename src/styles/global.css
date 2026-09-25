@@ -4,18 +4,19 @@
   --font-sans: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Fraunces", "Noto Serif TC", serif;
 
-  --color-cream: #f5f0e6;
-  --color-cream-dark: #ebe4d6;
-  --color-sage: #55705a;
-  --color-sage-light: #e3e8de;
-  --color-sage-dark: #2f4a35;
-  --color-clay: #e2481f;
-  --color-clay-light: #f0d9cc;
-  --color-clay-dark: #b8360f;
-  --color-butter: #eab308;
-  --color-butter-light: #f0e8d0;
-  --color-ink: #171716;
-  --color-ink-light: #5c5b55;
+  --color-cream: #fff6dc;
+  --color-cream-dark: #f5e6b8;
+  --color-sage: #3f86ab;
+  --color-sage-light: #d3e9f5;
+  --color-sage-dark: #245a78;
+  --color-clay: #d13a63;
+  --color-clay-light: #ffd9e3;
+  --color-clay-dark: #a82348;
+  --color-butter: #ffc800;
+  --color-butter-light: #ffe996;
+  --color-ink: #35312e;
+  --color-ink-light: #6d6660;
+  --color-wine: #6e2a35;
 }
 
 html {
@@ -24,8 +25,58 @@ html {
 
 body {
   background-color: var(--color-cream);
+  background-image: radial-gradient(rgba(53, 49, 46, 0.07) 1.4px, transparent 1.4px);
+  background-size: 24px 24px;
   color: var(--color-ink);
   font-family: var(--font-sans);
+}
+
+/* ---------- 可愛粉彩風的共用元件（參考日本校園網站） ---------- */
+@layer components {
+  /* 所有粗外框的方塊統一圓角 */
+  .border-2.border-ink {
+    border-radius: 0.9rem;
+  }
+
+  .card-pop {
+    background: #fffdf5;
+    border: 2px solid var(--color-ink);
+    border-radius: 1.5rem;
+    box-shadow: 6px 6px 0 var(--color-butter);
+  }
+
+  .btn-pop {
+    display: inline-block;
+    background: var(--color-butter);
+    color: var(--color-ink);
+    border: 2px solid var(--color-ink);
+    border-radius: 9999px;
+    font-weight: 600;
+    box-shadow: 0 4px 0 var(--color-ink);
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+  }
+  .btn-pop:hover {
+    background: var(--color-clay-light);
+  }
+  .btn-pop:active {
+    transform: translateY(3px);
+    box-shadow: 0 1px 0 var(--color-ink);
+  }
+
+  .tile {
+    position: relative;
+    border-radius: 1.25rem;
+    outline: 2px dashed rgba(53, 49, 46, 0.5);
+    outline-offset: -9px;
+    transition: transform 0.2s ease;
+  }
+  .tile:hover {
+    transform: translateY(-4px);
+  }
+
+  .marker {
+    background: linear-gradient(transparent 58%, var(--color-butter) 58%, var(--color-butter) 92%, transparent 92%);
+  }
 }
 
 ::selection {

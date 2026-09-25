@@ -22,7 +22,7 @@ const formatDate = (date: string) =>
 <a
   href={`/blog/${post.id}`}
   data-tilt
-  class="reveal group block bg-cream border-2 border-ink"
+  class="reveal group block card-pop overflow-hidden"
   style={`animation-delay: ${index * 0.08}s`}
   data-category={post.category}
   data-tags={(post.tags ?? []).join(',')}
@@ -47,7 +47,7 @@ const formatDate = (date: string) =>
     {post.tags && post.tags.length > 0 && (
       <div class="flex flex-wrap gap-1.5 mt-3">
         {post.tags.map((tag) => (
-          <span class="text-xs text-ink-light border border-ink/30 px-2 py-0.5">#{tag}</span>
+          <span class="text-xs text-ink-light border border-ink/30 px-2 py-0.5 rounded-full">#{tag}</span>
         ))}
       </div>
     )}

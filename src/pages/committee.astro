@@ -31,7 +31,7 @@ const introHtml = introPage ? await marked.parse(introPage.content) : null;
 
   {introHtml && (
     <section class="max-w-3xl mx-auto px-6 pb-16">
-      <div class="reveal bg-sage-light border-2 border-ink p-8">
+      <div class="reveal card-pop bg-sage-light p-8">
         <p class="inline-block bg-ink text-cream text-xs font-semibold px-2.5 py-1 mb-4">{introPage?.title}</p>
         <div class="prose-intro" set:html={introHtml} />
       </div>

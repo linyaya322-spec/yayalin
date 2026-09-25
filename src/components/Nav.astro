@@ -9,19 +9,19 @@ const links = [
 const currentPath = Astro.url.pathname;
 ---
 
-<header class="sticky top-0 z-50 bg-cream/85 backdrop-blur-md border-b border-ink/10">
+<header class="sticky top-0 z-50 bg-[#fffdf5] border-b-2 border-ink">
   <nav class="max-w-5xl mx-auto flex items-center justify-between px-6 py-4">
     <a href="/" class="flex items-center gap-2 group" data-magnetic>
-      <span class="w-9 h-9 rounded-xl bg-clay flex items-center justify-center font-display font-semibold text-cream text-lg group-hover:bg-ink transition-colors">Y</span>
+      <span class="w-9 h-9 rounded-xl border-2 border-ink bg-clay flex items-center justify-center font-display font-semibold text-cream text-lg group-hover:bg-ink transition-colors">Y</span>
       <span class="font-display text-xl text-ink tracking-wide">yaya 林</span>
     </a>
     <button
       id="nav-toggle"
-      class="sm:hidden text-ink"
+      class="nav-ribbon sm:hidden text-ink"
       aria-label="開啟選單"
       aria-expanded="false"
     >
-      <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 -mt-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
         <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5M3.75 17.25h16.5" />
       </svg>
     </button>
@@ -35,7 +35,7 @@ const currentPath = Astro.url.pathname;
               data-magnetic
               class:list={[
                 'inline-block px-4 py-1.5 rounded-full font-medium transition-colors',
-                isActive ? 'bg-ink text-cream' : 'text-ink hover:bg-ink/5',
+                isActive ? 'bg-butter border-2 border-ink' : 'border-2 border-transparent text-ink hover:bg-clay-light',
               ]}
             >
               {link.label}
@@ -48,7 +48,7 @@ const currentPath = Astro.url.pathname;
   <ul id="nav-links-mobile" class="sm:hidden hidden flex-col gap-1 px-6 pb-4">
     {links.map((link) => (
       <li>
-        <a href={link.href} class="block py-2 px-3 rounded-xl font-medium text-ink hover:bg-ink/5">{link.label}</a>
+        <a href={link.href} class="block py-2 px-3 rounded-xl font-medium text-ink hover:bg-clay-light">{link.label}</a>
       </li>
     ))}
   </ul>
@@ -64,3 +64,17 @@ const currentPath = Astro.url.pathname;
     toggle.setAttribute('aria-expanded', String(isHidden));
   });
 </script>
+
+<style>
+  .nav-ribbon {
+    width: 2.6rem;
+    height: 3.2rem;
+    display: grid;
+    place-items: center;
+    background: var(--color-clay-light);
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 80%, 0 100%);
+    margin-top: -1rem;
+    padding-top: 1rem;
+    border-bottom: 0;
+  }
+</style>

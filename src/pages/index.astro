@@ -35,6 +35,14 @@ const activeSurveys = (allActiveSurveys ?? [])
   })
   .slice(0, 3);
 
+const firstSurvey = activeSurveys[0];
+const quickLinks = [
+  { href: '/blog', icon: '📝', label: '部落格', bg: 'bg-butter-light' },
+  { href: '/committee', icon: '🏛️', label: '兒少委員專區', bg: 'bg-clay-light' },
+  ...(firstSurvey ? [{ href: `/survey/${firstSurvey.id}`, icon: '📋', label: '填寫問卷', bg: 'bg-white' }] : []),
+  { href: '/contact', icon: '💌', label: '聯絡我', bg: 'bg-sage-light' },
+];
+
 const statementChars = aboutTeaser ? [...aboutTeaser] : [];
 
 // 每張卡片一開始散開的位置與角度，捲動時聚攏
@@ -56,6 +64,22 @@ const formatDate = (date: string) =>
 >
   <Hero />
 
+  <section class="max-w-4xl mx-auto px-6 pb-16">
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      {quickLinks.map((q, i) => (
+        <a
+          href={q.href}
+          data-magnetic
+          class={`tile reveal border-2 border-ink flex flex-col items-center justify-center gap-2 px-3 py-7 text-ink font-semibold text-center ${q.bg}`}
+          style={`animation-delay: ${i * 0.06}s`}
+        >
+          <span class="text-3xl" aria-hidden="true">{q.icon}</span>
+          <span class="text-sm">{q.label}</span>
+        </a>
+      ))}
+    </div>
+  </section>
+
   <section class="px-4 sm:px-6 pb-24">
     <div class="showcase reveal max-w-5xl mx-auto rounded-[2rem] px-5 py-14 sm:px-14 sm:py-20">
       <QuoteWidget />
@@ -63,16 +87,16 @@ const formatDate = (date: string) =>
   </section>
 
   {aboutTeaser && (
-    <section class="relative h-[240vh]" data-statement>
+    <section class="relative h-[240vh] bg-clay-light border-y-2 border-ink" data-statement>
       <div class="sticky top-16 h-[calc(100vh-4rem)] flex flex-col items-center justify-center px-6 text-center">
-        <p class="text-xs font-semibold tracking-[0.25em] text-ink-light mb-8">關於我</p>
+        <p class="inline-block bg-white border-2 border-ink rounded-full text-xs font-semibold tracking-widest px-4 py-1 mb-8">關於我</p>
         <p class="statement font-display text-3xl sm:text-5xl leading-[1.55] max-w-3xl" aria-label={aboutTeaser}>
           {statementChars.map((c) => <span class="scrub-char" aria-hidden="true">{c}</span>)}
         </p>
         <a
           href="/about"
           data-magnetic
-          class="mt-12 px-7 py-3 rounded-full bg-ink text-cream text-sm font-semibold hover:bg-clay transition-colors"
+          class="btn-pop mt-12 px-7 py-3 text-sm"
         >
           認識更多 &rarr;
         </a>
@@ -81,26 +105,26 @@ const formatDate = (date: string) =>
   )}
 
   {timelineEntries && timelineEntries.length > 0 && (
-    <section class="bg-[#141413] text-cream rounded-t-[2.5rem] py-24 sm:py-32 overflow-hidden" data-converge>
+    <section class="bg-wine text-cream py-24 sm:py-32 overflow-hidden" data-converge>
       <div class="max-w-5xl mx-auto px-6">
         <div class="reveal flex items-end justify-between gap-4 mb-14">
           <h2 class="font-display text-4xl sm:text-6xl tracking-tight">兒少委員專區</h2>
-          <a href="/committee" data-magnetic class="shrink-0 text-sm font-semibold text-cream/70 hover:text-cream transition-colors">看完整時間軸 &rarr;</a>
+          <a href="/committee" data-magnetic class="shrink-0 text-sm font-semibold text-cream/80 hover:text-butter transition-colors">看完整時間軸 &rarr;</a>
         </div>
         <div class="grid sm:grid-cols-2 gap-5">
           {timelineEntries.map((entry, i) => {
             const o = convergeOffsets[i % convergeOffsets.length];
             return (
               <article
-                class="converge-card rounded-3xl bg-[#1e1e1c] border border-cream/10 p-7"
+                class="converge-card card-pop p-7 text-ink"
                 style={`--dx:${o.dx};--dy:${o.dy};--r:${o.r}`}
               >
                 <div class="flex flex-wrap items-center gap-2 mb-4">
-                  <p class="bg-cream/10 text-cream/80 text-xs font-medium px-3 py-1 rounded-full">{formatDate(entry.date)}</p>
-                  {entry.status && <p class="bg-clay text-cream text-xs font-semibold px-3 py-1 rounded-full">{entry.status}</p>}
+                  <p class="bg-butter-light border-2 border-ink text-ink text-xs font-semibold px-3 py-1 rounded-full">{formatDate(entry.date)}</p>
+                  {entry.status && <p class="bg-clay text-cream border-2 border-ink text-xs font-semibold px-3 py-1 rounded-full">{entry.status}</p>}
                 </div>
                 <h3 class="font-display text-xl sm:text-2xl mb-2 leading-snug">{entry.title}</h3>
-                <p class="text-sm text-cream/60 leading-relaxed line-clamp-3">{entry.description}</p>
+                <p class="text-sm text-ink-light leading-relaxed line-clamp-3">{entry.description}</p>
               </article>
             );
           })}
@@ -112,7 +136,7 @@ const formatDate = (date: string) =>
   {activeSurveys.length > 0 && (
     <section class="max-w-4xl mx-auto px-6 pb-24 grid gap-5">
       {activeSurveys.map((survey, i) => (
-        <div data-tilt class="reveal bg-butter-light border-2 border-ink p-8 sm:p-10" style={`animation-delay: ${i * 0.08}s`}>
+        <div data-tilt class="reveal card-pop bg-butter-light p-8 sm:p-10" style={`animation-delay: ${i * 0.08}s`}>
           <p class="inline-block bg-ink text-cream text-xs font-semibold px-2.5 py-1 mb-4">📋 問卷</p>
           <h2 class="font-display text-2xl text-ink mb-2">{survey.title}</h2>
           {survey.description && <p class="text-ink-light leading-relaxed mb-5">{survey.description}</p>}
@@ -120,7 +144,7 @@ const formatDate = (date: string) =>
             <a
               href={`/survey/${survey.id}`}
               data-magnetic
-              class="px-6 py-2.5 bg-clay text-cream text-sm font-semibold hover:bg-ink transition-colors"
+              class="btn-pop px-6 py-2.5 text-sm"
             >
               填寫問卷 →
             </a>
@@ -167,14 +191,13 @@ const formatDate = (date: string) =>
 
 <style>
   .showcase {
-    background:
-      radial-gradient(60% 55% at 15% 10%, rgba(255, 244, 222, 0.95), transparent 70%),
-      radial-gradient(50% 45% at 85% 20%, rgba(255, 255, 255, 0.55), transparent 70%),
-      linear-gradient(160deg, #f1c9a0 0%, #e2a27c 40%, #b9806a 75%, #8a6558 100%);
+    background: linear-gradient(135deg, var(--color-clay-light) 0%, var(--color-butter-light) 52%, var(--color-sage-light) 100%);
+    border: 2px solid var(--color-ink);
+    box-shadow: 6px 6px 0 var(--color-ink);
   }
 
   :global(html.js-scrub) .scrub-char {
-    color: rgba(23, 23, 22, 0.16);
+    color: rgba(53, 49, 46, 0.22);
     transition: color 0.3s ease;
   }
   :global(html.js-scrub) .scrub-char.lit {

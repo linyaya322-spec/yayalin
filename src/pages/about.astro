@@ -23,15 +23,15 @@ const bodyHtml = page ? await marked.parse(page.content) : '';
     <div class="reveal prose-about" style="animation-delay: 0.2s;" set:html={bodyHtml} />
 
     <div class="reveal grid sm:grid-cols-3 gap-4 mt-12" style="animation-delay: 0.3s;">
-      <div data-tilt class="bg-sage-light border-2 border-ink p-6 text-center">
+      <div data-tilt class="bg-sage-light card-pop p-6 text-center">
         <p class="font-display text-2xl text-ink mb-1">學生</p>
         <p class="text-sm text-ink-light">目前身份</p>
       </div>
-      <div data-tilt class="bg-clay-light border-2 border-ink p-6 text-center">
+      <div data-tilt class="bg-clay-light card-pop p-6 text-center">
         <p class="font-display text-2xl text-ink mb-1">兒少委員</p>
         <p class="text-sm text-ink-light">新竹縣</p>
       </div>
-      <div data-tilt class="bg-butter-light border-2 border-ink p-6 text-center">
+      <div data-tilt class="bg-butter-light card-pop p-6 text-center">
         <p class="font-display text-2xl text-ink mb-1">寫作 / 攝影</p>
         <p class="text-sm text-ink-light">興趣所在</p>
       </div>
