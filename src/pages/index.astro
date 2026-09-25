@@ -18,7 +18,7 @@ const { data: timelineEntries } = await supabase
   .from('timeline_entries')
   .select('*')
   .order('date', { ascending: false })
-  .limit(2);
+  .limit(4);
 
 const { data: allActiveSurveys } = await supabase
   .from('surveys')
@@ -35,6 +35,16 @@ const activeSurveys = (allActiveSurveys ?? [])
   })
   .slice(0, 3);
 
+const statementChars = aboutTeaser ? [...aboutTeaser] : [];
+
+// 每張卡片一開始散開的位置與角度，捲動時聚攏
+const convergeOffsets = [
+  { dx: '-70px', dy: '90px', r: '-7deg' },
+  { dx: '80px', dy: '120px', r: '6deg' },
+  { dx: '-50px', dy: '150px', r: '5deg' },
+  { dx: '60px', dy: '80px', r: '-6deg' },
+];
+
 const formatDate = (date: string) =>
   new Date(date).toLocaleDateString('zh-Hant-TW', { year: 'numeric', month: 'long', day: 'numeric' });
 ---
@@ -46,42 +56,55 @@ const formatDate = (date: string) =>
 >
   <Hero />
 
-  <section class="max-w-4xl mx-auto px-6 pb-20">
-    <QuoteWidget />
+  <section class="px-4 sm:px-6 pb-24">
+    <div class="showcase reveal max-w-5xl mx-auto rounded-[2rem] px-5 py-14 sm:px-14 sm:py-20">
+      <QuoteWidget />
+    </div>
   </section>
 
   {aboutTeaser && (
-    <section class="max-w-4xl mx-auto px-6 pb-24">
-      <div class="reveal bg-sage-light border-2 border-ink p-8 sm:p-10 grid sm:grid-cols-[1fr_auto] gap-6 items-center">
-        <div>
-          <p class="inline-block bg-ink text-cream text-xs font-semibold px-2.5 py-1 mb-4">關於我</p>
-          <p class="text-ink leading-relaxed text-lg">{aboutTeaser}</p>
-        </div>
+    <section class="relative h-[240vh]" data-statement>
+      <div class="sticky top-16 h-[calc(100vh-4rem)] flex flex-col items-center justify-center px-6 text-center">
+        <p class="text-xs font-semibold tracking-[0.25em] text-ink-light mb-8">關於我</p>
+        <p class="statement font-display text-3xl sm:text-5xl leading-[1.55] max-w-3xl" aria-label={aboutTeaser}>
+          {statementChars.map((c) => <span class="scrub-char" aria-hidden="true">{c}</span>)}
+        </p>
         <a
           href="/about"
           data-magnetic
-          class="justify-self-start sm:justify-self-end shrink-0 px-6 py-2.5 border-2 border-ink text-ink text-sm font-semibold hover:bg-ink hover:text-cream transition-colors whitespace-nowrap"
+          class="mt-12 px-7 py-3 rounded-full bg-ink text-cream text-sm font-semibold hover:bg-clay transition-colors"
         >
-          認識更多 →
+          認識更多 &rarr;
         </a>
       </div>
     </section>
   )}
 
   {timelineEntries && timelineEntries.length > 0 && (
-    <section class="max-w-4xl mx-auto px-6 pb-24">
-      <div class="reveal flex items-end justify-between mb-6">
-        <h2 class="font-display text-2xl sm:text-3xl text-ink">兒少委員專區</h2>
-        <a href="/committee" data-magnetic class="text-sm font-semibold text-clay hover:text-ink transition-colors">看完整時間軸 →</a>
-      </div>
-      <div class="grid sm:grid-cols-2 gap-5">
-        {timelineEntries.map((entry, i) => (
-          <div data-tilt class="reveal bg-cream border-2 border-ink p-6" style={`animation-delay: ${i * 0.08}s`}>
-            <p class="inline-block bg-clay text-cream text-xs font-semibold px-2.5 py-1 mb-3">{formatDate(entry.date)}</p>
-            <h3 class="font-display text-lg text-ink mb-1">{entry.title}</h3>
-            <p class="text-sm text-ink-light leading-relaxed line-clamp-2">{entry.description}</p>
-          </div>
-        ))}
+    <section class="bg-[#141413] text-cream rounded-t-[2.5rem] py-24 sm:py-32 overflow-hidden" data-converge>
+      <div class="max-w-5xl mx-auto px-6">
+        <div class="reveal flex items-end justify-between gap-4 mb-14">
+          <h2 class="font-display text-4xl sm:text-6xl tracking-tight">兒少委員專區</h2>
+          <a href="/committee" data-magnetic class="shrink-0 text-sm font-semibold text-cream/70 hover:text-cream transition-colors">看完整時間軸 &rarr;</a>
+        </div>
+        <div class="grid sm:grid-cols-2 gap-5">
+          {timelineEntries.map((entry, i) => {
+            const o = convergeOffsets[i % convergeOffsets.length];
+            return (
+              <article
+                class="converge-card rounded-3xl bg-[#1e1e1c] border border-cream/10 p-7"
+                style={`--dx:${o.dx};--dy:${o.dy};--r:${o.r}`}
+              >
+                <div class="flex flex-wrap items-center gap-2 mb-4">
+                  <p class="bg-cream/10 text-cream/80 text-xs font-medium px-3 py-1 rounded-full">{formatDate(entry.date)}</p>
+                  {entry.status && <p class="bg-clay text-cream text-xs font-semibold px-3 py-1 rounded-full">{entry.status}</p>}
+                </div>
+                <h3 class="font-display text-xl sm:text-2xl mb-2 leading-snug">{entry.title}</h3>
+                <p class="text-sm text-cream/60 leading-relaxed line-clamp-3">{entry.description}</p>
+              </article>
+            );
+          })}
+        </div>
       </div>
     </section>
   )}
@@ -141,3 +164,68 @@ const formatDate = (date: string) =>
     </div>
   </section>
 </BaseLayout>
+
+<style>
+  .showcase {
+    background:
+      radial-gradient(60% 55% at 15% 10%, rgba(255, 244, 222, 0.95), transparent 70%),
+      radial-gradient(50% 45% at 85% 20%, rgba(255, 255, 255, 0.55), transparent 70%),
+      linear-gradient(160deg, #f1c9a0 0%, #e2a27c 40%, #b9806a 75%, #8a6558 100%);
+  }
+
+  :global(html.js-scrub) .scrub-char {
+    color: rgba(23, 23, 22, 0.16);
+    transition: color 0.3s ease;
+  }
+  :global(html.js-scrub) .scrub-char.lit {
+    color: var(--color-ink);
+  }
+
+  .converge-card {
+    transform: translate3d(calc((1 - var(--p, 1)) * var(--dx)), calc((1 - var(--p, 1)) * var(--dy)), 0)
+      rotate(calc((1 - var(--p, 1)) * var(--r)));
+    opacity: calc(0.15 + 0.85 * var(--p, 1));
+    will-change: transform, opacity;
+  }
+</style>
+
+<script>
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  if (!reduceMotion) {
+    document.documentElement.classList.add('js-scrub');
+
+    const statement = document.querySelector<HTMLElement>('[data-statement]');
+    const chars = statement ? Array.from(statement.querySelectorAll<HTMLElement>('.scrub-char')) : [];
+    const converge = document.querySelector<HTMLElement>('[data-converge]');
+    const clamp = (v: number) => Math.min(1, Math.max(0, v));
+
+    let ticking = false;
+    const update = () => {
+      ticking = false;
+      const vh = window.innerHeight;
+
+      if (statement && chars.length) {
+        const r = statement.getBoundingClientRect();
+        const progress = clamp(-r.top / Math.max(1, r.height - vh));
+        const litCount = Math.ceil(clamp(progress / 0.85) * chars.length);
+        chars.forEach((c, i) => c.classList.toggle('lit', i < litCount));
+      }
+
+      if (converge) {
+        const r = converge.getBoundingClientRect();
+        converge.style.setProperty('--p', String(clamp((vh * 0.95 - r.top) / (vh * 0.75))));
+      }
+    };
+
+    const onScroll = () => {
+      if (!ticking) {
+        ticking = true;
+        requestAnimationFrame(update);
+      }
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+    update();
+  }
+</script>

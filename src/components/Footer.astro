@@ -2,38 +2,65 @@
 const year = new Date().getFullYear();
 ---
 
-<footer class="bg-ink text-cream mt-32">
-  <div class="max-w-5xl mx-auto px-6 py-12 flex flex-col gap-8">
-    <p class="font-display text-lg text-center sm:text-left">yaya 林 &middot; {year}</p>
+<footer class="relative bg-[#141413] text-cream mt-24 overflow-hidden">
+  <div class="relative z-10 max-w-5xl mx-auto px-6 pt-16 pb-10">
+    <div class="grid md:grid-cols-[1.3fr_1fr_1.4fr] gap-12">
+      <div>
+        <p class="font-display text-2xl">yaya 林</p>
+        <p class="text-sm text-cream/50 mt-2 max-w-[16rem] leading-relaxed">新竹縣兒少代表・兒少委員</p>
+      </div>
 
-    <div class="border-t border-cream/20 pt-8">
-      <p class="text-sm font-semibold mb-3">訂閱電子報</p>
-      <form id="newsletter-subscribe-form" class="flex flex-col sm:flex-row gap-2 max-w-sm">
-        <input
-          type="email"
-          id="newsletter-subscribe-email"
-          name="email"
-          required
-          placeholder="你的 Email"
-          aria-label="你的 Email"
-          class="flex-1 border border-cream/40 bg-transparent px-4 py-2 text-cream placeholder:text-cream/50 text-sm focus:outline-none focus:border-clay"
-        />
-        <button
-          type="submit"
-          data-magnetic
-          class="px-4 py-2 bg-clay text-cream text-sm font-semibold hover:bg-cream hover:text-ink transition-colors disabled:opacity-50"
-        >
-          訂閱
-        </button>
-      </form>
-      <p id="newsletter-subscribe-status" class="text-xs text-cream/60 min-h-4 mt-2"></p>
+      <nav aria-label="網站導覽">
+        <p class="text-xs text-cream/40 mb-4">探索</p>
+        <ul class="grid gap-2.5 text-sm">
+          <li><a href="/" class="text-cream/80 hover:text-cream transition-colors">首頁</a></li>
+          <li><a href="/about" class="text-cream/80 hover:text-cream transition-colors">關於我</a></li>
+          <li><a href="/committee" class="text-cream/80 hover:text-cream transition-colors">兒少委員專區</a></li>
+          <li><a href="/blog" class="text-cream/80 hover:text-cream transition-colors">部落格</a></li>
+          <li><a href="/contact" class="text-cream/80 hover:text-cream transition-colors">聯絡</a></li>
+        </ul>
+      </nav>
+
+      <div>
+        <p class="text-xs text-cream/40 mb-4">訂閱電子報</p>
+        <form id="newsletter-subscribe-form" class="flex flex-col sm:flex-row gap-2">
+          <input
+            type="email"
+            id="newsletter-subscribe-email"
+            name="email"
+            required
+            placeholder="你的 Email"
+            aria-label="你的 Email"
+            class="flex-1 min-w-0 rounded-full border border-cream/25 bg-transparent px-5 py-2.5 text-cream placeholder:text-cream/40 text-sm focus:outline-none focus:border-cream/60"
+          />
+          <button
+            type="submit"
+            data-magnetic
+            class="px-5 py-2.5 rounded-full bg-cream text-ink text-sm font-semibold hover:bg-clay hover:text-cream transition-colors disabled:opacity-50"
+          >
+            訂閱
+          </button>
+        </form>
+        <p id="newsletter-subscribe-status" class="text-xs text-cream/60 min-h-4 mt-2"></p>
+      </div>
     </div>
 
-    <div class="flex flex-wrap justify-center sm:justify-start gap-x-4 gap-y-2 text-sm text-cream/60">
-      <a href="/privacy" class="hover:text-cream transition-colors">隱私權政策</a>
-      <a href="/terms" class="hover:text-cream transition-colors">服務條款</a>
+    <div class="mt-16 flex flex-col-reverse sm:flex-row items-start sm:items-center justify-between gap-4 text-xs text-cream/45">
+      <p>&copy; {year} yaya 林</p>
+      <div class="flex gap-5">
+        <a href="/privacy" class="hover:text-cream transition-colors">隱私權政策</a>
+        <a href="/terms" class="hover:text-cream transition-colors">服務條款</a>
+      </div>
     </div>
   </div>
+
+  <p
+    class="pointer-events-none select-none font-display font-semibold text-center leading-[0.78] tracking-tight whitespace-nowrap -mb-[0.16em]"
+    style="font-size: clamp(6rem, 25vw, 22rem); color: rgba(245,240,230,0.06);"
+    aria-hidden="true"
+  >
+    yaya 林
+  </p>
 </footer>
 
 <script>

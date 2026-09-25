@@ -4,18 +4,18 @@
   --font-sans: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Fraunces", "Noto Serif TC", serif;
 
-  --color-cream: #f5f1e8;
-  --color-cream-dark: #ece4d2;
-  --color-sage: #3f7a4a;
-  --color-sage-light: #cfe3cf;
-  --color-sage-dark: #2c5a35;
+  --color-cream: #f5f0e6;
+  --color-cream-dark: #ebe4d6;
+  --color-sage: #55705a;
+  --color-sage-light: #e3e8de;
+  --color-sage-dark: #2f4a35;
   --color-clay: #e2481f;
-  --color-clay-light: #f7c9b6;
+  --color-clay-light: #f0d9cc;
   --color-clay-dark: #b8360f;
-  --color-butter: #f2b705;
-  --color-butter-light: #fbe8a6;
-  --color-ink: #1c1c1a;
-  --color-ink-light: #5a5952;
+  --color-butter: #eab308;
+  --color-butter-light: #f0e8d0;
+  --color-ink: #171716;
+  --color-ink-light: #5c5b55;
 }
 
 html {
