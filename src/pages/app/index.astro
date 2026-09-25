@@ -1,6 +1,6 @@
 ---
 import AppDoc from '../../components/AppDoc.astro';
-import { APP_NAME, APP_EMAIL, APP_STATUS_URL } from '../../lib/app';
+import { APP_NAME, APP_STATUS_URL } from '../../lib/app';
 ---
 
 <AppDoc title="TransitGo App" description="交通即時查 TransitGo：公車、台鐵、捷運、YouBike 即時資訊、導航與行程分享的 iPhone App。">
@@ -38,7 +38,7 @@ import { APP_NAME, APP_EMAIL, APP_STATUS_URL } from '../../lib/app';
   <ul>
     <li><a href="/app/privacy">隱私權政策</a></li>
     <li><a href="/app/terms">服務條款</a></li>
-    <li>信箱：<a href={`mailto:${APP_EMAIL}`}>{APP_EMAIL}</a></li>
+    <li>信箱：<a href="mailto:app&#64;yayalin.com">app&#64;yayalin.com</a></li>
   </ul>
 </AppDoc>
 
