@@ -37,8 +37,12 @@ const tabs = [
     <meta property="og:description" content={description} />
     <meta property="og:image" content={new URL('/app-assets/logo.png', Astro.site ?? 'https://yayalin.com').toString()} />
     <meta name="twitter:card" content="summary" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800&display=swap" rel="stylesheet" />
   </head>
   <body>
+    <div class="glow" aria-hidden="true"></div>
     <header class="top">
       <a class="brand" href="/app">
         <img class="logo" src="/app-assets/logo-icon.png" width="34" height="34" alt="" />
@@ -69,15 +73,31 @@ const tabs = [
     :root { --bg: #0b1626; --card: #101d33; --text: #eef3fa; --muted: #9fb0c6; --line: #24344c; --accent: #4da3ff; --accent-soft: #0a6cf033; --accent2: #2bd9ac; --accent2-soft: #0fb88a33; --warn-soft: #ffe94a26; }
   }
   * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.8 -apple-system, "PingFang TC", "Noto Sans TC", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
-  header.top { max-width: 780px; margin: 0 auto; padding: 22px 20px 6px; }
-  .brand { display: inline-flex; align-items: center; gap: 10px; font-weight: 800; font-size: 20px; color: var(--text); text-decoration: none; }
-  .logo { display: block; width: 34px; height: 34px; object-fit: contain; }
-  header.top nav { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
-  header.top nav a { padding: 6px 14px; border-radius: 999px; font-size: 14px; font-weight: 600; color: var(--muted); text-decoration: none; border: 1px solid transparent; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; position: relative; overflow-x: hidden; background: var(--bg); color: var(--text);
+    font: 16px/1.8 "Plus Jakarta Sans", -apple-system, "PingFang TC", "Noto Sans TC", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3, .brand { font-family: "Plus Jakarta Sans", -apple-system, "PingFang TC", "Noto Sans TC", system-ui, sans-serif; letter-spacing: -0.01em; }
+  /* 呼應 logo 本身藍到綠漸層的柔和光暈，讓首頁不是一片死板的純色 */
+  .glow {
+    position: absolute; top: -160px; left: 50%; transform: translateX(-50%);
+    width: 900px; height: 480px; pointer-events: none; z-index: 0;
+    background: radial-gradient(closest-side, var(--accent-soft), transparent 70%),
+                radial-gradient(closest-side at 75% 30%, var(--accent2-soft), transparent 65%);
+    opacity: 0.9;
+  }
+  header.top, main, footer { position: relative; z-index: 1; }
+  header.top { max-width: 780px; margin: 0 auto; padding: 26px 20px 6px; }
+  .brand { display: inline-flex; align-items: center; gap: 10px; font-weight: 800; font-size: 21px; color: var(--text); text-decoration: none; }
+  .logo { display: block; width: 36px; height: 36px; object-fit: contain; }
+  header.top nav { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 16px; }
+  header.top nav a { padding: 6px 14px; border-radius: 999px; font-size: 14px; font-weight: 600; color: var(--muted); text-decoration: none; border: 1px solid transparent; transition: background-color .15s, color .15s; }
+  header.top nav a:hover { background: var(--line); }
   header.top nav a[aria-current='page'] { background: var(--accent-soft); color: var(--accent); border-color: var(--accent-soft); }
   main { max-width: 780px; margin: 0 auto; padding: 8px 20px 40px; }
-  footer { max-width: 780px; margin: 0 auto; padding: 0 20px 44px; color: var(--muted); font-size: 13px; text-align: center; }
+  footer { max-width: 780px; margin: 0 auto; padding: 24px 20px 44px; color: var(--muted); font-size: 13px; text-align: center; }
   footer p { margin: 4px 0; }
   a { color: var(--accent); }
 </style>
