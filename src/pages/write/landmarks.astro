@@ -25,16 +25,23 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
         <button id="logout-btn" class="px-4 py-1.5 border-2 border-ink text-sm font-semibold hover:bg-ink hover:text-cream transition-colors">登出</button>
       </div>
 
-      <input id="filter" placeholder="搜尋名稱、內容、電話…" class="border-2 border-ink bg-cream px-4 py-2 w-full mb-6 focus:outline-none focus:bg-sage-light" />
+      <input id="filter" placeholder="搜尋名稱、內容、電話…" class="border-2 border-ink bg-cream px-4 py-2 w-full mb-4 focus:outline-none focus:bg-sage-light" />
+      <label class="flex items-center gap-2 text-sm text-ink-light mb-6">
+        <input type="checkbox" id="needs-action-only" checked />
+        只顯示需要處理的（待審核／被檢舉／未驗證店家）
+      </label>
+      <p id="summary" class="text-sm text-ink-light mb-6"></p>
 
       <h2 class="font-display text-xl text-ink mb-3">地標 <span id="landmark-count" class="text-sm text-ink-light font-normal"></span></h2>
-      <ul id="landmark-list" class="grid gap-3 mb-10"></ul>
-      <p id="landmark-empty" class="hidden text-sm text-ink-light mb-10">（無）</p>
+      <ul id="landmark-list" class="grid gap-3 mb-3"></ul>
+      <p id="landmark-empty" class="hidden text-sm text-ink-light mb-3">（無）</p>
+      <button id="landmark-more" class="hidden px-4 py-1.5 text-sm font-semibold border-2 border-ink hover:bg-ink hover:text-cream transition-colors mb-10">顯示更多</button>
 
       <h2 class="font-display text-xl text-ink mb-3">評論 <span id="review-count" class="text-sm text-ink-light font-normal"></span></h2>
       <p class="text-sm text-ink-light mb-3">被檢舉次數高的排最前面；檢舉只累加次數，不會自動隱藏。</p>
-      <ul id="review-list" class="grid gap-3"></ul>
-      <p id="review-empty" class="hidden text-sm text-ink-light">（無）</p>
+      <ul id="review-list" class="grid gap-3 mb-3"></ul>
+      <p id="review-empty" class="hidden text-sm text-ink-light mb-3">（無）</p>
+      <button id="review-more" class="hidden px-4 py-1.5 text-sm font-semibold border-2 border-ink hover:bg-ink hover:text-cream transition-colors">顯示更多</button>
     </div>
   </section>
 </BaseLayout>
@@ -202,26 +209,45 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 
   function needsAction(l: Landmark) { return !l.approved || l.reported > 0 || (l.isBusinessClaim && !l.businessVerified); }
 
+  // 資料一多（幾百筆）全部攤開成一整排卡片會很難找到真正需要處理的——預設只顯示需要處理的項目，
+  // 「顯示更多」則是為了不要一次把整個 DOM 塞滿（一頁 30 筆，往下按才再長出下一批），而不是真的
+  // 分頁換頁：管理員通常是想「掃過一輪」，不是在頁碼之間跳來跳去。
+  const PAGE_SIZE = 30;
+  let landmarkShown = PAGE_SIZE;
+  let reviewShown = PAGE_SIZE;
+
   function render() {
     const q = ($('filter') as HTMLInputElement).value.trim().toLowerCase();
     const hit = (...xs: (string | null | undefined)[]) => !q || xs.some((x) => (x ?? '').toLowerCase().includes(q));
+    const needsActionOnly = ($('needs-action-only') as HTMLInputElement).checked;
 
-    const lm = landmarks
-      .filter((l) => hit(l.name, l.description, l.category, l.phone))
+    const lmAll = landmarks.filter((l) => hit(l.name, l.description, l.category, l.phone));
+    const rvAll = reviews.filter((r) => hit(r.placeName, r.comment));
+    const lm = (needsActionOnly ? lmAll.filter(needsAction) : lmAll)
       .sort((a, b) => Number(needsAction(b)) - Number(needsAction(a)));
-    const rv = reviews
-      .filter((r) => hit(r.placeName, r.comment))
+    const rv = (needsActionOnly ? rvAll.filter((r) => r.reported > 0) : rvAll)
       .sort((a, b) => b.reported - a.reported);
+
+    ($('summary') as HTMLElement).textContent =
+      `共 ${landmarks.length} 個地標、${reviews.length} 則評論。待審核 ${landmarks.filter((l) => !l.approved).length}` +
+      ` · 未驗證店家 ${landmarks.filter((l) => l.isBusinessClaim && !l.businessVerified).length}` +
+      ` · 被檢舉地標 ${landmarks.filter((l) => l.reported > 0).length} · 被檢舉評論 ${reviews.filter((r) => r.reported > 0).length}`;
 
     const lmList = $('landmark-list'); lmList.innerHTML = '';
     $('landmark-count').textContent = lm.length ? `（${lm.length}）` : '';
-    if (lm.length === 0) $('landmark-empty').classList.remove('hidden'); else { $('landmark-empty').classList.add('hidden'); lm.forEach((l) => lmList.appendChild(landmarkCard(l))); }
+    if (lm.length === 0) $('landmark-empty').classList.remove('hidden'); else { $('landmark-empty').classList.add('hidden'); lm.slice(0, landmarkShown).forEach((l) => lmList.appendChild(landmarkCard(l))); }
+    ($('landmark-more') as HTMLElement).classList.toggle('hidden', lm.length <= landmarkShown);
 
     const rvList = $('review-list'); rvList.innerHTML = '';
     $('review-count').textContent = rv.length ? `（${rv.length}）` : '';
-    if (rv.length === 0) $('review-empty').classList.remove('hidden'); else { $('review-empty').classList.add('hidden'); rv.forEach((r) => rvList.appendChild(reviewCard(r))); }
+    if (rv.length === 0) $('review-empty').classList.remove('hidden'); else { $('review-empty').classList.add('hidden'); rv.slice(0, reviewShown).forEach((r) => rvList.appendChild(reviewCard(r))); }
+    ($('review-more') as HTMLElement).classList.toggle('hidden', rv.length <= reviewShown);
   }
-  $('filter').addEventListener('input', render);
+  function resetPagingAndRender() { landmarkShown = PAGE_SIZE; reviewShown = PAGE_SIZE; render(); }
+  $('filter').addEventListener('input', resetPagingAndRender);
+  $('needs-action-only').addEventListener('change', resetPagingAndRender);
+  $('landmark-more').addEventListener('click', () => { landmarkShown += PAGE_SIZE; render(); });
+  $('review-more').addEventListener('click', () => { reviewShown += PAGE_SIZE; render(); });
 
   async function loadLandmarks() {
     const j = await authedFetch('/write/api/landmarks');
