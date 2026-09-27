@@ -13,7 +13,7 @@ const features: { icon: Parameters<typeof Icon>[0]['name']; title: string; body:
 ];
 ---
 
-<AppDoc title="TransitGo App" description="交通即時查 TransitGo：公車、台鐵、捷運、YouBike 即時資訊、導航與行程分享的 iPhone App。" tag="TransitGo · iPhone / iPad App">
+<AppDoc title="TransitGo App" description="交通即時查 TransitGo：公車、台鐵、捷運、YouBike 即時資訊、導航與行程分享的 iPhone App。">
   <div class="hero">
     <h1>{APP_NAME}</h1>
     <p class="meta">公車・台鐵・捷運・YouBike 的即時資訊、導航與行程分享　·　iPhone / iPad　·　目前測試中</p>
@@ -77,15 +77,14 @@ const features: { icon: Parameters<typeof Icon>[0]['name']; title: string; body:
     margin: 1.2rem 0 1.4rem;
   }
   .feature-card {
-    background: #ffffff;
-    border: 2px solid var(--color-ink);
-    border-radius: 12px 5px 14px 6px / 6px 14px 5px 12px;
-    box-shadow: 3px 4px 0 rgba(29, 39, 66, 0.14);
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
     padding: 1.2rem 1.2rem 1.3rem;
   }
   .feature-icon {
-    color: var(--color-sage);
-    background: var(--color-sage-light);
+    color: var(--accent);
+    background: var(--accent-soft);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -95,13 +94,13 @@ const features: { icon: Parameters<typeof Icon>[0]['name']; title: string; body:
     margin-bottom: 0.7rem;
   }
   .feature-card h3 {
-    font-family: var(--font-display);
-    color: var(--color-ink);
+    color: var(--text);
     font-size: 1.05rem;
+    font-weight: 700;
     margin: 0 0 0.35rem;
   }
   .feature-card p {
-    color: var(--color-ink-light);
+    color: var(--muted);
     font-size: 0.9rem;
     line-height: 1.7;
     margin: 0;
@@ -120,10 +119,10 @@ const features: { icon: Parameters<typeof Icon>[0]['name']; title: string; body:
     height: 10px;
     border-radius: 50%;
     margin-top: 0.35rem;
-    background: var(--color-ink-light);
+    background: var(--muted);
   }
-  .status-dot.up { background: var(--color-sage); }
-  .status-dot.down { background: var(--color-clay); }
+  .status-dot.up { background: #2f9e5c; }
+  .status-dot.down { background: var(--accent); }
   .fine-print {
     font-size: 0.85rem;
   }

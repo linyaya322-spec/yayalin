@@ -2,6 +2,7 @@
 // TransitGo（交通即時查）App 的獨立版型：不使用個人網站的導覽列、頁尾、頭像、結構化資料。
 // App 的使用者看到的只有 App 本身與客服聯絡方式。
 import { APP_NAME } from '../lib/app';
+import Icon from '../components/Icon.astro';
 
 interface Props {
   title: string;
@@ -36,7 +37,10 @@ const tabs = [
   </head>
   <body>
     <header class="top">
-      <a class="brand" href="/app"><span class="logo" aria-hidden="true">🚌</span><span>{APP_NAME}</span></a>
+      <a class="brand" href="/app">
+        <span class="logo" aria-hidden="true"><Icon name="bus" size={20} /></span>
+        <span>{APP_NAME}</span>
+      </a>
       <nav aria-label="頁面">
         {tabs.map((t) => (
           <a href={t.href} aria-current={path === t.href ? 'page' : undefined}>{t.label}</a>
@@ -54,17 +58,18 @@ const tabs = [
 <style is:global>
   :root {
     color-scheme: light dark;
-    --bg: #f5f7fb; --card: #ffffff; --text: #1a2233; --muted: #5b6579; --line: #dfe4ee;
-    --accent: #0a6cf0; --accent-soft: #0a6cf01a; --warn-soft: #ffb4001f;
+    /* 跟個人網站同一套顏色（白紙、原子筆藍黑、紅筆），只是版型維持乾淨、不用貼紙感的粗邊框 */
+    --bg: #fefefc; --card: #ffffff; --text: #1d2742; --muted: #58627e; --line: #e7e1d3;
+    --accent: #d63a3a; --accent-soft: #fde4e2; --warn-soft: #fff7b0;
   }
   @media (prefers-color-scheme: dark) {
-    :root { --bg: #0d1220; --card: #161d30; --text: #edf0f7; --muted: #9aa5be; --line: #27314a; --accent: #6aa5ff; --accent-soft: #6aa5ff24; --warn-soft: #ffb4002b; }
+    :root { --bg: #171f38; --card: #1f2946; --text: #f1ede3; --muted: #a9b0c8; --line: #343f63; --accent: #ff8a76; --accent-soft: #d63a3a33; --warn-soft: #ffe94a26; }
   }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.8 -apple-system, "PingFang TC", "Noto Sans TC", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
   header.top { max-width: 780px; margin: 0 auto; padding: 22px 20px 6px; }
   .brand { display: inline-flex; align-items: center; gap: 10px; font-weight: 800; font-size: 20px; color: var(--text); text-decoration: none; }
-  .logo { display: inline-grid; place-items: center; width: 34px; height: 34px; border-radius: 10px; background: var(--accent); color: #fff; font-size: 18px; }
+  .logo { display: inline-grid; place-items: center; width: 34px; height: 34px; border-radius: 10px; background: var(--accent); color: #fff; }
   header.top nav { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
   header.top nav a { padding: 6px 14px; border-radius: 999px; font-size: 14px; font-weight: 600; color: var(--muted); text-decoration: none; border: 1px solid transparent; }
   header.top nav a[aria-current='page'] { background: var(--accent-soft); color: var(--accent); border-color: var(--accent-soft); }
