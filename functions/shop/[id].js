@@ -2,6 +2,7 @@
 // LINE 名片等）。伺服器端直接渲染 HTML（同一種做法見 functions/app/s/[token].js 的分享頁），這樣分享出去
 // 在 LINE／Messenger 等地方才有正確的預覽（標題、說明），純前端 fetch 渲染做不到這件事。
 import { backendBase } from '../_lib/shareProxy.js';
+import { categoryLabel } from '../_lib/landmarkCategories.js';
 
 const esc = (v) =>
   String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -66,29 +67,11 @@ footer a { color: var(--accent); }
     <div class="row"><b>地圖</b><a class="map" href="${esc(mapsUrl)}" target="_blank" rel="noopener">在地圖中開啟 →</a></div>
     ${!landmark.businessVerified ? '<p class="unverified">這個地標還沒有店家認領。如果是你的店，到 <a href="/app/business">商家後台</a> 認領它，就能顯示營業時間與電話。</p>' : ''}
   </div>
-  <footer>資料由「交通即時查 TransitGo」使用者提供 · <a href="/app">下載 App</a></footer>
+  <footer>資料由「交通即時查 TransitGo」使用者提供 · <a href="/shop">所有商家</a> · <a href="/app">下載 App</a></footer>
 </main>
 </body>
 </html>`;
 }
-
-const CATEGORY_LABEL = {
-  restaurant: '餐廳', cafe: '咖啡廳', teaShop: '飲料店', bakery: '麵包店', dessertShop: '甜點店', bar: '酒吧',
-  breakfastShop: '早餐店', nightMarketStall: '夜市小吃', buffet: '自助餐', fastFood: '速食店',
-  groceryStore: '雜貨店', convenienceStore: '便利商店', supermarket: '超市', clothingStore: '服飾店',
-  bookstore: '書店', electronicsStore: '3C／電器行', giftShop: '禮品店', marketplace: '市場',
-  hospital: '醫院', clinic: '診所', dentist: '牙醫', pharmacy: '藥局', veterinary: '獸醫院',
-  gasStation: '加油站', evCharging: '電動車充電站', parkingLot: '停車場', carRepair: '汽機車保養廠', bikeShop: '自行車行',
-  school: '學校', kindergarten: '幼兒園', cramSchool: '補習班', library: '圖書館',
-  bank: '銀行', atm: 'ATM', insurance: '保險',
-  policeStation: '警察局', fireStation: '消防局', postOffice: '郵局', cityHall: '行政機關',
-  park: '公園', cinema: '電影院', museum: '博物館', artGallery: '藝廊', karaoke: 'KTV', arcade: '遊藝場',
-  gym: '健身房', swimmingPool: '游泳池', sportsField: '運動場', yogaStudio: '瑜伽教室',
-  hotel: '飯店', hostel: '青年旅館', bnb: '民宿', campground: '露營地',
-  temple: '廟宇', church: '教堂',
-  hairSalon: '美髮沙龍', laundry: '洗衣店', petGrooming: '寵物美容', repairShop: '維修行', other: '其他',
-};
-const categoryLabel = (c) => CATEGORY_LABEL[c] ?? '其他';
 
 const notFound = (origin) => `<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8">
 <title>找不到這個地標｜交通即時查 TransitGo</title><meta name="robots" content="noindex"></head>
