@@ -13,6 +13,7 @@ const canonicalUrl = new URL(Astro.url.pathname, Astro.site ?? 'https://yayalin.
 const path = Astro.url.pathname.replace(/\/$/, '') || '/';
 const tabs = [
   { href: '/app', label: '首頁' },
+  { href: '/app/business', label: '商家後台' },
   { href: '/app/support', label: '客服與意見回饋' },
   { href: '/app/privacy', label: '隱私權政策' },
   { href: '/app/terms', label: '服務條款' },
