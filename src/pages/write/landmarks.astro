@@ -1,0 +1,235 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="地標與評論" description="站長專用：TransitGo 使用者新增地標與評論審核" noindex>
+  <section class="max-w-3xl mx-auto px-6 pt-16 pb-24">
+    <div id="login-view">
+      <p class="inline-block bg-ink text-cream text-sm font-medium px-3 py-1 mb-6">地標與評論</p>
+      <h1 class="font-display text-3xl text-ink mb-6">登入管理後台</h1>
+      <form id="login-form" class="grid gap-3 max-w-sm">
+        <input type="email" id="login-email" required placeholder="yayalin322@gmail.com"
+          class="border-2 border-ink bg-cream px-4 py-2.5 text-ink placeholder:text-ink-light/70 focus:outline-none focus:bg-sage-light" />
+        <button type="submit" class="px-6 py-2.5 bg-clay text-cream text-sm font-semibold hover:bg-ink transition-colors">寄送登入連結</button>
+        <p id="login-status" class="text-sm min-h-5 text-ink-light"></p>
+      </form>
+    </div>
+
+    <div id="admin-view" class="hidden">
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <a href="/write" data-magnetic class="text-sm font-semibold text-clay hover:text-ink transition-colors">← 回主控台</a>
+          <h1 class="font-display text-3xl text-ink mt-2">地標與評論</h1>
+          <p class="text-sm text-ink-light mt-1">使用者在 App 裡新增的地標、留下的評論。待核准、被檢舉、自稱店家但未驗證的排在最前面。</p>
+        </div>
+        <button id="logout-btn" class="px-4 py-1.5 border-2 border-ink text-sm font-semibold hover:bg-ink hover:text-cream transition-colors">登出</button>
+      </div>
+
+      <input id="filter" placeholder="搜尋名稱、內容、電話…" class="border-2 border-ink bg-cream px-4 py-2 w-full mb-6 focus:outline-none focus:bg-sage-light" />
+
+      <h2 class="font-display text-xl text-ink mb-3">地標 <span id="landmark-count" class="text-sm text-ink-light font-normal"></span></h2>
+      <ul id="landmark-list" class="grid gap-3 mb-10"></ul>
+      <p id="landmark-empty" class="hidden text-sm text-ink-light mb-10">（無）</p>
+
+      <h2 class="font-display text-xl text-ink mb-3">評論 <span id="review-count" class="text-sm text-ink-light font-normal"></span></h2>
+      <p class="text-sm text-ink-light mb-3">被檢舉次數高的排最前面；檢舉只累加次數，不會自動隱藏。</p>
+      <ul id="review-list" class="grid gap-3"></ul>
+      <p id="review-empty" class="hidden text-sm text-ink-light">（無）</p>
+    </div>
+  </section>
+</BaseLayout>
+
+<script>
+  import { supabase } from '../../lib/supabase';
+
+  const ADMIN_EMAIL = 'yayalin322@gmail.com';
+  const REASON_LABEL: Record<string, string> = { spam: '廣告/垃圾訊息', offensive: '不當言論', sexual: '色情內容', harassment: '騷擾/人身攻擊', other: '其他' };
+  const CATEGORY_LABEL: Record<string, string> = {};
+
+  interface Landmark {
+    id: number; name: string; description: string; category: string;
+    lat: number; lon: number; photo: string | null;
+    isBusinessClaim: boolean; businessVerified: boolean; businessHours: string | null; phone: string | null;
+    approved: boolean; reported: number; reportReasons: Record<string, number> | null;
+    appVersion: string | null; createdAt: string;
+  }
+  interface Review {
+    id: number; placeName: string; stars: number; comment: string; photo: string | null;
+    reported: number; reportReasons: Record<string, number> | null; appVersion: string | null; createdAt: string;
+  }
+
+  const $ = (id: string) => document.getElementById(id)!;
+  const loginView = $('login-view');
+  const adminView = $('admin-view');
+
+  function esc(v: unknown) {
+    const div = document.createElement('div');
+    div.textContent = String(v ?? '');
+    return div.innerHTML;
+  }
+  const safeImg = (src: string | null) => (src && /^(data:image\/(png|jpe?g|webp|gif);base64,|https:\/\/)/i.test(src) ? esc(src) : '');
+  const when = (iso: string) => new Date(iso).toLocaleString('zh-TW', { hour12: false, timeZone: 'Asia/Taipei' });
+  const reasons = (o: Record<string, number> | null) => Object.entries(o || {}).map(([k, v]) => `${esc(REASON_LABEL[k] ?? k)} ×${v}`).join('、');
+
+  async function authedFetch(path: string, opts: RequestInit = {}) {
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token;
+    if (!token) return null;
+    const res = await fetch(path, { ...opts, headers: { ...(opts.headers || {}), authorization: `Bearer ${token}` } });
+    if (!res.ok) return null;
+    return res.json().catch(() => null);
+  }
+
+  ($('login-form') as HTMLFormElement).addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const status = $('login-status');
+    status.textContent = '寄送中...';
+    const { error } = await supabase.auth.signInWithOtp({
+      email: ($('login-email') as HTMLInputElement).value.trim(),
+      options: { shouldCreateUser: false, emailRedirectTo: window.location.origin + '/write/landmarks' },
+    });
+    status.textContent = error ? '寄送失敗，請確認 Email 是否正確。' : '登入連結已寄出，請到信箱點連結（可能在垃圾信件夾）。';
+  });
+  $('logout-btn').addEventListener('click', async () => { await supabase.auth.signOut(); });
+
+  async function renderForSession() {
+    const { data } = await supabase.auth.getSession();
+    if (data.session?.user.email === ADMIN_EMAIL) {
+      loginView.classList.add('hidden');
+      adminView.classList.remove('hidden');
+      loadAll();
+    } else {
+      loginView.classList.remove('hidden');
+      adminView.classList.add('hidden');
+    }
+  }
+  supabase.auth.onAuthStateChange(() => renderForSession());
+  renderForSession();
+
+  let landmarks: Landmark[] = [];
+  let reviews: Review[] = [];
+
+  function landmarkCard(l: Landmark) {
+    const li = document.createElement('li');
+    li.className = 'border-2 border-ink bg-cream p-4';
+    const tags = [
+      !l.approved ? '<span class="text-xs font-semibold px-2 py-0.5 border border-ink bg-butter">待審核</span>' : '',
+      l.isBusinessClaim
+        ? (l.businessVerified
+          ? '<span class="text-xs font-semibold px-2 py-0.5 border border-ink">已驗證店家</span>'
+          : '<span class="text-xs font-semibold px-2 py-0.5 border border-ink bg-butter">自稱店家（未驗證）</span>')
+        : '',
+      l.reported > 0 ? `<span class="text-xs font-semibold px-2 py-0.5 border border-clay text-clay">被檢舉 ${l.reported} 次（${reasons(l.reportReasons)}）</span>` : '',
+    ].filter(Boolean).join(' ');
+    li.innerHTML = `
+      <div class="flex flex-wrap items-center gap-2 mb-1">
+        <strong class="text-ink">${esc(l.name)}</strong>
+        <span class="text-xs text-ink-light">${esc(CATEGORY_LABEL[l.category] ?? l.category)}</span>
+        ${tags}
+      </div>
+      ${l.description ? `<p class="text-sm text-ink-light">${esc(l.description)}</p>` : ''}
+      ${l.businessHours ? `<p class="text-xs text-ink-light mt-1">營業時間：${esc(l.businessHours)}</p>` : ''}
+      ${l.phone ? `<p class="text-xs text-ink-light">電話：${esc(l.phone)}</p>` : ''}
+      ${safeImg(l.photo) ? `<img src="${safeImg(l.photo)}" class="max-w-[160px] mt-2" alt="" />` : ''}
+      <p class="text-xs text-ink-light mt-2">${l.lat.toFixed(5)}, ${l.lon.toFixed(5)} · ${esc(when(l.createdAt))} · ${esc(l.appVersion || '?')}</p>
+    `;
+    const actions = document.createElement('div');
+    actions.className = 'flex flex-wrap gap-2 mt-2';
+    if (!l.approved) {
+      const b = document.createElement('button');
+      b.textContent = '核准';
+      b.className = 'px-3 py-1 text-xs font-semibold border-2 border-ink hover:bg-ink hover:text-cream transition-colors';
+      b.addEventListener('click', async () => {
+        b.disabled = true;
+        const j = await authedFetch(`/write/api/landmarks/${l.id}/approve`, { method: 'POST' });
+        if (j) loadLandmarks(); else { b.disabled = false; alert('失敗，請稍後再試。'); }
+      });
+      actions.appendChild(b);
+    }
+    if (l.isBusinessClaim && !l.businessVerified) {
+      const b = document.createElement('button');
+      b.textContent = '驗證為店家';
+      b.className = 'px-3 py-1 text-xs font-semibold border-2 border-ink hover:bg-ink hover:text-cream transition-colors';
+      b.addEventListener('click', async () => {
+        if (!confirm('確定已經在 App 外自行核實這位使用者真的是店家嗎？')) return;
+        b.disabled = true;
+        const j = await authedFetch(`/write/api/landmarks/${l.id}/verify-business`, { method: 'POST' });
+        if (j) loadLandmarks(); else { b.disabled = false; alert('失敗，請稍後再試。'); }
+      });
+      actions.appendChild(b);
+    }
+    const del = document.createElement('button');
+    del.textContent = '刪除';
+    del.className = 'px-3 py-1 text-xs font-semibold border-2 border-clay text-clay hover:bg-clay hover:text-cream transition-colors';
+    del.addEventListener('click', async () => {
+      if (!confirm(`確定刪除地標「${l.name}」？刪除後無法復原。`)) return;
+      del.disabled = true;
+      const j = await authedFetch(`/write/api/landmarks/${l.id}`, { method: 'DELETE' });
+      if (j) loadLandmarks(); else { del.disabled = false; alert('失敗，請稍後再試。'); }
+    });
+    actions.appendChild(del);
+    li.appendChild(actions);
+    return li;
+  }
+
+  function reviewCard(r: Review) {
+    const li = document.createElement('li');
+    li.className = 'border-2 border-ink bg-cream p-4';
+    li.innerHTML = `
+      <div class="flex flex-wrap items-center gap-2 mb-1">
+        <strong class="text-ink">${'★'.repeat(Math.max(0, Math.min(5, r.stars)))}</strong>
+        <span class="text-sm text-ink-light">${esc(r.placeName)}</span>
+        ${r.reported > 0 ? `<span class="text-xs font-semibold px-2 py-0.5 border border-clay text-clay">被檢舉 ${r.reported} 次（${reasons(r.reportReasons)}）</span>` : ''}
+      </div>
+      <p class="text-sm text-ink-light">${r.comment ? esc(r.comment) : '<span class="text-ink-light/70">（無文字）</span>'}</p>
+      ${safeImg(r.photo) ? `<img src="${safeImg(r.photo)}" class="max-w-[160px] mt-2" alt="" />` : ''}
+      <p class="text-xs text-ink-light mt-2">${esc(when(r.createdAt))} · ${esc(r.appVersion || '?')}</p>
+    `;
+    const del = document.createElement('button');
+    del.textContent = '刪除';
+    del.className = 'mt-2 px-3 py-1 text-xs font-semibold border-2 border-clay text-clay hover:bg-clay hover:text-cream transition-colors';
+    del.addEventListener('click', async () => {
+      if (!confirm('確定刪除這則評論？刪除後無法復原。')) return;
+      del.disabled = true;
+      const j = await authedFetch(`/write/api/place-reviews/${r.id}`, { method: 'DELETE' });
+      if (j) loadReviews(); else { del.disabled = false; alert('失敗，請稍後再試。'); }
+    });
+    li.appendChild(del);
+    return li;
+  }
+
+  function needsAction(l: Landmark) { return !l.approved || l.reported > 0 || (l.isBusinessClaim && !l.businessVerified); }
+
+  function render() {
+    const q = ($('filter') as HTMLInputElement).value.trim().toLowerCase();
+    const hit = (...xs: (string | null | undefined)[]) => !q || xs.some((x) => (x ?? '').toLowerCase().includes(q));
+
+    const lm = landmarks
+      .filter((l) => hit(l.name, l.description, l.category, l.phone))
+      .sort((a, b) => Number(needsAction(b)) - Number(needsAction(a)));
+    const rv = reviews
+      .filter((r) => hit(r.placeName, r.comment))
+      .sort((a, b) => b.reported - a.reported);
+
+    const lmList = $('landmark-list'); lmList.innerHTML = '';
+    $('landmark-count').textContent = lm.length ? `（${lm.length}）` : '';
+    if (lm.length === 0) $('landmark-empty').classList.remove('hidden'); else { $('landmark-empty').classList.add('hidden'); lm.forEach((l) => lmList.appendChild(landmarkCard(l))); }
+
+    const rvList = $('review-list'); rvList.innerHTML = '';
+    $('review-count').textContent = rv.length ? `（${rv.length}）` : '';
+    if (rv.length === 0) $('review-empty').classList.remove('hidden'); else { $('review-empty').classList.add('hidden'); rv.forEach((r) => rvList.appendChild(reviewCard(r))); }
+  }
+  $('filter').addEventListener('input', render);
+
+  async function loadLandmarks() {
+    const j = await authedFetch('/write/api/landmarks');
+    landmarks = j?.landmarks ?? [];
+    render();
+  }
+  async function loadReviews() {
+    const j = await authedFetch('/write/api/place-reviews');
+    reviews = j?.reviews ?? [];
+    render();
+  }
+  function loadAll() { loadLandmarks(); loadReviews(); }
+</script>
