@@ -1,0 +1,280 @@
+---
+import AppDoc from '../../components/AppDoc.astro';
+---
+
+<AppDoc title="商家後台" description="TransitGo 商家後台：認領你的地標、管理營業時間、電話與營業狀態，不用安裝 App。">
+<h1>商家後台</h1>
+<p class="meta">不用安裝 App，用信箱驗證身分後就能認領你的店家、管理營業時間／電話／營業狀態。</p>
+
+<div class="note">
+每個動作（認領、儲存）都需要各自輸入一次剛收到的驗證碼——驗證碼只能用一次，這是刻意的設計，
+不是漏掉步驟。收不到信請看垃圾信件匣。
+</div>
+
+<h2>找到我的店家</h2>
+<p>先驗證信箱，看看有沒有已經認領的店家。</p>
+<div class="card" id="view-card">
+  <input type="email" id="view-email" placeholder="你的 Email" class="field" />
+  <div class="row">
+    <button id="view-send" class="btn">寄驗證碼</button>
+    <input type="text" id="view-code" placeholder="6 位數驗證碼" inputmode="numeric" maxlength="6" class="field" disabled />
+  </div>
+  <p id="view-status" class="hint"></p>
+  <button id="view-submit" class="btn primary" disabled>查看我認領的店家</button>
+</div>
+
+<div id="mine-section" class="hidden">
+  <h3>我認領的店家</h3>
+  <ul id="mine-list" class="list"></ul>
+  <p id="mine-empty" class="hidden hint">還沒有認領任何地標。</p>
+</div>
+
+<h2>認領一個地標</h2>
+<p>搜尋地標名稱（要先在 App 裡被使用者新增過、且已經通過後台審核，才搜尋得到）。</p>
+<div class="card">
+  <input type="text" id="search-q" placeholder="地標名稱，至少 2 個字" class="field" />
+  <button id="search-btn" class="btn">搜尋</button>
+  <ul id="search-list" class="list"></ul>
+  <p id="search-empty" class="hidden hint">查不到符合的地標，或都已經被認領了。</p>
+</div>
+
+<template id="claim-template">
+  <li class="item">
+    <p class="item-name"></p>
+    <p class="item-meta"></p>
+    <div class="claim-form hidden">
+      <input type="email" class="claim-email field" placeholder="你的 Email（要跟這家店有關）" />
+      <div class="row">
+        <button class="claim-send btn">寄驗證碼</button>
+        <input type="text" class="claim-code field" placeholder="6 位數驗證碼" inputmode="numeric" maxlength="6" disabled />
+      </div>
+      <input type="text" class="claim-hours field" placeholder="營業時間，例如：週一至週日 11:00–21:00" />
+      <input type="text" class="claim-phone field" placeholder="電話" />
+      <p class="claim-status hint"></p>
+      <button class="claim-submit btn primary" disabled>認領這個地標</button>
+    </div>
+    <button class="claim-toggle btn">認領這裡</button>
+  </li>
+</template>
+
+<template id="mine-template">
+  <li class="item">
+    <p class="item-name"></p>
+    <p class="item-meta"></p>
+    <div class="edit-form hidden">
+      <label class="hint">營業狀態</label>
+      <select class="edit-status field">
+        <option value="open">營業中</option>
+        <option value="temporarily_closed">暫停營業</option>
+        <option value="permanently_closed">已停業</option>
+      </select>
+      <input type="text" class="edit-hours field" placeholder="營業時間" />
+      <input type="text" class="edit-phone field" placeholder="電話" />
+      <div class="row">
+        <button class="edit-send btn">寄驗證碼</button>
+        <input type="text" class="edit-code field" placeholder="6 位數驗證碼" inputmode="numeric" maxlength="6" disabled />
+      </div>
+      <p class="edit-status-msg hint"></p>
+      <button class="edit-submit btn primary" disabled>儲存</button>
+    </div>
+    <button class="edit-toggle btn">編輯</button>
+  </li>
+</template>
+
+<h2>需要幫忙</h2>
+<p>信箱收不到驗證碼、或這個地標還沒被任何人新增過，寄信到 <a href="mailto:app&#64;yayalin.com">app&#64;yayalin.com</a>。</p>
+</AppDoc>
+
+<style>
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 1.1rem 1.2rem; margin: 1rem 0; }
+  .field {
+    display: block; width: 100%; background: var(--bg); border: 1px solid var(--line); border-radius: 10px;
+    padding: 0.6rem 0.75rem; color: var(--text); font: inherit; margin: 0.5rem 0;
+  }
+  .field:focus { outline: none; border-color: var(--accent); }
+  .row { display: grid; grid-template-columns: auto 1fr; gap: 0.6rem; align-items: center; }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; border-radius: 10px;
+    padding: 0.55rem 1rem; font-weight: 700; font-size: 0.88rem; border: 1px solid var(--line);
+    background: var(--bg); color: var(--text); cursor: pointer;
+  }
+  .btn:disabled { opacity: 0.5; cursor: default; }
+  .btn.primary { background: var(--accent); color: #fff; border-color: transparent; }
+  .hint { font-size: 0.82rem; color: var(--muted); margin: 0.3rem 0; }
+  .hidden { display: none; }
+  .list { list-style: none; padding: 0; margin: 0.8rem 0; display: grid; gap: 0.7rem; }
+  .item { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 0.9rem 1rem; }
+  .item-name { font-weight: 700; color: var(--text); margin: 0; }
+  .item-meta { font-size: 0.85rem; color: var(--muted); margin: 0.2rem 0 0.6rem; }
+  .claim-form, .edit-form { display: grid; gap: 0.4rem; margin-top: 0.6rem; padding-top: 0.6rem; border-top: 1px dashed var(--line); }
+</style>
+
+<script>
+  const API = '/app/api/business';
+  const $ = (sel: string, root: ParentNode = document) => root.querySelector(sel) as HTMLElement;
+
+  async function post(path: string, body: unknown) {
+    const res = await fetch(API + path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+    return { ok: res.ok, status: res.status, data: await res.json().catch(() => null) };
+  }
+  async function put(path: string, body: unknown) {
+    const res = await fetch(API + path, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+    return { ok: res.ok, status: res.status, data: await res.json().catch(() => null) };
+  }
+
+  function wireSendCode(sendBtn: HTMLButtonElement, emailInput: HTMLInputElement, codeInput: HTMLInputElement, statusEl: HTMLElement) {
+    sendBtn.addEventListener('click', async () => {
+      const email = emailInput.value.trim();
+      if (!email.includes('@')) { statusEl.textContent = '請輸入正確的 Email。'; return; }
+      sendBtn.disabled = true;
+      statusEl.textContent = '寄送中…';
+      const { ok, status } = await post('/email-code', { email });
+      sendBtn.disabled = false;
+      if (!ok) {
+        statusEl.textContent = status === 429 ? '這個信箱寄太多次了，請一小時後再試。' : '寄送失敗，請確認 Email 後再試一次。';
+        return;
+      }
+      statusEl.textContent = `驗證碼已寄到 ${email}，10 分鐘內有效（沒收到請看垃圾信件匣）。`;
+      codeInput.disabled = false;
+      codeInput.focus();
+    });
+  }
+
+  /* ---------- 查看我認領的店家 ---------- */
+  const viewEmail = $('#view-email') as HTMLInputElement;
+  const viewCode = $('#view-code') as HTMLInputElement;
+  const viewStatus = $('#view-status');
+  const viewSubmit = $('#view-submit') as HTMLButtonElement;
+  wireSendCode($('#view-send') as HTMLButtonElement, viewEmail, viewCode, viewStatus);
+  viewCode.addEventListener('input', () => { viewSubmit.disabled = viewCode.value.trim().length !== 6; });
+
+  const mineTemplate = $('#mine-template') as HTMLTemplateElement;
+  const mineSection = $('#mine-section');
+  const mineList = $('#mine-list');
+  const mineEmpty = $('#mine-empty');
+
+  interface MyLandmark {
+    id: number; name: string; category: string; businessHours: string | null; phone: string | null;
+    businessStatus: 'open' | 'temporarily_closed' | 'permanently_closed'; approved: boolean;
+  }
+  const STATUS_LABEL: Record<string, string> = { open: '營業中', temporarily_closed: '暫停營業', permanently_closed: '已停業' };
+
+  function renderMine(landmarks: MyLandmark[], email: string) {
+    mineSection.classList.remove('hidden');
+    mineList.innerHTML = '';
+    if (landmarks.length === 0) { mineEmpty.classList.remove('hidden'); return; }
+    mineEmpty.classList.add('hidden');
+    for (const l of landmarks) {
+      const node = mineTemplate.content.cloneNode(true) as DocumentFragment;
+      const li = node.querySelector('.item')!;
+      (li.querySelector('.item-name') as HTMLElement).textContent = l.name;
+      (li.querySelector('.item-meta') as HTMLElement).textContent =
+        `${l.approved ? '已上架' : '待後台審核'} · ${STATUS_LABEL[l.businessStatus] ?? l.businessStatus}`;
+      const toggle = li.querySelector('.edit-toggle') as HTMLButtonElement;
+      const form = li.querySelector('.edit-form') as HTMLElement;
+      const statusSel = li.querySelector('.edit-status') as HTMLSelectElement;
+      const hoursInput = li.querySelector('.edit-hours') as HTMLInputElement;
+      const phoneInput = li.querySelector('.edit-phone') as HTMLInputElement;
+      const codeInput = li.querySelector('.edit-code') as HTMLInputElement;
+      const statusMsg = li.querySelector('.edit-status-msg') as HTMLElement;
+      const submitBtn = li.querySelector('.edit-submit') as HTMLButtonElement;
+      statusSel.value = l.businessStatus;
+      hoursInput.value = l.businessHours ?? '';
+      phoneInput.value = l.phone ?? '';
+      toggle.addEventListener('click', () => form.classList.toggle('hidden'));
+      wireSendCode(li.querySelector('.edit-send') as HTMLButtonElement, { value: email } as HTMLInputElement, codeInput, statusMsg);
+      codeInput.addEventListener('input', () => { submitBtn.disabled = codeInput.value.trim().length !== 6; });
+      submitBtn.addEventListener('click', async () => {
+        submitBtn.disabled = true;
+        statusMsg.textContent = '儲存中…';
+        const { ok, data } = await put(`/landmarks/${l.id}`, {
+          email, code: codeInput.value.trim(), businessHours: hoursInput.value, phone: phoneInput.value, businessStatus: statusSel.value,
+        });
+        if (ok) {
+          statusMsg.textContent = '已儲存。';
+          (li.querySelector('.item-meta') as HTMLElement).textContent =
+            `${l.approved ? '已上架' : '待後台審核'} · ${STATUS_LABEL[statusSel.value] ?? statusSel.value}`;
+        } else {
+          statusMsg.textContent = data?.error === 'invalid code' ? '驗證碼不正確或已過期，請重新寄一次。' : '儲存失敗，請稍後再試。';
+          submitBtn.disabled = false;
+        }
+      });
+      mineList.appendChild(node);
+    }
+  }
+
+  viewSubmit.addEventListener('click', async () => {
+    const email = viewEmail.value.trim();
+    const code = viewCode.value.trim();
+    viewSubmit.disabled = true;
+    viewStatus.textContent = '查詢中…';
+    const { ok, data } = await post('/mine', { email, code });
+    viewSubmit.disabled = false;
+    if (!ok) {
+      viewStatus.textContent = '驗證碼不正確或已過期，請重新寄一次。';
+      return;
+    }
+    viewStatus.textContent = '';
+    renderMine(data.landmarks ?? [], email);
+  });
+
+  /* ---------- 認領一個地標 ---------- */
+  const searchInput = $('#search-q') as HTMLInputElement;
+  const searchBtn = $('#search-btn') as HTMLButtonElement;
+  const searchList = $('#search-list');
+  const searchEmpty = $('#search-empty');
+  const claimTemplate = $('#claim-template') as HTMLTemplateElement;
+
+  interface SearchResult { id: number; name: string; category: string; isBusinessClaim: boolean; businessVerified: boolean }
+
+  searchBtn.addEventListener('click', async () => {
+    const q = searchInput.value.trim();
+    if (q.length < 2) return;
+    searchBtn.disabled = true;
+    const res = await fetch(`${API}/search?q=${encodeURIComponent(q)}`);
+    searchBtn.disabled = false;
+    const data = res.ok ? await res.json() : { landmarks: [] };
+    const results: SearchResult[] = data.landmarks ?? [];
+    searchList.innerHTML = '';
+    if (results.length === 0) { searchEmpty.classList.remove('hidden'); return; }
+    searchEmpty.classList.add('hidden');
+    for (const r of results) {
+      const node = claimTemplate.content.cloneNode(true) as DocumentFragment;
+      const li = node.querySelector('.item')!;
+      (li.querySelector('.item-name') as HTMLElement).textContent = r.name;
+      (li.querySelector('.item-meta') as HTMLElement).textContent = r.businessVerified ? '已經有人認領了' : '還沒有店家認領';
+      const toggle = li.querySelector('.claim-toggle') as HTMLButtonElement;
+      const form = li.querySelector('.claim-form') as HTMLElement;
+      if (r.businessVerified) {
+        toggle.disabled = true;
+        toggle.textContent = '已被認領';
+      } else {
+        toggle.addEventListener('click', () => form.classList.toggle('hidden'));
+      }
+      const emailInput = li.querySelector('.claim-email') as HTMLInputElement;
+      const codeInput = li.querySelector('.claim-code') as HTMLInputElement;
+      const hoursInput = li.querySelector('.claim-hours') as HTMLInputElement;
+      const phoneInput = li.querySelector('.claim-phone') as HTMLInputElement;
+      const statusMsg = li.querySelector('.claim-status') as HTMLElement;
+      const submitBtn = li.querySelector('.claim-submit') as HTMLButtonElement;
+      wireSendCode(li.querySelector('.claim-send') as HTMLButtonElement, emailInput, codeInput, statusMsg);
+      codeInput.addEventListener('input', () => { submitBtn.disabled = codeInput.value.trim().length !== 6; });
+      submitBtn.addEventListener('click', async () => {
+        submitBtn.disabled = true;
+        statusMsg.textContent = '送出中…';
+        const { ok, data: claimData } = await post(`/landmarks/${r.id}/claim`, {
+          email: emailInput.value.trim(), code: codeInput.value.trim(), businessHours: hoursInput.value, phone: phoneInput.value,
+        });
+        if (ok) {
+          statusMsg.textContent = '認領成功！可以到上面「找到我的店家」用同一個信箱查看與管理。';
+          toggle.disabled = true;
+          toggle.textContent = '已認領';
+        } else {
+          statusMsg.textContent = claimData?.error === 'invalid code' ? '驗證碼不正確或已過期，請重新寄一次。' : '認領失敗（可能剛好被別人搶先認領），請重新整理再試。';
+          submitBtn.disabled = false;
+        }
+      });
+      searchList.appendChild(node);
+    }
+  });
+</script>
