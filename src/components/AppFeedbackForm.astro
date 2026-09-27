@@ -1,0 +1,157 @@
+---
+import Icon from './Icon.astro';
+---
+<form id="app-feedback-form" class="reveal card-pop grid gap-4 max-w-lg p-8 pt-10">
+  <div class="flex items-center gap-3 text-ink" aria-hidden="true">
+    <Icon name="bubble" size={44} />
+    <Icon name="paper" size={44} />
+    <Icon name="send" size={44} />
+  </div>
+
+  <div class="grid grid-cols-3 gap-2" role="radiogroup" aria-label="類型">
+    <label class="kind-choice">
+      <input type="radio" name="kind" value="bug" checked />
+      <span>問題回報</span>
+    </label>
+    <label class="kind-choice">
+      <input type="radio" name="kind" value="idea" />
+      <span>功能建議</span>
+    </label>
+    <label class="kind-choice">
+      <input type="radio" name="kind" value="other" />
+      <span>其他</span>
+    </label>
+  </div>
+
+  <textarea
+    id="app-feedback-message"
+    name="message"
+    placeholder="想告訴我們的事：發生了什麼、你預期會怎樣、時間地點或路線車次…"
+    aria-label="意見內容"
+    required
+    maxlength="4000"
+    rows="5"
+    class="paper-lines"
+  ></textarea>
+
+  <input
+    type="email"
+    id="app-feedback-email"
+    name="email"
+    placeholder="你的 Email，方便我們回覆你（需驗證）"
+    aria-label="你的 Email，需要驗證"
+    required
+    class="paper-field"
+  />
+  <div class="grid gap-2 sm:grid-cols-[auto_1fr] items-center">
+    <button type="button" id="app-feedback-send-code" class="btn-pop px-4 py-2 text-sm disabled:opacity-50">寄驗證碼</button>
+    <input
+      type="text"
+      id="app-feedback-code"
+      name="code"
+      inputmode="numeric"
+      autocomplete="one-time-code"
+      maxlength="6"
+      placeholder="輸入 6 位數驗證碼"
+      aria-label="Email 驗證碼"
+      required
+      disabled
+      class="paper-field"
+    />
+  </div>
+  <p id="app-feedback-code-status" class="text-xs text-ink-light min-h-4 -mt-2"></p>
+
+  <button
+    type="submit"
+    data-magnetic
+    class="btn-pop justify-self-start inline-flex items-center gap-2 px-6 py-2.5 text-sm disabled:opacity-50"
+  >
+    <Icon name="send" size={18} />
+    送出
+  </button>
+  <p id="app-feedback-status" class="text-sm min-h-5"></p>
+</form>
+
+<style>
+  .kind-choice {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    border: 2px solid var(--color-ink);
+    border-radius: 10px 4px 12px 5px / 5px 12px 4px 10px;
+    padding: 0.5rem 0.4rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--color-ink-light);
+    cursor: pointer;
+    transition: background-color 0.15s, color 0.15s;
+  }
+  .kind-choice input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .kind-choice:has(input:checked) {
+    background: var(--color-sage-light);
+    color: var(--color-ink);
+  }
+  .kind-choice:has(input:focus-visible) {
+    outline: 2px solid var(--color-sage);
+    outline-offset: 2px;
+  }
+</style>
+
+<script>
+  import { supabase } from '../lib/supabase';
+  import { wireEmailCode } from '../lib/emailCode';
+
+  const form = document.getElementById('app-feedback-form') as HTMLFormElement | null;
+  const status = document.getElementById('app-feedback-status');
+
+  const emailInput = document.getElementById('app-feedback-email') as HTMLInputElement | null;
+  const codeInput = document.getElementById('app-feedback-code') as HTMLInputElement | null;
+  const sendBtn = document.getElementById('app-feedback-send-code') as HTMLButtonElement | null;
+  const codeStatus = document.getElementById('app-feedback-code-status');
+  if (emailInput && codeInput && sendBtn && codeStatus) {
+    wireEmailCode({ emailInput, sendBtn, codeInput, statusEl: codeStatus, purpose: 'app' });
+  }
+
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement | null;
+    const formData = new FormData(form);
+    const kind = String(formData.get('kind') ?? 'other');
+    const message = String(formData.get('message') ?? '').trim();
+    const email = String(formData.get('email') ?? '').trim();
+    const code = String(formData.get('code') ?? '').trim();
+    if (!message || !email) return;
+    if (!/^\d{6}$/.test(code)) {
+      if (status) status.textContent = '請先按「寄驗證碼」，並輸入信箱收到的 6 位數驗證碼。';
+      return;
+    }
+
+    if (submitBtn) submitBtn.disabled = true;
+    if (status) status.textContent = '送出中...';
+
+    const { data, error } = await supabase.rpc('submit_app_feedback', {
+      p_kind: kind,
+      p_message: message,
+      p_email: email,
+      p_code: code,
+    });
+
+    if (error) {
+      if (status) status.textContent = '送出失敗，請稍後再試一次，或直接寄 Email 給我們。';
+    } else if (!data || !data.case_number) {
+      if (status) status.textContent = '驗證碼不正確或已過期，請重新按「寄驗證碼」。你打的內容還在，不用重打。';
+    } else {
+      if (status) {
+        status.textContent = `已收到，我們會盡快回覆！案件編號 ${data.case_number}，回覆會寄到你的信箱（在 App 內開啟同一個 Email 也能繼續對話）。`;
+      }
+      form.reset();
+      if (codeInput) codeInput.disabled = true;
+    }
+    if (submitBtn) submitBtn.disabled = false;
+  });
+</script>

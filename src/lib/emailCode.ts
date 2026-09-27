@@ -5,7 +5,7 @@ interface Options {
   sendBtn: HTMLButtonElement;
   codeInput: HTMLInputElement;
   statusEl: HTMLElement;
-  purpose: 'suggestion' | 'contact';
+  purpose: 'suggestion' | 'contact' | 'app';
 }
 
 // Wires up the "send code" button next to an email field. The server
