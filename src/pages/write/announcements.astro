@@ -1,0 +1,260 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="App 公告" description="站長專用：TransitGo 後端公告／推播" noindex>
+  <section class="max-w-3xl mx-auto px-6 pt-16 pb-24">
+    <div id="login-view">
+      <p class="inline-block bg-ink text-cream text-sm font-medium px-3 py-1 mb-6">App 公告</p>
+      <h1 class="font-display text-3xl text-ink mb-6">登入管理後台</h1>
+      <form id="login-form" class="grid gap-3 max-w-sm">
+        <input
+          type="email"
+          id="login-email"
+          required
+          placeholder="yayalin322@gmail.com"
+          class="border-2 border-ink bg-cream px-4 py-2.5 text-ink placeholder:text-ink-light/70 focus:outline-none focus:bg-sage-light"
+        />
+        <button type="submit" class="px-6 py-2.5 bg-clay text-cream text-sm font-semibold hover:bg-ink transition-colors">
+          寄送登入連結
+        </button>
+        <p id="login-status" class="text-sm min-h-5 text-ink-light"></p>
+      </form>
+    </div>
+
+    <div id="admin-view" class="hidden">
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <a href="/write" data-magnetic class="text-sm font-semibold text-clay hover:text-ink transition-colors">← 回主控台</a>
+          <h1 class="font-display text-3xl text-ink mt-2">App 公告</h1>
+          <p class="text-sm text-ink-light mt-1">發佈公告會同時推播給裝了 App 的使用者。過期時間到了公告會自動下架，不用手動處理。</p>
+        </div>
+        <button id="logout-btn" class="px-4 py-1.5 border-2 border-ink text-sm font-semibold hover:bg-ink hover:text-cream transition-colors">
+          登出
+        </button>
+      </div>
+
+      <!-- 發佈 -->
+      <form id="publish-form" class="grid gap-3 mb-10 bg-sage-light border-2 border-ink p-6">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <label class="grid gap-1 text-xs font-semibold text-ink-light">
+            分類
+            <select id="category" class="border-2 border-ink bg-cream px-3 py-2 text-sm text-ink">
+              <option value="metro">捷運</option>
+              <option value="rail">台鐵／高鐵</option>
+              <option value="bus">公車</option>
+              <option value="general" selected>一般</option>
+            </select>
+          </label>
+          <label class="grid gap-1 text-xs font-semibold text-ink-light">
+            嚴重程度
+            <select id="severity" class="border-2 border-ink bg-cream px-3 py-2 text-sm text-ink">
+              <option value="info">資訊</option>
+              <option value="warning" selected>警示</option>
+              <option value="critical">緊急</option>
+            </select>
+          </label>
+          <label class="grid gap-1 text-xs font-semibold text-ink-light">
+            幾分鐘後自動下架（空 = 不過期）
+            <input id="expires" type="number" min="1" placeholder="180" class="border-2 border-ink bg-cream px-3 py-2 text-sm text-ink" />
+          </label>
+        </div>
+        <input id="title" maxlength="80" required placeholder="標題，例如：板南線忠孝復興站有旅客事件，列車延誤"
+          class="border-2 border-ink bg-cream px-4 py-2.5 text-ink placeholder:text-ink-light/70 focus:outline-none" />
+        <textarea id="body" rows="3" placeholder="細節說明（選填）…" class="border-2 border-ink bg-cream px-4 py-2.5 text-ink placeholder:text-ink-light/70 focus:outline-none resize-none"></textarea>
+        <div class="flex items-center gap-3">
+          <button id="publish-btn" type="submit" class="px-6 py-2.5 bg-clay text-cream text-sm font-semibold hover:bg-ink transition-colors disabled:opacity-50">
+            發佈並推播
+          </button>
+          <p id="publish-status" class="text-sm text-ink-light min-h-5"></p>
+        </div>
+      </form>
+
+      <!-- 目前公告 -->
+      <h2 class="font-display text-xl text-ink mb-3">目前公告</h2>
+      <ul id="ann-list" class="grid gap-3 mb-10"></ul>
+      <p id="ann-empty" class="hidden text-sm text-ink-light mb-10">目前沒有公告。</p>
+
+      <!-- 回報 -->
+      <h2 class="font-display text-xl text-ink mb-3">App 回報</h2>
+      <p class="text-sm text-ink-light mb-3">使用者在 App 裡用「回報問題」送出的內容（跟「App 回饋」是不同的舊功能，這裡看不到、也不能回覆）。</p>
+      <ul id="report-list" class="grid gap-2"></ul>
+      <p id="report-empty" class="hidden text-sm text-ink-light">目前沒有回報。</p>
+    </div>
+  </section>
+</BaseLayout>
+
+<script>
+  import { supabase } from '../../lib/supabase';
+
+  const ADMIN_EMAIL = 'yayalin322@gmail.com';
+
+  interface Announcement {
+    id: number;
+    category: string;
+    severity: 'info' | 'warning' | 'critical';
+    title: string;
+    body: string | null;
+    active: boolean;
+    source: string;
+    createdAt: string;
+  }
+  interface Report {
+    id: number;
+    type: string;
+    message: string;
+    context: string | null;
+    app_version: string | null;
+    os: string | null;
+    created_at: string;
+  }
+
+  const CATEGORY_LABEL: Record<string, string> = { metro: '捷運', rail: '台鐵／高鐵', bus: '公車', general: '一般' };
+  const SEVERITY_LABEL: Record<string, string> = { info: '資訊', warning: '警示', critical: '緊急' };
+  const SEVERITY_CLASS: Record<string, string> = {
+    info: 'bg-cream text-ink border-ink',
+    warning: 'bg-butter text-ink border-ink',
+    critical: 'bg-clay text-cream border-clay',
+  };
+
+  const $ = (id: string) => document.getElementById(id)!;
+  const loginView = $('login-view');
+  const adminView = $('admin-view');
+
+  function esc(value: string | null | undefined) {
+    const div = document.createElement('div');
+    div.textContent = value ?? '';
+    return div.innerHTML;
+  }
+  const when = (iso: string) => new Date(iso).toLocaleString('zh-TW', { hour12: false, timeZone: 'Asia/Taipei' });
+
+  async function authedFetch(path: string, opts: RequestInit = {}) {
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token;
+    if (!token) return null;
+    const res = await fetch(path, { ...opts, headers: { ...(opts.headers || {}), authorization: `Bearer ${token}` } });
+    if (!res.ok) return null;
+    return res.json().catch(() => null);
+  }
+
+  /* ---------- 登入（跟其他管理頁同一套） ---------- */
+  ($('login-form') as HTMLFormElement).addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const status = $('login-status');
+    status.textContent = '寄送中...';
+    const { error } = await supabase.auth.signInWithOtp({
+      email: ($('login-email') as HTMLInputElement).value.trim(),
+      options: { shouldCreateUser: false, emailRedirectTo: window.location.origin + '/write/announcements' },
+    });
+    status.textContent = error ? '寄送失敗，請確認 Email 是否正確。' : '登入連結已寄出，請到信箱點連結（可能在垃圾信件夾）。';
+  });
+  $('logout-btn').addEventListener('click', async () => { await supabase.auth.signOut(); });
+
+  async function renderForSession() {
+    const { data } = await supabase.auth.getSession();
+    if (data.session?.user.email === ADMIN_EMAIL) {
+      loginView.classList.add('hidden');
+      adminView.classList.remove('hidden');
+      loadAll();
+    } else {
+      loginView.classList.remove('hidden');
+      adminView.classList.add('hidden');
+    }
+  }
+  supabase.auth.onAuthStateChange(() => renderForSession());
+  renderForSession();
+
+  /* ---------- 公告 ---------- */
+  function annCard(a: Announcement) {
+    const li = document.createElement('li');
+    li.className = 'border-2 border-ink bg-cream p-4';
+    li.innerHTML = `
+      <div class="flex flex-wrap items-center gap-2 mb-1">
+        <span class="text-xs font-semibold px-2 py-0.5 border ${SEVERITY_CLASS[a.severity] ?? 'border-ink'}">${esc(SEVERITY_LABEL[a.severity] ?? a.severity)}</span>
+        <span class="text-xs text-ink-light">${esc(CATEGORY_LABEL[a.category] ?? a.category)}</span>
+        ${a.active ? '' : '<span class="text-xs text-ink-light">（已下架）</span>'}
+      </div>
+      <p class="font-semibold text-ink">${esc(a.title)}</p>
+      ${a.body ? `<p class="text-sm text-ink-light mt-1">${esc(a.body)}</p>` : ''}
+      <p class="text-xs text-ink-light mt-2">${esc(when(a.createdAt))} · ${esc(a.source)}</p>
+    `;
+    if (a.active) {
+      const btn = document.createElement('button');
+      btn.textContent = '下架';
+      btn.className = 'mt-2 px-3 py-1 text-xs font-semibold border-2 border-clay text-clay hover:bg-clay hover:text-cream transition-colors';
+      btn.addEventListener('click', async () => {
+        if (!confirm(`要下架「${a.title}」嗎？`)) return;
+        btn.disabled = true;
+        const ok = await authedFetch(`/write/api/announcements/${a.id}`, { method: 'DELETE' });
+        if (ok) loadAnnouncements(); else { btn.disabled = false; alert('下架失敗，請稍後再試。'); }
+      });
+      li.appendChild(btn);
+    }
+    return li;
+  }
+
+  async function loadAnnouncements() {
+    const j = await authedFetch('/write/api/announcements');
+    const list = $('ann-list');
+    const empty = $('ann-empty');
+    list.innerHTML = '';
+    const anns: Announcement[] = j?.announcements ?? [];
+    if (anns.length === 0) { empty.classList.remove('hidden'); return; }
+    empty.classList.add('hidden');
+    for (const a of anns) list.appendChild(annCard(a));
+  }
+
+  ($('publish-form') as HTMLFormElement).addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const title = ($('title') as HTMLInputElement).value.trim();
+    if (!title) return;
+    const categoryLabel = ($('category') as HTMLSelectElement).selectedOptions[0].text;
+    if (!confirm(`要發佈並推播給所有使用者嗎？\n\n【${categoryLabel}】${title}`)) return;
+
+    const payload: Record<string, unknown> = {
+      category: ($('category') as HTMLSelectElement).value,
+      severity: ($('severity') as HTMLSelectElement).value,
+      title,
+      body: ($('body') as HTMLTextAreaElement).value.trim(),
+    };
+    const ex = parseInt(($('expires') as HTMLInputElement).value, 10);
+    if (ex) payload.expiresInMinutes = ex;
+
+    const btn = $('publish-btn') as HTMLButtonElement;
+    const status = $('publish-status');
+    btn.disabled = true;
+    status.textContent = '發佈中…';
+    const j = await authedFetch('/write/api/announcements', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) });
+    btn.disabled = false;
+    if (!j?.announcement) { status.textContent = '發佈失敗，請稍後再試。'; return; }
+    const pushText = j.push?.dryRun ? '推播 DRY-RUN，未實際發送（還沒設定 APNs）' : `已推播給 ${j.push?.sent ?? 0} 台裝置`;
+    status.textContent = `已發佈 #${j.announcement.id}，${pushText}`;
+    ($('title') as HTMLInputElement).value = '';
+    ($('body') as HTMLTextAreaElement).value = '';
+    ($('expires') as HTMLInputElement).value = '';
+    loadAnnouncements();
+  });
+
+  /* ---------- 回報 ---------- */
+  async function loadReports() {
+    const j = await authedFetch('/write/api/reports?limit=50');
+    const list = $('report-list');
+    const empty = $('report-empty');
+    list.innerHTML = '';
+    const reports: Report[] = j?.reports ?? [];
+    if (reports.length === 0) { empty.classList.remove('hidden'); return; }
+    empty.classList.add('hidden');
+    for (const r of reports) {
+      const li = document.createElement('li');
+      li.className = 'border border-ink/30 px-3 py-2 text-sm';
+      li.innerHTML = `
+        <p><strong class="text-ink">${esc(r.type)}</strong> — ${esc(r.message)}</p>
+        <p class="text-xs text-ink-light mt-0.5">${esc(when(r.created_at))} · ${esc(r.os || '?')} · ${esc(r.app_version || '?')}</p>
+        ${r.context ? `<pre class="text-xs text-ink-light mt-1 whitespace-pre-wrap">${esc(r.context)}</pre>` : ''}
+      `;
+      list.appendChild(li);
+    }
+  }
+
+  function loadAll() { loadAnnouncements(); loadReports(); }
+</script>
