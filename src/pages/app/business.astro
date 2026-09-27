@@ -61,6 +61,7 @@ import AppDoc from '../../components/AppDoc.astro';
   <li class="item">
     <p class="item-name"></p>
     <p class="item-meta"></p>
+    <p class="item-link hint"></p>
     <div class="edit-form hidden">
       <label class="hint">營業狀態</label>
       <select class="edit-status field">
@@ -170,6 +171,13 @@ import AppDoc from '../../components/AppDoc.astro';
       (li.querySelector('.item-name') as HTMLElement).textContent = l.name;
       (li.querySelector('.item-meta') as HTMLElement).textContent =
         `${l.approved ? '已上架' : '待後台審核'} · ${STATUS_LABEL[l.businessStatus] ?? l.businessStatus}`;
+      const linkEl = li.querySelector('.item-link') as HTMLElement;
+      if (l.approved) {
+        const url = `${location.origin}/shop/${l.id}`;
+        linkEl.innerHTML = `分享頁：<a href="${url}" target="_blank" rel="noopener">${url}</a>`;
+      } else {
+        linkEl.textContent = '分享頁要等後台審核通過才會生效。';
+      }
       const toggle = li.querySelector('.edit-toggle') as HTMLButtonElement;
       const form = li.querySelector('.edit-form') as HTMLElement;
       const statusSel = li.querySelector('.edit-status') as HTMLSelectElement;
