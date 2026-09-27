@@ -70,34 +70,40 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
         </div>
       </form>
 
-      <!-- 目前公告 -->
-      <h2 class="font-display text-xl text-ink mb-3">目前公告</h2>
+      <!-- 目前公告：唯一預設展開的區塊，這是這頁真正常用的動作 -->
+      <h2 class="font-display text-xl text-ink mb-3">目前公告 <span id="ann-count" class="text-sm text-ink-light font-normal"></span></h2>
       <ul id="ann-list" class="grid gap-3 mb-10"></ul>
       <p id="ann-empty" class="hidden text-sm text-ink-light mb-10">目前沒有公告。</p>
 
-      <!-- 回報 -->
-      <h2 class="font-display text-xl text-ink mb-3">App 回報</h2>
-      <p class="text-sm text-ink-light mb-3">使用者在 App 裡用「回報問題」送出的內容（跟「App 回饋」是不同的舊功能，這裡看不到、也不能回覆）。</p>
-      <ul id="report-list" class="grid gap-2 mb-10"></ul>
-      <p id="report-empty" class="hidden text-sm text-ink-light mb-10">目前沒有回報。</p>
+      <!-- 其餘都是「偶爾查一下」的資料，摺起來預設不展開，資料一多也不會把整頁撐得很長；
+           summary 上直接顯示筆數，不用點開就知道有沒有東西。 -->
+      <details class="mb-6">
+        <summary class="cursor-pointer font-display text-xl text-ink mb-1">App 回報 <span id="report-count" class="text-sm text-ink-light font-normal"></span></summary>
+        <p class="text-sm text-ink-light my-3">使用者在 App 裡用「回報問題」送出的內容（跟「App 回饋」是不同的舊功能，這裡看不到、也不能回覆）。</p>
+        <ul id="report-list" class="grid gap-2"></ul>
+        <p id="report-empty" class="hidden text-sm text-ink-light">目前沒有回報。</p>
+      </details>
 
-      <!-- 行程評分 -->
-      <h2 class="font-display text-xl text-ink mb-3">行程評分</h2>
-      <p id="rating-stats" class="text-sm text-ink-light mb-3"></p>
-      <ul id="rating-list" class="grid gap-2 mb-10"></ul>
-      <p id="rating-empty" class="hidden text-sm text-ink-light mb-10">目前沒有評分。</p>
+      <details class="mb-6">
+        <summary class="cursor-pointer font-display text-xl text-ink mb-1">行程評分 <span id="rating-count" class="text-sm text-ink-light font-normal"></span></summary>
+        <p id="rating-stats" class="text-sm text-ink-light my-3"></p>
+        <ul id="rating-list" class="grid gap-2"></ul>
+        <p id="rating-empty" class="hidden text-sm text-ink-light">目前沒有評分。</p>
+      </details>
 
-      <!-- 乘客回報（上下車） -->
-      <h2 class="font-display text-xl text-ink mb-3">乘客回報（上下車）</h2>
-      <ul id="obs-list" class="grid gap-2 mb-10"></ul>
-      <p id="obs-empty" class="hidden text-sm text-ink-light mb-10">目前沒有回報。</p>
+      <details class="mb-6">
+        <summary class="cursor-pointer font-display text-xl text-ink mb-1">乘客回報（上下車） <span id="obs-count" class="text-sm text-ink-light font-normal"></span></summary>
+        <ul id="obs-list" class="grid gap-2 mt-3"></ul>
+        <p id="obs-empty" class="hidden text-sm text-ink-light">目前沒有回報。</p>
+      </details>
 
-      <!-- 系統狀態 -->
-      <h2 class="font-display text-xl text-ink mb-3">系統狀態</h2>
-      <p id="sys-info" class="text-sm text-ink-light mb-3">讀取中…</p>
-      <details class="text-sm text-ink-light">
-        <summary class="cursor-pointer font-semibold text-ink">YouBike 資料狀態（原始資料）</summary>
-        <pre id="bike-status" class="text-xs bg-sage-light border-2 border-ink p-3 mt-2 overflow-auto"></pre>
+      <details class="mb-6">
+        <summary class="cursor-pointer font-display text-xl text-ink mb-1">系統狀態</summary>
+        <p id="sys-info" class="text-sm text-ink-light my-3">讀取中…</p>
+        <details class="text-sm text-ink-light">
+          <summary class="cursor-pointer font-semibold text-ink">YouBike 資料狀態（原始資料）</summary>
+          <pre id="bike-status" class="text-xs bg-sage-light border-2 border-ink p-3 mt-2 overflow-auto"></pre>
+        </details>
       </details>
     </div>
   </section>
@@ -218,6 +224,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     const empty = $('ann-empty');
     list.innerHTML = '';
     const anns: Announcement[] = j?.announcements ?? [];
+    $('ann-count').textContent = anns.length ? `（${anns.length}）` : '';
     if (anns.length === 0) { empty.classList.remove('hidden'); return; }
     empty.classList.add('hidden');
     for (const a of anns) list.appendChild(annCard(a));
@@ -261,6 +268,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     const empty = $('report-empty');
     list.innerHTML = '';
     const reports: Report[] = j?.reports ?? [];
+    $('report-count').textContent = reports.length ? `（${reports.length}）` : '';
     if (reports.length === 0) { empty.classList.remove('hidden'); return; }
     empty.classList.add('hidden');
     for (const r of reports) {
@@ -286,6 +294,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     const empty = $('rating-empty');
     list.innerHTML = '';
     const ratings: Rating[] = j?.ratings ?? [];
+    $('rating-count').textContent = ratings.length ? `（${ratings.length}）` : '';
     const stats = j?.stats;
     if (stats) {
       const bars = [5, 4, 3, 2, 1].map((n) => `${'★'.repeat(n)} ${(stats.byStar || {})[n] ?? 0}`).join('　');
@@ -315,6 +324,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     const empty = $('obs-empty');
     list.innerHTML = '';
     const obs: Observation[] = j?.observations ?? [];
+    $('obs-count').textContent = obs.length ? `（${obs.length}）` : '';
     if (obs.length === 0) { empty.classList.remove('hidden'); return; }
     empty.classList.add('hidden');
     for (const o of obs) {

@@ -37,9 +37,11 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       <!-- 列表 -->
       <div id="list-view">
         <div id="summary" class="flex flex-wrap gap-2 mb-4 text-sm"></div>
+        <input id="search" placeholder="搜尋案號、內容、Email…" class="border-2 border-ink bg-cream px-4 py-2 w-full mb-4 focus:outline-none focus:bg-sage-light" />
         <div id="filters" class="flex flex-wrap gap-2 mb-5 text-sm"></div>
-        <ul id="ticket-list" class="grid gap-3"></ul>
-        <p id="empty-hint" class="hidden text-sm text-ink-light">這個分類目前沒有回饋。</p>
+        <ul id="ticket-list" class="grid gap-3 mb-3"></ul>
+        <p id="empty-hint" class="hidden text-sm text-ink-light mb-3">這個分類目前沒有回饋。</p>
+        <button id="ticket-more" class="hidden px-4 py-1.5 text-sm font-semibold border-2 border-ink hover:bg-ink hover:text-cream transition-colors">顯示更多</button>
       </div>
 
       <!-- 單張工單 -->
@@ -162,6 +164,10 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
   let lastDirection = new Map<string, 'inbound' | 'outbound'>();
   let filter = 'open';
   let current: Ticket | null = null;
+  // 資料一多（幾百張工單）「全部」分類一次全展開會很難掃——不是真的分頁換頁，是往下按才再長出
+  // 下一批，管理員通常是想「掃過一輪」找待處理的，不是在頁碼之間跳來跳去。
+  const PAGE_SIZE = 30;
+  let ticketsShown = PAGE_SIZE;
 
   function esc(value: string) {
     const div = document.createElement('div');
@@ -234,12 +240,16 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       return `<button data-filter="${f.key}" class="px-3 py-1 border-2 border-ink font-semibold ${active ? 'bg-ink text-cream' : 'hover:bg-clay-light'}">${f.label} ${n}</button>`;
     }).join('');
     filtersEl.querySelectorAll<HTMLButtonElement>('[data-filter]').forEach((b) =>
-      b.addEventListener('click', () => { filter = b.dataset.filter!; renderList(); }),
+      b.addEventListener('click', () => { filter = b.dataset.filter!; ticketsShown = PAGE_SIZE; renderList(); }),
     );
 
     const active = FILTERS.find((f) => f.key === filter)!;
-    const shown = sortTickets(tickets.filter(active.test));
-    emptyHint.classList.toggle('hidden', shown.length > 0);
+    const q = (($('search') as HTMLInputElement).value ?? '').trim().toLowerCase();
+    const hit = (t: Ticket) => !q || t.case_number.toLowerCase().includes(q) || t.message.toLowerCase().includes(q) || t.email.toLowerCase().includes(q);
+    const matched = sortTickets(tickets.filter(active.test).filter(hit));
+    const shown = matched.slice(0, ticketsShown);
+    emptyHint.classList.toggle('hidden', matched.length > 0);
+    ($('ticket-more') as HTMLElement).classList.toggle('hidden', matched.length <= ticketsShown);
     ticketList.innerHTML = shown.map((t) => {
       const waitingOnMe = t.status !== 'resolved' && lastDirection.get(t.id) === 'inbound';
       return `<li>
@@ -260,6 +270,8 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       b.addEventListener('click', () => openTicket(b.dataset.id!)),
     );
   }
+  $('search').addEventListener('input', () => { ticketsShown = PAGE_SIZE; renderList(); });
+  $('ticket-more').addEventListener('click', () => { ticketsShown += PAGE_SIZE; renderList(); });
 
   /* ---------- 單張工單 ---------- */
   const priorityCell = $('priority-select') as HTMLSelectElement;
