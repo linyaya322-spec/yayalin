@@ -60,12 +60,12 @@ const tabs = [
 <style is:global>
   :root {
     color-scheme: light dark;
-    /* 跟個人網站同一套顏色（白紙、原子筆藍黑、紅筆），只是版型維持乾淨、不用貼紙感的粗邊框 */
-    --bg: #fefefc; --card: #ffffff; --text: #1d2742; --muted: #58627e; --line: #e7e1d3;
-    --accent: #d63a3a; --accent-soft: #fde4e2; --warn-soft: #fff7b0;
+    /* 跟正式 App 圖示同一套顏色（圖示本身是藍到綠的漸層、深藍字），取代先前暫時借用個人網站的紅筆色 */
+    --bg: #fbfdff; --card: #ffffff; --text: #0e2038; --muted: #57667e; --line: #e2e8f1;
+    --accent: #0a6cf0; --accent-soft: #e6f1ff; --accent2: #0fb88a; --accent2-soft: #e3faf3; --warn-soft: #fff7b0;
   }
   @media (prefers-color-scheme: dark) {
-    :root { --bg: #171f38; --card: #1f2946; --text: #f1ede3; --muted: #a9b0c8; --line: #343f63; --accent: #ff8a76; --accent-soft: #d63a3a33; --warn-soft: #ffe94a26; }
+    :root { --bg: #0b1626; --card: #101d33; --text: #eef3fa; --muted: #9fb0c6; --line: #24344c; --accent: #4da3ff; --accent-soft: #0a6cf033; --accent2: #2bd9ac; --accent2-soft: #0fb88a33; --warn-soft: #ffe94a26; }
   }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.8 -apple-system, "PingFang TC", "Noto Sans TC", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }

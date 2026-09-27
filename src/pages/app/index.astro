@@ -93,6 +93,11 @@ const features: { icon: Parameters<typeof Icon>[0]['name']; title: string; body:
     border-radius: 50%;
     margin-bottom: 0.7rem;
   }
+  /* Alternating blue/green, like the app icon's own gradient. */
+  .feature-card:nth-child(even) .feature-icon {
+    color: var(--accent2);
+    background: var(--accent2-soft);
+  }
   .feature-card h3 {
     color: var(--text);
     font-size: 1.05rem;
@@ -121,8 +126,8 @@ const features: { icon: Parameters<typeof Icon>[0]['name']; title: string; body:
     margin-top: 0.35rem;
     background: var(--muted);
   }
-  .status-dot.up { background: #2f9e5c; }
-  .status-dot.down { background: var(--accent); }
+  .status-dot.up { background: var(--accent2); }
+  .status-dot.down { background: #d6483a; }
   .fine-print {
     font-size: 0.85rem;
   }
