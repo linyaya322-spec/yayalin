@@ -1,23 +1,22 @@
 ---
 import Icon from './Icon.astro';
 ---
-<form id="app-feedback-form" class="reveal card-pop grid gap-4 max-w-lg p-8 pt-10">
-  <div class="flex items-center gap-3 text-ink" aria-hidden="true">
-    <Icon name="bubble" size={44} />
-    <Icon name="paper" size={44} />
-    <Icon name="send" size={44} />
+<form id="app-feedback-form" class="af-form">
+  <div class="af-icons" aria-hidden="true">
+    <Icon name="bubble" size={30} />
+    <Icon name="paper" size={30} />
   </div>
 
-  <div class="grid grid-cols-3 gap-2" role="radiogroup" aria-label="類型">
-    <label class="kind-choice">
+  <div class="af-kinds" role="radiogroup" aria-label="類型">
+    <label class="af-kind">
       <input type="radio" name="kind" value="bug" checked />
       <span>問題回報</span>
     </label>
-    <label class="kind-choice">
+    <label class="af-kind">
       <input type="radio" name="kind" value="idea" />
       <span>功能建議</span>
     </label>
-    <label class="kind-choice">
+    <label class="af-kind">
       <input type="radio" name="kind" value="other" />
       <span>其他</span>
     </label>
@@ -31,7 +30,7 @@ import Icon from './Icon.astro';
     required
     maxlength="4000"
     rows="5"
-    class="paper-lines"
+    class="af-field af-textarea"
   ></textarea>
 
   <input
@@ -41,10 +40,10 @@ import Icon from './Icon.astro';
     placeholder="你的 Email，方便我們回覆你（需驗證）"
     aria-label="你的 Email，需要驗證"
     required
-    class="paper-field"
+    class="af-field"
   />
-  <div class="grid gap-2 sm:grid-cols-[auto_1fr] items-center">
-    <button type="button" id="app-feedback-send-code" class="btn-pop px-4 py-2 text-sm disabled:opacity-50">寄驗證碼</button>
+  <div class="af-code-row">
+    <button type="button" id="app-feedback-send-code" class="af-btn af-btn-outline">寄驗證碼</button>
     <input
       type="text"
       id="app-feedback-code"
@@ -56,49 +55,141 @@ import Icon from './Icon.astro';
       aria-label="Email 驗證碼"
       required
       disabled
-      class="paper-field"
+      class="af-field"
     />
   </div>
-  <p id="app-feedback-code-status" class="text-xs text-ink-light min-h-4 -mt-2"></p>
+  <p id="app-feedback-code-status" class="af-hint"></p>
 
-  <button
-    type="submit"
-    data-magnetic
-    class="btn-pop justify-self-start inline-flex items-center gap-2 px-6 py-2.5 text-sm disabled:opacity-50"
-  >
-    <Icon name="send" size={18} />
+  <button type="submit" class="af-btn af-btn-primary">
+    <Icon name="send" size={16} />
     送出
   </button>
-  <p id="app-feedback-status" class="text-sm min-h-5"></p>
+  <p id="app-feedback-status" class="af-status"></p>
 </form>
 
 <style>
-  .kind-choice {
+  .af-form {
+    display: grid;
+    gap: 0.9rem;
+    max-width: 32rem;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 1.5rem 1.5rem 1.7rem;
+    margin: 1rem 0 1.6rem;
+  }
+  .af-icons {
+    display: flex;
+    gap: 0.6rem;
+    color: var(--accent);
+  }
+  .af-kinds {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+  }
+  .af-kind {
     display: flex;
     align-items: center;
     justify-content: center;
     text-align: center;
-    border: 2px solid var(--color-ink);
-    border-radius: 10px 4px 12px 5px / 5px 12px 4px 10px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
     padding: 0.5rem 0.4rem;
     font-size: 0.85rem;
     font-weight: 600;
-    color: var(--color-ink-light);
+    color: var(--muted);
     cursor: pointer;
-    transition: background-color 0.15s, color 0.15s;
+    transition: background-color 0.15s, color 0.15s, border-color 0.15s;
   }
-  .kind-choice input {
+  .af-kind input {
     position: absolute;
     opacity: 0;
     pointer-events: none;
   }
-  .kind-choice:has(input:checked) {
-    background: var(--color-sage-light);
-    color: var(--color-ink);
+  .af-kind:has(input:checked) {
+    background: var(--accent-soft);
+    border-color: var(--accent);
+    color: var(--accent);
   }
-  .kind-choice:has(input:focus-visible) {
-    outline: 2px solid var(--color-sage);
+  .af-kind:has(input:focus-visible) {
+    outline: 2px solid var(--accent);
     outline-offset: 2px;
+  }
+  .af-field {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 0.65rem 0.8rem;
+    color: var(--text);
+    font: inherit;
+  }
+  .af-field:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+  .af-field::placeholder {
+    color: var(--muted);
+  }
+  .af-field:disabled {
+    opacity: 0.6;
+  }
+  .af-textarea {
+    resize: vertical;
+    min-height: 6.5rem;
+  }
+  .af-code-row {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.6rem;
+    align-items: center;
+  }
+  .af-hint {
+    font-size: 0.78rem;
+    color: var(--muted);
+    margin: -0.4rem 0 0;
+    min-height: 1em;
+  }
+  .af-status {
+    font-size: 0.88rem;
+    color: var(--text);
+    margin: 0;
+    min-height: 1.3em;
+  }
+  .af-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    border-radius: 10px;
+    padding: 0.6rem 1.1rem;
+    font-weight: 700;
+    font-size: 0.9rem;
+    border: 1px solid transparent;
+    cursor: pointer;
+    justify-self: start;
+  }
+  .af-btn:disabled {
+    opacity: 0.55;
+    cursor: default;
+  }
+  .af-btn-outline {
+    background: var(--bg);
+    border-color: var(--line);
+    color: var(--text);
+    white-space: nowrap;
+  }
+  .af-btn-outline:hover:not(:disabled) {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .af-btn-primary {
+    background: var(--accent);
+    color: #fff;
+  }
+  .af-btn-primary:hover:not(:disabled) {
+    filter: brightness(1.06);
   }
 </style>
 
