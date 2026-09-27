@@ -1,15 +1,18 @@
 ---
 import AppDoc from '../../components/AppDoc.astro';
+import AppFeedbackForm from '../../components/AppFeedbackForm.astro';
 ---
 
 <AppDoc title="客服與意見回饋" description="聯絡交通即時查 TransitGo：意見回饋、問題回報與常見問題。">
 <h1>客服與意見回饋</h1>
 <p class="meta">遇到問題、想回報錯誤或有功能建議，都可以在這裡找到管道。</p>
 
-<h2>聯絡我們</h2>
-<p><a class="cta" href="mailto:app&#64;yayalin.com?subject=%E4%BA%A4%E9%80%9A%E5%8D%B3%E6%99%82%E6%9F%A5%20%E5%AE%A2%E6%9C%8D">寄信到 app&#64;yayalin.com</a></p>
-<p>也可以直接在 App 裡回報：<strong>設定 › 支援與法律 › 意見回饋</strong>。需要先用 Email 收一組 6 位數驗證碼確認是你本人，送出後會拿到案件編號，我們會用你的 Email 回覆你（會附上 App 版本與系統版本，方便我們重現問題）。</p>
-<p>寄信時附上以下資訊，我們比較容易幫你：</p>
+<h2>線上意見回饋</h2>
+<p>不用裝 App 也能直接在這裡留言，我們會用你的 Email 回覆（會寄到你的信箱，也能在 App「設定 › 支援與法律 › 我的回饋」看到同一則對話）。</p>
+<AppFeedbackForm />
+
+<p class="alt-contact">也可以直接寄信：<a class="cta" href="mailto:app&#64;yayalin.com?subject=%E4%BA%A4%E9%80%9A%E5%8D%B3%E6%99%82%E6%9F%A5%20%E5%AE%A2%E6%9C%8D">寄信到 app&#64;yayalin.com</a>，或在 App 裡回報：<strong>設定 › 支援與法律 › 意見回饋</strong>（可以傳照片、之後繼續對話）。</p>
+<p>不管用哪種方式，附上以下資訊我們比較容易幫你：</p>
 <ul>
 <li>發生了什麼事、你預期會怎樣</li>
 <li>發生的時間、地點（縣市即可）、路線或車次</li>
@@ -37,3 +40,10 @@ import AppDoc from '../../components/AppDoc.astro';
 <h2>相關文件</h2>
 <ul><li><a href="/app/privacy">隱私權政策</a></li><li><a href="/app/terms">服務條款</a></li></ul>
 </AppDoc>
+
+<style>
+  :global(.alt-contact) {
+    font-size: 0.9rem;
+    margin-top: 1.4rem;
+  }
+</style>
