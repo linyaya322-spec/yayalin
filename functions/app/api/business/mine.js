@@ -1,5 +1,5 @@
-import { proxyPublic } from '../../../_lib/publicProxy.js';
+import { proxyBusiness } from '../../../_lib/businessProxy.js';
 
 export async function onRequest({ request, env }) {
-  return proxyPublic({ request, env, path: '/v1/landmarks/mine', methods: ['POST'] });
+  return proxyBusiness({ request, env, path: '/v1/landmarks/mine', methods: ['POST'] });
 }

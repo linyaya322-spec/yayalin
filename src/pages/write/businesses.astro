@@ -1,0 +1,136 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="商家帳號" description="站長專用：管理商家後台的登入帳號，封鎖濫用帳號" noindex>
+  <section class="max-w-3xl mx-auto px-6 pt-16 pb-24">
+    <div id="login-view">
+      <p class="inline-block bg-ink text-cream text-sm font-medium px-3 py-1 mb-6">商家帳號</p>
+      <h1 class="font-display text-3xl text-ink mb-6">登入管理後台</h1>
+      <form id="login-form" class="grid gap-3 max-w-sm">
+        <input type="email" id="login-email" required placeholder="yayalin322@gmail.com"
+          class="border-2 border-ink bg-cream px-4 py-2.5 text-ink placeholder:text-ink-light/70 focus:outline-none focus:bg-sage-light" />
+        <button type="submit" class="px-6 py-2.5 bg-clay text-cream text-sm font-semibold hover:bg-ink transition-colors">寄送登入連結</button>
+        <p id="login-status" class="text-sm min-h-5 text-ink-light"></p>
+      </form>
+    </div>
+
+    <div id="admin-view" class="hidden">
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <a href="/write" data-magnetic class="text-sm font-semibold text-clay hover:text-ink transition-colors">← 回主控台</a>
+          <h1 class="font-display text-3xl text-ink mt-2">商家帳號</h1>
+          <p class="text-sm text-ink-light mt-1">商家後台（yayalin.com/app/business）的登入帳號——濫用、亂認領的帳號可以直接封鎖，封鎖後連登入都會被擋下來。</p>
+        </div>
+        <button id="logout-btn" class="px-4 py-1.5 border-2 border-ink text-sm font-semibold hover:bg-ink hover:text-cream transition-colors">登出</button>
+      </div>
+
+      <input id="filter" placeholder="搜尋信箱…" class="border-2 border-ink bg-cream px-4 py-2 w-full mb-6 focus:outline-none focus:bg-sage-light" />
+
+      <p class="text-sm text-ink-light mb-3">共 <span id="account-count"></span> 個帳號</p>
+      <ul id="account-list" class="grid gap-3"></ul>
+      <p id="account-empty" class="hidden text-sm text-ink-light">（無）</p>
+    </div>
+  </section>
+</BaseLayout>
+
+<script>
+  import { supabase } from '../../lib/supabase';
+
+  const ADMIN_EMAIL = 'yayalin322@gmail.com';
+
+  interface Account { id: string; email: string; createdAt: string; lastSignInAt: string | null; banned: boolean }
+  interface Landmark { email: string | null; businessVerified: boolean; approved: boolean }
+
+  const $ = (id: string) => document.getElementById(id)!;
+  const loginView = $('login-view');
+  const adminView = $('admin-view');
+
+  const when = (iso: string | null) => (iso ? new Date(iso).toLocaleString('zh-TW', { hour12: false, timeZone: 'Asia/Taipei' }) : '從沒登入過');
+
+  async function authedFetch(path: string, opts: RequestInit = {}) {
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token;
+    if (!token) return null;
+    const res = await fetch(path, { ...opts, headers: { ...(opts.headers || {}), authorization: `Bearer ${token}` } });
+    if (!res.ok) return null;
+    return res.json().catch(() => null);
+  }
+
+  ($('login-form') as HTMLFormElement).addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const status = $('login-status');
+    status.textContent = '寄送中...';
+    const { error } = await supabase.auth.signInWithOtp({
+      email: ($('login-email') as HTMLInputElement).value.trim(),
+      options: { shouldCreateUser: false, emailRedirectTo: window.location.origin + '/write/businesses' },
+    });
+    status.textContent = error ? '寄送失敗，請確認 Email 是否正確。' : '登入連結已寄出，請到信箱點連結（可能在垃圾信件夾）。';
+  });
+  $('logout-btn').addEventListener('click', async () => { await supabase.auth.signOut(); });
+
+  async function renderForSession() {
+    const { data } = await supabase.auth.getSession();
+    if (data.session?.user.email === ADMIN_EMAIL) {
+      loginView.classList.add('hidden');
+      adminView.classList.remove('hidden');
+      loadAll();
+    } else {
+      loginView.classList.remove('hidden');
+      adminView.classList.add('hidden');
+    }
+  }
+  supabase.auth.onAuthStateChange(() => renderForSession());
+  renderForSession();
+
+  let accounts: Account[] = [];
+  let landmarkCountByEmail = new Map<string, number>();
+
+  function render() {
+    const q = (($('filter') as HTMLInputElement).value ?? '').trim().toLowerCase();
+    const list = $('account-list');
+    const empty = $('account-empty');
+    const filtered = q ? accounts.filter((a) => a.email.toLowerCase().includes(q)) : accounts;
+    ($('account-count') as HTMLElement).textContent = String(accounts.length);
+    list.innerHTML = '';
+    empty.classList.toggle('hidden', filtered.length > 0);
+    for (const a of filtered) {
+      const count = landmarkCountByEmail.get(a.email) ?? 0;
+      const li = document.createElement('li');
+      li.className = `border-2 p-4 ${a.banned ? 'border-clay bg-clay/5' : 'border-ink bg-cream'}`;
+      li.innerHTML = `
+        <div class="flex items-center justify-between gap-3">
+          <div>
+            <p class="font-semibold text-ink">${a.email}${a.banned ? ' <span class="text-clay text-sm font-bold">（已封鎖）</span>' : ''}</p>
+            <p class="text-xs text-ink-light mt-1">認領 ${count} 個地標 · 最後登入：${when(a.lastSignInAt)} · 建立於 ${when(a.createdAt)}</p>
+          </div>
+          <button class="ban-btn shrink-0 px-4 py-1.5 border-2 text-sm font-semibold transition-colors ${a.banned ? 'border-ink hover:bg-ink hover:text-cream' : 'border-clay text-clay hover:bg-clay hover:text-cream'}">
+            ${a.banned ? '解除封鎖' : '封鎖'}
+          </button>
+        </div>`;
+      (li.querySelector('.ban-btn') as HTMLButtonElement).addEventListener('click', async () => {
+        if (!a.banned && !confirm(`確定要封鎖 ${a.email} 嗎？封鎖後這個帳號會完全無法登入商家後台。`)) return;
+        const btn = li.querySelector('.ban-btn') as HTMLButtonElement;
+        btn.disabled = true;
+        const result = await authedFetch(`/write/api/businesses/${a.id}/${a.banned ? 'unban' : 'ban'}`, { method: 'POST' });
+        if (result?.ok) { a.banned = !a.banned; render(); } else { btn.disabled = false; alert('操作失敗，請稍後再試。'); }
+      });
+      list.appendChild(li);
+    }
+  }
+  $('filter').addEventListener('input', render);
+
+  async function loadAll() {
+    const [accountsData, landmarksData] = await Promise.all([
+      authedFetch('/write/api/businesses'),
+      authedFetch('/write/api/landmarks'),
+    ]);
+    accounts = (accountsData?.accounts ?? []).sort((a: Account, b: Account) => (b.lastSignInAt ?? '').localeCompare(a.lastSignInAt ?? ''));
+    landmarkCountByEmail = new Map();
+    for (const l of (landmarksData?.landmarks ?? []) as Landmark[]) {
+      if (!l.email || !l.businessVerified) continue;
+      landmarkCountByEmail.set(l.email, (landmarkCountByEmail.get(l.email) ?? 0) + 1);
+    }
+    render();
+  }
+</script>
