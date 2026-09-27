@@ -50,6 +50,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     id: number; name: string; description: string; category: string;
     lat: number; lon: number; photo: string | null;
     isBusinessClaim: boolean; businessVerified: boolean; businessHours: string | null; phone: string | null;
+    email: string | null;
     approved: boolean; reported: number; reportReasons: Record<string, number> | null;
     appVersion: string | null; createdAt: string;
   }
@@ -130,6 +131,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       ${l.description ? `<p class="text-sm text-ink-light">${esc(l.description)}</p>` : ''}
       ${l.businessHours ? `<p class="text-xs text-ink-light mt-1">營業時間：${esc(l.businessHours)}</p>` : ''}
       ${l.phone ? `<p class="text-xs text-ink-light">電話：${esc(l.phone)}</p>` : ''}
+      ${l.email ? `<p class="text-xs text-ink-light">店家信箱：${esc(l.email)}${l.businessVerified ? '（已透過信箱驗證）' : ''}</p>` : ''}
       ${safeImg(l.photo) ? `<img src="${safeImg(l.photo)}" class="max-w-[160px] mt-2" alt="" />` : ''}
       <p class="text-xs text-ink-light mt-2">${l.lat.toFixed(5)}, ${l.lon.toFixed(5)} · ${esc(when(l.createdAt))} · ${esc(l.appVersion || '?')}</p>
     `;
