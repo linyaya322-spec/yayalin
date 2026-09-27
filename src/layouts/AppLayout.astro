@@ -2,7 +2,6 @@
 // TransitGo（交通即時查）App 的獨立版型：不使用個人網站的導覽列、頁尾、頭像、結構化資料。
 // App 的使用者看到的只有 App 本身與客服聯絡方式。
 import { APP_NAME } from '../lib/app';
-import Icon from '../components/Icon.astro';
 
 interface Props {
   title: string;
@@ -26,6 +25,8 @@ const tabs = [
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="light dark" />
+    <link rel="icon" type="image/png" href="/app-assets/app-touch-icon.png" />
+    <link rel="apple-touch-icon" href="/app-assets/app-touch-icon-180.png" />
     <title>{pageTitle}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={canonicalUrl} />
@@ -33,12 +34,13 @@ const tabs = [
     <meta property="og:site_name" content={APP_NAME} />
     <meta property="og:title" content={pageTitle} />
     <meta property="og:description" content={description} />
+    <meta property="og:image" content={new URL('/app-assets/logo.png', Astro.site ?? 'https://yayalin.com').toString()} />
     <meta name="twitter:card" content="summary" />
   </head>
   <body>
     <header class="top">
       <a class="brand" href="/app">
-        <span class="logo" aria-hidden="true"><Icon name="bus" size={20} /></span>
+        <img class="logo" src="/app-assets/logo-icon.png" width="34" height="34" alt="" />
         <span>{APP_NAME}</span>
       </a>
       <nav aria-label="頁面">
@@ -69,7 +71,7 @@ const tabs = [
   body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.8 -apple-system, "PingFang TC", "Noto Sans TC", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
   header.top { max-width: 780px; margin: 0 auto; padding: 22px 20px 6px; }
   .brand { display: inline-flex; align-items: center; gap: 10px; font-weight: 800; font-size: 20px; color: var(--text); text-decoration: none; }
-  .logo { display: inline-grid; place-items: center; width: 34px; height: 34px; border-radius: 10px; background: var(--accent); color: #fff; }
+  .logo { display: block; width: 34px; height: 34px; object-fit: contain; }
   header.top nav { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
   header.top nav a { padding: 6px 14px; border-radius: 999px; font-size: 14px; font-weight: 600; color: var(--muted); text-decoration: none; border: 1px solid transparent; }
   header.top nav a[aria-current='page'] { background: var(--accent-soft); color: var(--accent); border-color: var(--accent-soft); }
