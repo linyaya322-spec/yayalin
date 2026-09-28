@@ -44,11 +44,16 @@ const tabs = [
   <body>
     <div class="glow" aria-hidden="true"></div>
     <header class="top">
-      <a class="brand" href="/app">
-        <img class="logo" src="/app-assets/logo-icon.png" width="34" height="34" alt="" />
-        <span>{APP_NAME}</span>
-      </a>
-      <nav aria-label="頁面">
+      <div class="top-row">
+        <a class="brand" href="/app">
+          <img class="logo" src="/app-assets/logo-icon.png" width="34" height="34" alt="" />
+          <span>{APP_NAME}</span>
+        </a>
+        <button id="nav-toggle" class="nav-toggle" aria-expanded="false" aria-controls="site-nav" aria-label="開啟選單">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+      <nav id="site-nav" aria-label="頁面">
         {tabs.map((t) => (
           <a href={t.href} aria-current={path === t.href ? 'page' : undefined}>{t.label}</a>
         ))}
@@ -89,9 +94,12 @@ const tabs = [
     opacity: 0.9;
   }
   header.top, main, footer { position: relative; z-index: 1; }
-  header.top { max-width: 780px; margin: 0 auto; padding: 26px 20px 6px; }
+  header.top { max-width: 780px; margin: 0 auto; padding: 22px 20px 6px; }
+  .top-row { display: flex; align-items: center; justify-content: space-between; }
   .brand { display: inline-flex; align-items: center; gap: 10px; font-weight: 800; font-size: 21px; color: var(--text); text-decoration: none; }
   .logo { display: block; width: 36px; height: 36px; object-fit: contain; }
+  .nav-toggle { display: none; flex-direction: column; justify-content: center; gap: 4px; width: 38px; height: 38px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); cursor: pointer; padding: 0; }
+  .nav-toggle span { display: block; width: 16px; height: 2px; margin: 0 auto; border-radius: 2px; background: var(--text); transition: transform .2s, opacity .2s; }
   header.top nav { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 16px; }
   header.top nav a { padding: 6px 14px; border-radius: 999px; font-size: 14px; font-weight: 600; color: var(--muted); text-decoration: none; border: 1px solid transparent; transition: background-color .15s, color .15s; }
   header.top nav a:hover { background: var(--line); }
@@ -100,4 +108,27 @@ const tabs = [
   footer { max-width: 780px; margin: 0 auto; padding: 24px 20px 44px; color: var(--muted); font-size: 13px; text-align: center; }
   footer p { margin: 4px 0; }
   a { color: var(--accent); }
+
+  /* 手機寬度：5 個分頁塞在一排會擠成好幾行，改成漢堡選單收起來，點了才展開。 */
+  @media (max-width: 640px) {
+    .nav-toggle { display: flex; }
+    header.top nav {
+      flex-direction: column; align-items: stretch; gap: 2px; margin-top: 0;
+      max-height: 0; overflow: hidden; opacity: 0; transition: max-height .22s ease, opacity .18s ease, margin-top .22s ease;
+    }
+    header.top nav a { padding: 10px 12px; border-radius: 10px; }
+    header.top.nav-open nav { max-height: 320px; opacity: 1; margin-top: 14px; }
+    header.top.nav-open .nav-toggle span:nth-child(1) { transform: translateY(6px) rotate(45deg); }
+    header.top.nav-open .nav-toggle span:nth-child(2) { opacity: 0; }
+    header.top.nav-open .nav-toggle span:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
+  }
 </style>
+
+<script>
+  const toggle = document.getElementById('nav-toggle');
+  const header = toggle?.closest('header.top');
+  toggle?.addEventListener('click', () => {
+    const open = header?.classList.toggle('nav-open');
+    toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+  });
+</script>

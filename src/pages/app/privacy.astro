@@ -7,10 +7,21 @@ import AppDoc from '../../components/AppDoc.astro';
 <p class="meta">生效日期：2026 年 9 月 26 日　·　適用：「交通即時查 TransitGo」iPhone／iPad App 與其後端服務</p>
 <p>我們很在意你的隱私。這份政策用白話說明：App 會用到什麼資料、為什麼用、資料去了哪裡、你可以怎麼處理。我們<strong>沒有廣告、沒有第三方行為追蹤或分析套件</strong>，也不會出售你的個人資料。</p>
 
-<h2>1. 我們是誰</h2>
+<nav class="doc-toc" aria-label="本頁章節">
+  <a href="#s1">1. 我們是誰</a>
+  <a href="#s2">2. 我們用到哪些資料</a>
+  <a href="#s3">3. 資料會送到哪些第三方</a>
+  <a href="#s4">4. 我們保存多久</a>
+  <a href="#s5">5. 你的權利與如何行使</a>
+  <a href="#s6">6. 兒童</a>
+  <a href="#s7">7. 資料安全</a>
+  <a href="#s8">8. 政策變更</a>
+</nav>
+
+<h2 id="s1">1. 我們是誰</h2>
 <p>本 App 由個人開發者經營。任何隱私相關問題或要求，請寄到 <a href="mailto:app&#64;yayalin.com">app&#64;yayalin.com</a>。</p>
 
-<h2>2. 我們用到哪些資料</h2>
+<h2 id="s2">2. 我們用到哪些資料</h2>
 <table>
 <tr><th>資料</th><th>用途</th><th>是否離開你的手機</th></tr>
 <tr><td data-label="資料"><strong>精確位置</strong>（使用 App 期間；開啟「追蹤班車」或導航時會在背景使用）</td><td data-label="用途">顯示附近站牌與 YouBike、導航與語音提示、測速照相警示、靈動島／鎖定畫面倒數</td><td data-label="是否離開你的手機">會。查詢附近站牌、YouBike、測速照相、規劃路線時，座標會傳到我們的伺服器<strong>即時回答</strong>；我們不會用它建立你的移動軌跡或行程紀錄</td></tr>
@@ -22,7 +33,7 @@ import AppDoc from '../../components/AppDoc.astro';
 <tr><td data-label="資料">我的最愛、車票、常用地點、學習習慣（「現在常去」）、設定</td><td data-label="用途">App 本身功能</td><td data-label="是否離開你的手機"><strong>不會</strong>。只存在你的手機上；「學習我的習慣」可在設定中關閉並清除</td></tr>
 </table>
 
-<h2>3. 資料會送到哪些第三方</h2>
+<h2 id="s3">3. 資料會送到哪些第三方</h2>
 <ul>
 <li><strong>Apple</strong>：地圖與地點搜尋（MapKit）、推播（APNs）、靈動島與鎖定畫面（Live Activities）。適用 Apple 的隱私權政策。</li>
 <li><strong>交通部 TDX 運輸資料流通服務平台</strong>：公車到站、台鐵、捷運、YouBike 等公開資料。查詢時 TDX 會看到查詢的路線／站牌參數與請求來源 IP，看不到你的裝置識別碼。</li>
@@ -34,7 +45,7 @@ import AppDoc from '../../components/AppDoc.astro';
 </ul>
 <p>上述部分服務位於台灣以外的地區，你的資料可能因此傳輸到境外。除上述與法律要求外，我們不會把你的資料提供給第三方。</p>
 
-<h2>4. 我們保存多久</h2>
+<h2 id="s4">4. 我們保存多久</h2>
 <ul>
 <li>分享連結：行程 6 小時、車票 12 小時後自動失效。</li>
 <li>你提交的評論、地標、評分、乘車紀錄：保存到你要求刪除，或我們因品質、安全或法律因素移除為止。</li>
@@ -42,7 +53,7 @@ import AppDoc from '../../components/AppDoc.astro';
 <li>位置查詢：只用來回答當下的查詢，不另外保存為個人紀錄。</li>
 </ul>
 
-<h2>5. 你的權利與如何行使</h2>
+<h2 id="s5">5. 你的權利與如何行使</h2>
 <p>依據個人資料保護法，你可以請求查詢或閱覽、製給複製本、補充或更正、停止蒐集處理利用，以及刪除你的個人資料。請寄信到 <a href="mailto:app&#64;yayalin.com">app&#64;yayalin.com</a>，並附上：</p>
 <ul>
 <li>App 內「設定 › 支援與法律」顯示的<strong>裝置識別碼</strong>（我們才找得到屬於你這支裝置的資料）</li>
@@ -50,13 +61,13 @@ import AppDoc from '../../components/AppDoc.astro';
 </ul>
 <p>我們會盡速處理並回覆，一般在 30 日內。你也可以隨時在 iPhone 的「設定」中關閉本 App 的定位與通知權限；不允許定位時，附近與導航功能將無法使用。</p>
 
-<h2>6. 兒童</h2>
+<h2 id="s6">6. 兒童</h2>
 <p>本 App 不是專為 13 歲以下兒童設計，我們也不會刻意蒐集其個人資料。如發現有此情形，請來信，我們會刪除。</p>
 
-<h2>7. 資料安全</h2>
+<h2 id="s7">7. 資料安全</h2>
 <p>App 與伺服器之間使用加密連線（HTTPS）。我們限制可存取後台資料的人員與工具，但沒有任何網路服務能保證百分之百安全。</p>
 
-<h2>8. 政策變更</h2>
+<h2 id="s8">8. 政策變更</h2>
 <p>政策如有重大變更，我們會更新本頁的生效日期，並在 App 內公告。繼續使用即表示你了解更新後的內容。</p>
 
 <div class="note">問題或要求：<a href="mailto:app&#64;yayalin.com">app&#64;yayalin.com</a>　·　<a href="/app/terms">服務條款</a>　·　<a href="/app/support">客服與意見回饋</a></div>

@@ -1,18 +1,58 @@
 ---
 import AppDoc from '../../components/AppDoc.astro';
 import AppFeedbackForm from '../../components/AppFeedbackForm.astro';
+import Icon from '../../components/Icon.astro';
+
+const faqGroups: { title: string; items: { q: string; a: string }[] }[] = [
+  {
+    title: '資料與即時資訊',
+    items: [
+      { q: '為什麼有些班次顯示「查不到即時資料」？', a: '即時資訊來自政府與營運單位的開放資料，偶爾會延遲、暫停或該路線沒有提供。我們寧可顯示「查不到」，也不會編造時間。' },
+      { q: '為什麼高鐵看不到列車現在的位置？', a: '高鐵目前沒有公開的即時車次位置或誤點資料，所以只能顯示班次時間與營運公告。台鐵則可以看到列車最後回報的位置。' },
+      { q: '行程分享的連結是什麼？別人看到什麼？', a: '連結只包含行程的交通方式、路線、上下車站名稱與時間，<strong>不含你的位置</strong>。收到連結的人不需要安裝任何 App，用瀏覽器就能看班次狀態。行程連結 6 小時、車票連結 12 小時後自動失效。' },
+    ],
+  },
+  {
+    title: '導航與定位',
+    items: [
+      { q: '導航的位置不準，或漏了測速照相提醒？', a: '請來信告訴我們路段與行駛方向，我們會檢查資料。測速與科技執法資料來自政府開放資料，可能有更新落差，請務必自行注意路況與速限。' },
+      { q: 'App 需要哪些權限？', a: '「定位」（顯示附近站牌、導航；追蹤班車時會在背景使用）與「通知」（營運異常公告，可選）。不允許時相關功能無法使用，但其他功能不受影響。' },
+      { q: 'Siri 或小工具要怎麼用？', a: '可以對 Siri 說「用交通即時查導航」。Siri 與小工具的設定方式之後會更新在這裡。' },
+    ],
+  },
+  {
+    title: '帳號與資料',
+    items: [
+      { q: '如何刪除我的資料？', a: '寄信到 <a href="mailto:app&#64;yayalin.com">app&#64;yayalin.com</a>，附上 App 「設定 › 支援與法律」裡的<strong>裝置識別碼</strong>與想刪除的內容。詳見<a href="/app/privacy">隱私權政策</a>第 5 節。' },
+    ],
+  },
+];
 ---
 
 <AppDoc title="客服與意見回饋" description="聯絡交通即時查 TransitGo：意見回饋、問題回報與常見問題。">
 <h1>客服與意見回饋</h1>
 <p class="meta">遇到問題、想回報錯誤或有功能建議，都可以在這裡找到管道。</p>
 
-<h2>線上意見回饋</h2>
+<div class="contact-cards">
+  <a class="contact-card" href="#feedback-form">
+    <Icon name="bubble" size={30} />
+    <div><strong>線上意見回饋</strong><span>不用裝 App，直接在這頁留言</span></div>
+  </a>
+  <a class="contact-card" href="mailto:app&#64;yayalin.com?subject=%E4%BA%A4%E9%80%9A%E5%8D%B3%E6%99%82%E6%9F%A5%20%E5%AE%A2%E6%9C%8D">
+    <Icon name="mail" size={30} />
+    <div><strong>寄信</strong><span>app&#64;yayalin.com</span></div>
+  </a>
+  <div class="contact-card is-static">
+    <Icon name="mouth" size={30} />
+    <div><strong>App 內回報</strong><span>設定 › 支援與法律 › 意見回饋</span></div>
+  </div>
+</div>
+
+<h2 id="feedback-form">線上意見回饋</h2>
 <p>不用裝 App 也能直接在這裡留言，我們會用你的 Email 回覆（會寄到你的信箱，也能在 App「設定 › 支援與法律 › 我的回饋」看到同一則對話）。</p>
 <AppFeedbackForm />
 
-<p class="alt-contact">也可以直接寄信：<a class="cta" href="mailto:app&#64;yayalin.com?subject=%E4%BA%A4%E9%80%9A%E5%8D%B3%E6%99%82%E6%9F%A5%20%E5%AE%A2%E6%9C%8D">寄信到 app&#64;yayalin.com</a>，或在 App 裡回報：<strong>設定 › 支援與法律 › 意見回饋</strong>（可以傳照片、之後繼續對話）。</p>
-<p>不管用哪種方式，附上以下資訊我們比較容易幫你：</p>
+<p class="alt-contact">在 App 裡回報的話，一樣可以傳照片、之後繼續對話。不管用哪種方式，附上以下資訊我們比較容易幫你：</p>
 <ul>
 <li>發生了什麼事、你預期會怎樣</li>
 <li>發生的時間、地點（縣市即可）、路線或車次</li>
@@ -22,28 +62,45 @@ import AppFeedbackForm from '../../components/AppFeedbackForm.astro';
 <div class="note">我們會盡快回覆。緊急的交通異常請以現場公告與營運單位官方管道為準。</div>
 
 <h2>常見問題</h2>
-<details><summary>為什麼有些班次顯示「查不到即時資料」？</summary>
-<p>即時資訊來自政府與營運單位的開放資料，偶爾會延遲、暫停或該路線沒有提供。我們寧可顯示「查不到」，也不會編造時間。</p></details>
-<details><summary>為什麼高鐵看不到列車現在的位置？</summary>
-<p>高鐵目前沒有公開的即時車次位置或誤點資料，所以只能顯示班次時間與營運公告。台鐵則可以看到列車最後回報的位置。</p></details>
-<details><summary>行程分享的連結是什麼？別人看到什麼？</summary>
-<p>連結只包含行程的交通方式、路線、上下車站名稱與時間，<strong>不含你的位置</strong>。收到連結的人不需要安裝任何 App，用瀏覽器就能看班次狀態。行程連結 6 小時、車票連結 12 小時後自動失效。</p></details>
-<details><summary>導航的位置不準，或漏了測速照相提醒？</summary>
-<p>請來信告訴我們路段與行駛方向，我們會檢查資料。測速與科技執法資料來自政府開放資料，可能有更新落差，請務必自行注意路況與速限。</p></details>
-<details><summary>如何刪除我的資料？</summary>
-<p>寄信到 <a href="mailto:app&#64;yayalin.com">app&#64;yayalin.com</a>，附上 App 「設定 › 支援與法律」裡的<strong>裝置識別碼</strong>與想刪除的內容。詳見<a href="/app/privacy">隱私權政策</a>第 5 節。</p></details>
-<details><summary>App 需要哪些權限？</summary>
-<p>「定位」（顯示附近站牌、導航；追蹤班車時會在背景使用）與「通知」（營運異常公告，可選）。不允許時相關功能無法使用，但其他功能不受影響。</p></details>
-<details><summary>Siri 或小工具要怎麼用？</summary>
-<p>可以對 Siri 說「用交通即時查導航」。Siri 與小工具的設定方式之後會更新在這裡。</p></details>
+{faqGroups.map((group) => (
+  <div class="faq-group">
+    <h3 class="faq-group-title">{group.title}</h3>
+    {group.items.map((item) => (
+      <details>
+        <summary>{item.q}</summary>
+        <p set:html={item.a} />
+      </details>
+    ))}
+  </div>
+))}
 
 <h2>相關文件</h2>
 <ul><li><a href="/app/privacy">隱私權政策</a></li><li><a href="/app/terms">服務條款</a></li></ul>
 </AppDoc>
 
 <style>
+  :global(.contact-cards) {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 10px;
+    margin: 1.2rem 0 1.8rem;
+  }
+  :global(.contact-card) {
+    display: flex; align-items: center; gap: 12px;
+    background: var(--bg); border: 1px solid var(--line); border-radius: 16px; padding: 14px 16px;
+    color: var(--text); text-decoration: none; transition: border-color .15s, transform .15s;
+  }
+  :global(.contact-card):not(.is-static):hover { border-color: var(--accent); transform: translateY(-2px); }
+  :global(.contact-card) :global(svg) { color: var(--accent); flex: none; }
+  :global(.contact-card) strong { display: block; font-size: 0.95rem; }
+  :global(.contact-card) span { display: block; font-size: 0.8rem; color: var(--muted); margin-top: 2px; }
   :global(.alt-contact) {
     font-size: 0.9rem;
     margin-top: 1.4rem;
+  }
+  :global(.faq-group) { margin-bottom: 0.6rem; }
+  :global(.faq-group-title) {
+    font-size: 0.82rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+    color: var(--accent); margin: 1.6rem 0 0.4rem;
   }
 </style>
