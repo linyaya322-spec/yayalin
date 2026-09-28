@@ -67,10 +67,45 @@ const req = (method, extra = {}, body) => new Request('https://yayalin.com/app/a
   check('other fields (businessHours) pass through untouched', sentBody.businessHours === '9-5');
 }
 {
+  // extraBody pins down fields the client must never control (e.g. forcing isBusinessClaim on
+  // the "new landmark" route) — it has to win even if the client tried to send the same field.
+  const calls = [];
+  const authedReq = req('POST', { authorization: 'Bearer x', 'content-type': 'application/json' }, JSON.stringify({ name: '我的店', isBusinessClaim: false }));
+  const fakeFetch = async (url, init) => {
+    if (url.includes('/auth/v1/user')) return new Response(JSON.stringify({ email: 'biz@example.com' }), { status: 200 });
+    calls.push({ url, init });
+    return new Response(JSON.stringify({ ok: true }), { status: 200 });
+  };
+  const r = await proxyBusiness({
+    request: authedReq, env: { TRUSTED_PROXY_SECRET: 'shh' }, path: '/v1/landmarks', methods: ['POST'],
+    extraBody: { isBusinessClaim: true }, fetchImpl: fakeFetch,
+  });
+  check('extraBody request reaches the backend', r.status === 200 && calls.length === 1);
+  const sentBody = JSON.parse(calls[0].init.body);
+  check('extraBody overrides a client-supplied value for the same field', sentBody.isBusinessClaim === true);
+  check('fields the client sent that extraBody does not touch still pass through', sentBody.name === '我的店');
+}
+{
   const authedReq = req('POST', { authorization: 'Bearer x', 'content-type': 'application/json' }, 'not json');
   const fakeFetch = async (url) => (url.includes('/auth/v1/user') ? new Response(JSON.stringify({ email: 'biz@example.com' }), { status: 200 }) : new Response('{}'));
   const r = await proxyBusiness({ request: authedReq, env: { TRUSTED_PROXY_SECRET: 's' }, path: '/v1/landmarks/mine', methods: ['POST'], fetchImpl: fakeFetch });
   check('malformed JSON body is refused, not forwarded as-is', r.status === 400);
+}
+{
+  // Photos (up to 6 data: URIs) push a real request body well past the old 4000-byte cap this
+  // proxy used to have — it has to be sized for that, not just the common tiny edits.
+  const bigPhoto = 'data:image/jpeg;base64,' + 'A'.repeat(500_000);
+  const authedReq = req('POST', { authorization: 'Bearer x', 'content-type': 'application/json' }, JSON.stringify({ photos: [{ url: bigPhoto, category: 'food' }] }));
+  const fakeFetch = async (url) => (url.includes('/auth/v1/user') ? new Response(JSON.stringify({ email: 'biz@example.com' }), { status: 200 }) : new Response(JSON.stringify({ ok: true }), { status: 200 }));
+  const r = await proxyBusiness({ request: authedReq, env: { TRUSTED_PROXY_SECRET: 's' }, path: '/v1/landmarks/mine', methods: ['POST'], fetchImpl: fakeFetch });
+  check('a half-megabyte photo (well past the old 4000-byte cap) is NOT rejected as too_large', r.status === 200);
+}
+{
+  const hugeBody = JSON.stringify({ photos: [{ url: 'data:image/jpeg;base64,' + 'A'.repeat(9_000_000), category: 'food' }] });
+  const authedReq = req('POST', { authorization: 'Bearer x', 'content-type': 'application/json' }, hugeBody);
+  const fakeFetch = async (url) => (url.includes('/auth/v1/user') ? new Response(JSON.stringify({ email: 'biz@example.com' }), { status: 200 }) : new Response('{}'));
+  const r = await proxyBusiness({ request: authedReq, env: { TRUSTED_PROXY_SECRET: 's' }, path: '/v1/landmarks/mine', methods: ['POST'], fetchImpl: fakeFetch });
+  check('but something past the new (8mb) cap is still refused, not an unbounded proxy', r.status === 413);
 }
 
 // ---- businessAccounts: listing and banning ----

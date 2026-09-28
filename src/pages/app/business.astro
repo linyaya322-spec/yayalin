@@ -1,18 +1,26 @@
 ---
 import AppDoc from '../../components/AppDoc.astro';
+import Icon from '../../components/Icon.astro';
 ---
 
-<AppDoc title="商家後台" description="TransitGo 商家後台：登入一次，管理你認領的地標營業時間、電話與營業狀態，不用安裝 App。">
-<h1>商家後台</h1>
-<p class="meta">用信箱登入一次，就能認領你的店家、管理營業時間／電話／營業狀態——之後回來不用再重新驗證。</p>
+<AppDoc title="商家後台" description="TransitGo 商家後台：登入一次，管理你認領的地標營業時間、電話、類型、連結與照片，不用安裝 App。">
+<div class="page-head">
+  <div class="page-icon" aria-hidden="true"><Icon name="box" size={34} /></div>
+  <div>
+    <h1>商家後台</h1>
+    <p class="meta">用信箱登入一次，就能認領你的店家、管理營業時間／電話／類型／連結／照片——之後回來不用再重新驗證。</p>
+  </div>
+</div>
 
 <div id="login-view">
   <div class="card">
-    <input type="email" id="login-email" placeholder="你的 Email" class="field" />
-    <button id="login-send" class="btn primary">寄送驗證碼</button>
+    <label class="field-label" for="login-email">你的 Email</label>
+    <input type="email" id="login-email" placeholder="you@example.com" class="field" />
+    <button id="login-send" class="btn primary btn-block">寄送驗證碼</button>
     <div id="login-code-row" class="hidden">
+      <label class="field-label" for="login-code">驗證碼</label>
       <input type="text" id="login-code" placeholder="信箱收到的驗證碼" class="field" inputmode="numeric" maxlength="10" autocomplete="one-time-code" />
-      <button id="login-verify" class="btn primary">驗證並登入</button>
+      <button id="login-verify" class="btn primary btn-block">驗證並登入</button>
     </div>
     <p id="login-status" class="hint"></p>
   </div>
@@ -20,21 +28,61 @@ import AppDoc from '../../components/AppDoc.astro';
 
 <div id="business-view" class="hidden">
   <div class="row-between">
-    <p class="hint">已登入：<span id="whoami"></span></p>
+    <p class="hint">已登入：<strong id="whoami"></strong></p>
     <button id="logout-btn" class="btn">登出</button>
   </div>
 
-  <h2>我認領的店家</h2>
+  <h2 class="section-title">我認領的店家</h2>
   <ul id="mine-list" class="list"></ul>
-  <p id="mine-empty" class="hidden hint">還沒有認領任何地標。</p>
+  <p id="mine-empty" class="hidden empty-state">還沒有認領任何地標——在下面搜尋或新增一個。</p>
 
-  <h2>認領一個地標</h2>
-  <p>搜尋地標名稱（要先在 App 裡被使用者新增過、且已經通過後台審核，才搜尋得到）。</p>
+  <h2 class="section-title">認領一個地標</h2>
+  <p class="meta-sm">搜尋地標名稱（要先在 App 裡被使用者新增過、且已經通過後台審核，才搜尋得到）。</p>
   <div class="card">
-    <input type="text" id="search-q" placeholder="地標名稱，至少 2 個字" class="field" />
-    <button id="search-btn" class="btn">搜尋</button>
+    <div class="search-row">
+      <input type="text" id="search-q" placeholder="地標名稱，至少 2 個字" class="field" />
+      <button id="search-btn" class="btn primary">搜尋</button>
+    </div>
     <ul id="search-list" class="list"></ul>
-    <p id="search-empty" class="hidden hint">查不到符合的地標，或都已經被認領了。</p>
+    <div id="search-empty" class="hidden empty-state">
+      <p>查不到符合的地標，或都已經被認領了。</p>
+      <p class="hint">如果這個地方只在 Apple 地圖上、還沒被加進我們的系統，可以直接新增：</p>
+      <button id="show-new-form-btn" class="btn">＋ 新增這個地方並認領</button>
+    </div>
+  </div>
+
+  <div id="new-landmark-card" class="card hidden">
+    <h3 class="card-title">新增地標並認領</h3>
+    <p class="meta-sm">送出後會直接標示為已驗證店家，之後可以在上面「我認領的店家」繼續管理。</p>
+    <label class="field-label" for="new-name">店名</label>
+    <input type="text" id="new-name" placeholder="跟 Apple 地圖上顯示的名稱一致比較好找" class="field" />
+
+    <label class="field-label">類型</label>
+    <div class="category-picker" id="new-category-picker"></div>
+
+    <label class="field-label">地點</label>
+    <div class="location-row">
+      <button id="use-location-btn" class="btn">📍 用我目前的位置</button>
+      <span id="location-status" class="hint"></span>
+    </div>
+
+    <label class="field-label">營業時間</label>
+    <div class="hours-editor" id="new-hours-editor"></div>
+
+    <label class="field-label" for="new-phone">電話（選填）</label>
+    <input type="text" id="new-phone" placeholder="電話" class="field" />
+
+    <label class="field-label">連結（選填）</label>
+    <div class="links-editor" id="new-links-editor"></div>
+
+    <label class="field-label">照片（選填，最多 6 張）</label>
+    <div class="photo-editor" id="new-photo-editor"></div>
+
+    <p id="new-status" class="hint"></p>
+    <div class="new-actions">
+      <button id="new-cancel-btn" class="btn">取消</button>
+      <button id="new-submit-btn" class="btn primary" disabled>新增並認領</button>
+    </div>
   </div>
 </div>
 
@@ -43,10 +91,12 @@ import AppDoc from '../../components/AppDoc.astro';
     <p class="item-name"></p>
     <p class="item-meta"></p>
     <div class="claim-form hidden">
-      <input type="text" class="claim-hours field" placeholder="營業時間，例如：週一至週日 11:00–21:00" />
+      <label class="field-label">營業時間（選填）</label>
+      <input type="text" class="claim-hours field" placeholder="例如：週一至週日 11:00–21:00" />
+      <label class="field-label">電話（選填）</label>
       <input type="text" class="claim-phone field" placeholder="電話" />
       <p class="claim-status hint"></p>
-      <button class="claim-submit btn primary">認領這個地標</button>
+      <button class="claim-submit btn primary btn-block">認領這個地標</button>
     </div>
     <button class="claim-toggle btn">認領這裡</button>
   </li>
@@ -58,51 +108,122 @@ import AppDoc from '../../components/AppDoc.astro';
     <p class="item-meta"></p>
     <p class="item-link hint"></p>
     <div class="edit-form hidden">
-      <label class="hint">營業狀態</label>
+      <label class="field-label">營業狀態</label>
       <select class="edit-status field">
         <option value="open">營業中</option>
         <option value="temporarily_closed">暫停營業</option>
         <option value="permanently_closed">已停業</option>
       </select>
-      <input type="text" class="edit-hours field" placeholder="營業時間" />
+
+      <label class="field-label">類型</label>
+      <div class="category-picker edit-category-picker"></div>
+
+      <label class="field-label">營業時間</label>
+      <div class="hours-editor edit-hours-editor"></div>
+
+      <label class="field-label">電話</label>
       <input type="text" class="edit-phone field" placeholder="電話" />
+
+      <label class="field-label">連結（選填）</label>
+      <div class="links-editor edit-links-editor"></div>
+
+      <label class="field-label">照片（選填，最多 6 張）</label>
+      <div class="photo-editor edit-photo-editor"></div>
+
       <p class="edit-status-msg hint"></p>
-      <button class="edit-submit btn primary">儲存</button>
+      <button class="edit-submit btn primary btn-block">儲存</button>
     </div>
     <button class="edit-toggle btn">編輯</button>
   </li>
 </template>
 
-<h2>需要幫忙</h2>
-<p>信箱收不到登入連結、或這個地標還沒被任何人新增過，寄信到 <a href="mailto:app&#64;yayalin.com">app&#64;yayalin.com</a>。</p>
+<h2 class="section-title">需要幫忙</h2>
+<p>信箱收不到驗證碼、或這個地標還沒被任何人新增過，寄信到 <a href="mailto:app&#64;yayalin.com">app&#64;yayalin.com</a>。</p>
 </AppDoc>
 
 <style>
-  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 1.1rem 1.2rem; margin: 1rem 0; }
+  .page-head { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 0.6rem; }
+  .page-head h1 { margin-bottom: 0.3rem; }
+  .page-icon {
+    flex: none; width: 52px; height: 52px; border-radius: 16px; display: flex; align-items: center; justify-content: center;
+    color: var(--accent); background: linear-gradient(150deg, var(--accent-soft), transparent);
+  }
+  .section-title { display: flex; align-items: center; gap: 8px; }
+  .meta-sm { font-size: 0.88rem; color: var(--muted); margin: 0.2rem 0 0.6rem; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 1.2rem 1.3rem; margin: 1rem 0; }
+  .card-title { font-size: 1.02rem; font-weight: 700; margin: 0 0 0.3rem; }
+  .field-label { display: block; font-size: 0.78rem; font-weight: 700; color: var(--muted); margin: 0.7rem 0 0.2rem; }
+  .field-label:first-child { margin-top: 0; }
   .field {
     display: block; width: 100%; background: var(--bg); border: 1px solid var(--line); border-radius: 10px;
-    padding: 0.6rem 0.75rem; color: var(--text); font: inherit; margin: 0.5rem 0;
+    padding: 0.6rem 0.75rem; color: var(--text); font: inherit; margin: 0;
   }
   .field:focus { outline: none; border-color: var(--accent); }
+  .search-row { display: flex; gap: 8px; }
+  .search-row .field { flex: 1; }
+  .location-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .new-actions { display: flex; gap: 8px; margin-top: 0.9rem; }
+  .new-actions .btn.primary { flex: 1; }
   .row-between { display: flex; align-items: center; justify-content: space-between; margin: 1rem 0; }
   .btn {
     display: inline-flex; align-items: center; justify-content: center; border-radius: 10px;
-    padding: 0.55rem 1rem; font-weight: 700; font-size: 0.88rem; border: 1px solid var(--line);
-    background: var(--bg); color: var(--text); cursor: pointer;
+    padding: 0.6rem 1.1rem; font-weight: 700; font-size: 0.88rem; border: 1px solid var(--line);
+    background: var(--bg); color: var(--text); cursor: pointer; transition: border-color .15s, background-color .15s;
   }
-  .btn:disabled { opacity: 0.5; cursor: default; }
+  .btn:hover { border-color: var(--accent); }
+  .btn:disabled { opacity: 0.5; cursor: default; border-color: var(--line); }
   .btn.primary { background: var(--accent); color: #fff; border-color: transparent; }
-  .hint { font-size: 0.82rem; color: var(--muted); margin: 0.3rem 0; }
+  .btn.primary:hover { background: var(--accent); filter: brightness(1.08); }
+  .btn-block { width: 100%; margin-top: 0.9rem; }
+  .hint { font-size: 0.82rem; color: var(--muted); margin: 0.4rem 0 0; }
   .hidden { display: none; }
+  .empty-state { background: var(--bg); border: 1px dashed var(--line); border-radius: 12px; padding: 1rem 1.1rem; margin: 0.8rem 0 0; }
+  .empty-state p { margin: 0 0 0.5rem; }
+  .empty-state p:last-of-type { margin-bottom: 0.7rem; }
   .list { list-style: none; padding: 0; margin: 0.8rem 0; display: grid; gap: 0.7rem; }
-  .item { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 0.9rem 1rem; }
-  .item-name { font-weight: 700; color: var(--text); margin: 0; }
-  .item-meta { font-size: 0.85rem; color: var(--muted); margin: 0.2rem 0 0.6rem; }
-  .claim-form, .edit-form { display: grid; gap: 0.4rem; margin-top: 0.6rem; padding-top: 0.6rem; border-top: 1px dashed var(--line); }
+  .item { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 1rem 1.1rem; }
+  .item-name { font-weight: 700; color: var(--text); margin: 0; font-size: 1.02rem; }
+  .item-meta { font-size: 0.85rem; color: var(--muted); margin: 0.25rem 0 0.6rem; }
+  .claim-form, .edit-form { display: grid; gap: 0; margin-top: 0.7rem; padding-top: 0.8rem; border-top: 1px dashed var(--line); }
+
+  /* ---- 分類選擇器（先選大分類，再選細項）---- */
+  .category-picker { display: grid; gap: 6px; }
+
+  /* ---- 營業時間滑桿編輯器 ---- */
+  .hours-editor { display: grid; gap: 8px; }
+  .hours-day { background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 0.6rem 0.8rem 0.7rem; }
+  .hours-day-head { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+  .hours-day-label { font-weight: 700; font-size: 0.88rem; min-width: 3.2em; }
+  .hours-toggle { display: inline-flex; align-items: center; gap: 4px; font-size: 0.8rem; color: var(--muted); cursor: pointer; }
+  .hours-toggle input { accent-color: var(--accent); }
+  .hours-sliders { display: grid; gap: 6px; margin-top: 0.5rem; }
+  .hours-sliders.hidden { display: none; }
+  .hours-slider-row { display: flex; align-items: center; gap: 10px; }
+  .hours-time { font-size: 0.8rem; font-weight: 700; color: var(--accent); min-width: 3.4em; font-variant-numeric: tabular-nums; }
+  .hours-range { flex: 1; accent-color: var(--accent); }
+  .hours-range:disabled { opacity: 0.4; }
+
+  /* ---- 連結編輯器 ---- */
+  .links-editor { display: grid; gap: 6px; }
+  .links-editor .field-label { margin: 0.4rem 0 0.15rem; }
+  .links-editor .field-label:first-child { margin-top: 0; }
+
+  /* ---- 照片編輯器 ---- */
+  .photo-editor { display: grid; gap: 8px; }
+  .photo-file-input { font-size: 0.85rem; }
+  .photo-thumbs { display: flex; flex-wrap: wrap; gap: 10px; }
+  .photo-thumb { display: grid; gap: 4px; width: 108px; }
+  .photo-thumb img { width: 108px; height: 108px; object-fit: cover; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); }
+  .photo-thumb select { font-size: 0.76rem; padding: 3px 4px; }
+  .photo-thumb .photo-remove-btn { font-size: 0.76rem; padding: 3px 6px; }
 </style>
 
 <script>
   import { supabase } from '../../lib/supabase';
+  import { CATEGORY_LABEL } from '../../../functions/_lib/landmarkCategories.js';
+  import { GROUP_LABEL, GROUP_ORDER, groupOf } from '../../../functions/_lib/landmarkCategoryGroups.js';
+  import { LINK_LABEL, LINK_ORDER } from '../../../functions/_lib/landmarkLinks.js';
+  import { PHOTO_CATEGORY_LABEL } from '../../../functions/_lib/landmarkPhotoCategories.js';
 
   const API = '/app/api/business';
   // Every call site in this file passes a bare element id ("login-send"), meaning
@@ -125,8 +246,249 @@ import AppDoc from '../../components/AppDoc.astro';
     return { ok: res.ok, status: res.status, data: await res.json().catch(() => null) };
   }
 
+  /* ==================== 共用小工具：分類選擇器／營業時間滑桿／連結／照片 ====================
+     這四個都要同時用在「新增地標」卡片跟每一筆「我認領的店家」的編輯表單裡（後者會被
+     mine-template clone 出好幾份，每份都要有自己獨立的一組），所以都寫成「餵一個容器
+     element 進去、回傳 {get,set}」的小工廠函式，兩邊直接重複使用同一套邏輯。 */
+
+  // ---- 分類：先選大分類，再選細項 ----
+  function buildCategoryPicker(container: HTMLElement) {
+    container.innerHTML = `<select class="cat-group field"></select><select class="cat-fine field"></select>`;
+    const groupSel = container.querySelector('.cat-group') as HTMLSelectElement;
+    const fineSel = container.querySelector('.cat-fine') as HTMLSelectElement;
+    for (const g of GROUP_ORDER) {
+      const opt = document.createElement('option');
+      opt.value = g;
+      opt.textContent = (GROUP_LABEL as Record<string, string>)[g];
+      groupSel.appendChild(opt);
+    }
+    function populateFine(group: string, selected?: string) {
+      fineSel.innerHTML = '';
+      for (const [value, label] of Object.entries(CATEGORY_LABEL)) {
+        if (groupOf(value) !== group) continue;
+        const opt = document.createElement('option');
+        opt.value = value;
+        opt.textContent = label as string;
+        if (value === selected) opt.selected = true;
+        fineSel.appendChild(opt);
+      }
+    }
+    groupSel.addEventListener('change', () => populateFine(groupSel.value));
+    groupSel.value = 'other';
+    populateFine('other', 'other');
+    return {
+      get: () => fineSel.value,
+      set: (category: string) => {
+        const group = groupOf(category);
+        groupSel.value = group;
+        populateFine(group, category);
+      },
+    };
+  }
+
+  // ---- 營業時間：每天一組滑桿，可設公休／24 小時營業 ----
+  const WEEKDAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+  const DAY_LABEL: Record<string, string> = { mon: '週一', tue: '週二', wed: '週三', thu: '週四', fri: '週五', sat: '週六', sun: '週日' };
+  type DayHours = { open: string; close: string } | null;
+
+  function minToHHMM(min: number) {
+    const h = Math.floor(min / 60).toString().padStart(2, '0');
+    const m = (min % 60).toString().padStart(2, '0');
+    return `${h}:${m}`;
+  }
+  function hhmmToMin(hhmm: string) {
+    const [h, m] = hhmm.split(':').map(Number);
+    return h * 60 + m;
+  }
+
+  function buildHoursEditor(container: HTMLElement) {
+    container.innerHTML = WEEKDAYS.map((d) => `
+      <div class="hours-day" data-day="${d}">
+        <div class="hours-day-head">
+          <span class="hours-day-label">${DAY_LABEL[d]}</span>
+          <label class="hours-toggle"><input type="checkbox" class="hours-open-toggle" checked /> 營業</label>
+          <label class="hours-toggle"><input type="checkbox" class="hours-24h" /> 24 小時</label>
+        </div>
+        <div class="hours-sliders">
+          <div class="hours-slider-row">
+            <span class="hours-time open">09:00</span>
+            <input type="range" class="hours-range open" min="0" max="1435" step="5" value="540" />
+          </div>
+          <div class="hours-slider-row">
+            <span class="hours-time close">21:00</span>
+            <input type="range" class="hours-range close" min="0" max="1435" step="5" value="1260" />
+          </div>
+        </div>
+      </div>
+    `).join('');
+
+    const days = WEEKDAYS.map((day) => {
+      const dayEl = container.querySelector(`[data-day="${day}"]`) as HTMLElement;
+      const openToggle = dayEl.querySelector('.hours-open-toggle') as HTMLInputElement;
+      const h24 = dayEl.querySelector('.hours-24h') as HTMLInputElement;
+      const sliders = dayEl.querySelector('.hours-sliders') as HTMLElement;
+      const openRange = dayEl.querySelector('.hours-range.open') as HTMLInputElement;
+      const closeRange = dayEl.querySelector('.hours-range.close') as HTMLInputElement;
+      const openLabel = dayEl.querySelector('.hours-time.open') as HTMLElement;
+      const closeLabel = dayEl.querySelector('.hours-time.close') as HTMLElement;
+
+      const refresh = () => {
+        sliders.classList.toggle('hidden', !openToggle.checked);
+        const disabled = !openToggle.checked || h24.checked;
+        openRange.disabled = disabled;
+        closeRange.disabled = disabled;
+        openLabel.textContent = minToHHMM(Number(openRange.value));
+        closeLabel.textContent = minToHHMM(Number(closeRange.value));
+      };
+      openToggle.addEventListener('change', refresh);
+      h24.addEventListener('change', () => {
+        if (h24.checked) { openRange.value = '0'; closeRange.value = '1435'; }
+        refresh();
+      });
+      openRange.addEventListener('input', refresh);
+      closeRange.addEventListener('input', refresh);
+      refresh();
+
+      return { day, openToggle, h24, openRange, closeRange, refresh };
+    });
+
+    return {
+      get(): Record<string, DayHours> {
+        const out: Record<string, DayHours> = {};
+        for (const d of days) {
+          if (!d.openToggle.checked) { out[d.day] = null; continue; }
+          if (d.h24.checked) { out[d.day] = { open: '00:00', close: '23:59' }; continue; }
+          let om = Number(d.openRange.value);
+          let cm = Number(d.closeRange.value);
+          if (om === cm) cm = (cm + 5) % 1440;   // sanitizeHours rejects open === close
+          out[d.day] = { open: minToHHMM(om), close: minToHHMM(cm) };
+        }
+        return out;
+      },
+      set(hours: Record<string, DayHours> | null | undefined) {
+        for (const d of days) {
+          const entry = hours?.[d.day] ?? null;
+          d.openToggle.checked = entry !== null;
+          if (entry) {
+            d.h24.checked = entry.open === '00:00' && entry.close === '23:59';
+            d.openRange.value = String(hhmmToMin(entry.open));
+            d.closeRange.value = String(hhmmToMin(entry.close));
+          } else {
+            d.h24.checked = false;
+          }
+          d.refresh();
+        }
+      },
+    };
+  }
+
+  // ---- 外部連結：菜單／線上點餐／官網／外送 ----
+  function buildLinksEditor(container: HTMLElement) {
+    container.innerHTML = LINK_ORDER.map((key: string) => `
+      <label class="field-label">${(LINK_LABEL as Record<string, string>)[key]}</label>
+      <input type="url" class="field link-input" data-key="${key}" placeholder="https://" />
+    `).join('');
+    const inputs = Object.fromEntries(
+      LINK_ORDER.map((key: string) => [key, container.querySelector(`[data-key="${key}"]`) as HTMLInputElement]),
+    ) as Record<string, HTMLInputElement>;
+    return {
+      get(): Record<string, string> {
+        const out: Record<string, string> = {};
+        for (const key of LINK_ORDER) { const v = inputs[key].value.trim(); if (v) out[key] = v; }
+        return out;
+      },
+      set(links: Record<string, string> | null | undefined) {
+        for (const key of LINK_ORDER) inputs[key].value = links?.[key] ?? '';
+      },
+    };
+  }
+
+  // ---- 照片：選檔案 → 縮圖壓縮成 JPEG data URL → 逐張選分類 ----
+  const MAX_PHOTOS = 6;
+  type Photo = { url: string; category: string };
+
+  function encodePhoto(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = () => reject(reader.error);
+      reader.onload = () => {
+        const img = new Image();
+        img.onerror = () => reject(new Error('bad image'));
+        img.onload = () => {
+          const maxDim = 1280;
+          const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+          const w = Math.max(1, Math.round(img.width * scale));
+          const h = Math.max(1, Math.round(img.height * scale));
+          const canvas = document.createElement('canvas');
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) { reject(new Error('no canvas context')); return; }
+          ctx.drawImage(img, 0, 0, w, h);
+          resolve(canvas.toDataURL('image/jpeg', 0.8));
+        };
+        img.src = reader.result as string;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function buildPhotoEditor(container: HTMLElement) {
+    let photos: Photo[] = [];
+    container.innerHTML = `
+      <input type="file" class="photo-file-input" accept="image/*" multiple />
+      <div class="photo-thumbs"></div>
+      <p class="photo-status hint"></p>
+    `;
+    const fileInput = container.querySelector('.photo-file-input') as HTMLInputElement;
+    const thumbs = container.querySelector('.photo-thumbs') as HTMLElement;
+    const status = container.querySelector('.photo-status') as HTMLElement;
+
+    function render() {
+      thumbs.innerHTML = '';
+      photos.forEach((p, i) => {
+        const row = document.createElement('div');
+        row.className = 'photo-thumb';
+        row.innerHTML = `<img src="${p.url}" alt="" /><select class="photo-cat-select"></select><button type="button" class="photo-remove-btn btn">移除</button>`;
+        const sel = row.querySelector('.photo-cat-select') as HTMLSelectElement;
+        for (const [value, label] of Object.entries(PHOTO_CATEGORY_LABEL)) {
+          const opt = document.createElement('option');
+          opt.value = value;
+          opt.textContent = label as string;
+          if (value === p.category) opt.selected = true;
+          sel.appendChild(opt);
+        }
+        sel.addEventListener('change', () => { photos[i].category = sel.value; });
+        (row.querySelector('.photo-remove-btn') as HTMLButtonElement).addEventListener('click', () => {
+          photos.splice(i, 1);
+          render();
+        });
+        thumbs.appendChild(row);
+      });
+    }
+
+    fileInput.addEventListener('change', async () => {
+      const files = Array.from(fileInput.files ?? []);
+      fileInput.value = '';
+      const room = MAX_PHOTOS - photos.length;
+      if (room <= 0) { status.textContent = `最多 ${MAX_PHOTOS} 張，請先移除幾張再加。`; return; }
+      const toEncode = files.slice(0, room);
+      status.textContent = '處理照片中…';
+      for (const f of toEncode) {
+        try { photos.push({ url: await encodePhoto(f), category: 'other' }); } catch { /* 這張讀不出來就跳過，不擋其他張 */ }
+      }
+      status.textContent = files.length > toEncode.length ? `最多 ${MAX_PHOTOS} 張，多的先不放。` : '';
+      render();
+    });
+
+    return {
+      get: () => photos,
+      set: (p: Photo[] | null | undefined) => { photos = p ? p.map((x) => ({ ...x })) : []; render(); },
+    };
+  }
+
   /* ---------- 登入（Supabase Auth，六碼驗證碼；第一次使用會自動建立帳號）----------
-     signInWithOtp 寄出的同一封信本來就含 6 位數 {{ .Token }}（跟點連結是同一支信、同一個
+     signInWithOtp 寄出的同一封信本來就含 {{ .Token }}（跟點連結是同一支信、同一個
      Supabase Auth 寄信管道，只是不用等使用者去點連結、直接在這頁輸入碼）——用
      verifyOtp(email, token) 換成真正的 session，後面 authedFetch／封鎖商家帳號等既有機制
      完全不用改。 */
@@ -205,6 +567,7 @@ import AppDoc from '../../components/AppDoc.astro';
   interface MyLandmark {
     id: number; name: string; category: string; businessHours: string | null; phone: string | null;
     businessStatus: 'open' | 'temporarily_closed' | 'permanently_closed'; approved: boolean;
+    hours?: Record<string, DayHours> | null; links?: Record<string, string> | null; photos?: Photo[] | null;
   }
   const STATUS_LABEL: Record<string, string> = { open: '營業中', temporarily_closed: '暫停營業', permanently_closed: '已停業' };
 
@@ -228,21 +591,33 @@ import AppDoc from '../../components/AppDoc.astro';
       const toggle = li.querySelector('.edit-toggle') as HTMLButtonElement;
       const form = li.querySelector('.edit-form') as HTMLElement;
       const statusSel = li.querySelector('.edit-status') as HTMLSelectElement;
-      const hoursInput = li.querySelector('.edit-hours') as HTMLInputElement;
+      const categoryPicker = buildCategoryPicker(li.querySelector('.edit-category-picker') as HTMLElement);
+      const hoursEditor = buildHoursEditor(li.querySelector('.edit-hours-editor') as HTMLElement);
       const phoneInput = li.querySelector('.edit-phone') as HTMLInputElement;
+      const linksEditor = buildLinksEditor(li.querySelector('.edit-links-editor') as HTMLElement);
+      const photoEditor = buildPhotoEditor(li.querySelector('.edit-photo-editor') as HTMLElement);
       const statusMsg = li.querySelector('.edit-status-msg') as HTMLElement;
       const submitBtn = li.querySelector('.edit-submit') as HTMLButtonElement;
       statusSel.value = l.businessStatus;
-      hoursInput.value = l.businessHours ?? '';
+      categoryPicker.set(l.category);
+      hoursEditor.set(l.hours ?? null);
       phoneInput.value = l.phone ?? '';
+      linksEditor.set(l.links ?? null);
+      photoEditor.set(l.photos ?? null);
       toggle.addEventListener('click', () => form.classList.toggle('hidden'));
       submitBtn.addEventListener('click', async () => {
         submitBtn.disabled = true;
         statusMsg.textContent = '儲存中…';
+        const photos = photoEditor.get();
+        const links = linksEditor.get();
         const { ok, data } = await authedFetch(`/landmarks/${l.id}`, {
           method: 'PUT',
           headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ businessHours: hoursInput.value, phone: phoneInput.value, businessStatus: statusSel.value }),
+          body: JSON.stringify({
+            phone: phoneInput.value, businessStatus: statusSel.value, category: categoryPicker.get(),
+            hours: hoursEditor.get(), links: Object.keys(links).length ? links : null,
+            photos: photos.length ? photos : null,
+          }),
         });
         submitBtn.disabled = false;
         if (ok) {
@@ -280,6 +655,7 @@ import AppDoc from '../../components/AppDoc.astro';
     const data = res.ok ? await res.json() : { landmarks: [] };
     const results: SearchResult[] = data.landmarks ?? [];
     searchList.innerHTML = '';
+    newLandmarkCard.classList.add('hidden');
     if (results.length === 0) { searchEmpty.classList.remove('hidden'); return; }
     searchEmpty.classList.add('hidden');
     for (const r of results) {
@@ -308,7 +684,7 @@ import AppDoc from '../../components/AppDoc.astro';
           body: JSON.stringify({ businessHours: hoursInput.value, phone: phoneInput.value }),
         });
         if (ok) {
-          statusMsg.textContent = '認領成功！在上面「我認領的店家」就能看到與管理。';
+          statusMsg.textContent = '認領成功！在上面「我認領的店家」可以再繼續設定類型、營業時間、連結與照片。';
           toggle.disabled = true;
           toggle.textContent = '已認領';
           loadMine();
@@ -318,6 +694,89 @@ import AppDoc from '../../components/AppDoc.astro';
         }
       });
       searchList.appendChild(node);
+    }
+  });
+
+  /* ---------- 新增地標並認領（用於「原本只存在 Apple 地圖，還沒加進我們系統」的地方）----------
+     網頁沒有地圖/地址轉座標的工具，用瀏覽器定位取代——商家實際站在店裡按一下最直接，也不用
+     另外接第三方地圖/地址服務（跟這個網站本來就沒有第三方追蹤套件的原則一致）。 */
+  const newLandmarkCard = $('new-landmark-card');
+  const showNewFormBtn = $('show-new-form-btn') as HTMLButtonElement;
+  const newCancelBtn = $('new-cancel-btn') as HTMLButtonElement;
+  const newNameInput = $('new-name') as HTMLInputElement;
+  const newCategoryPicker = buildCategoryPicker($('new-category-picker'));
+  const useLocationBtn = $('use-location-btn') as HTMLButtonElement;
+  const locationStatus = $('location-status');
+  const newHoursEditor = buildHoursEditor($('new-hours-editor'));
+  const newPhoneInput = $('new-phone') as HTMLInputElement;
+  const newLinksEditor = buildLinksEditor($('new-links-editor'));
+  const newPhotoEditor = buildPhotoEditor($('new-photo-editor'));
+  const newStatus = $('new-status');
+  const newSubmitBtn = $('new-submit-btn') as HTMLButtonElement;
+
+  let newCoordinate: { lat: number; lon: number } | null = null;
+
+  function updateSubmitEnabled() {
+    newSubmitBtn.disabled = !newNameInput.value.trim() || !newCoordinate;
+  }
+  newNameInput.addEventListener('input', updateSubmitEnabled);
+
+  showNewFormBtn.addEventListener('click', () => {
+    newLandmarkCard.classList.remove('hidden');
+    newNameInput.value = searchInput.value.trim();
+    updateSubmitEnabled();
+    newNameInput.focus();
+  });
+  newCancelBtn.addEventListener('click', () => {
+    newLandmarkCard.classList.add('hidden');
+  });
+
+  useLocationBtn.addEventListener('click', () => {
+    if (!navigator.geolocation) { locationStatus.textContent = '這個瀏覽器不支援定位。'; return; }
+    useLocationBtn.disabled = true;
+    locationStatus.textContent = '定位中…';
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        newCoordinate = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+        locationStatus.textContent = `已取得目前位置（精確度約 ${Math.round(pos.coords.accuracy)} 公尺）`;
+        useLocationBtn.disabled = false;
+        updateSubmitEnabled();
+      },
+      () => {
+        locationStatus.textContent = '無法取得位置，請確認瀏覽器的定位權限。';
+        useLocationBtn.disabled = false;
+      },
+      { enableHighAccuracy: true, timeout: 15000 },
+    );
+  });
+
+  newSubmitBtn.addEventListener('click', async () => {
+    const name = newNameInput.value.trim();
+    if (!name || !newCoordinate) return;
+    newSubmitBtn.disabled = true;
+    newStatus.textContent = '送出中…';
+    const links = newLinksEditor.get();
+    const photos = newPhotoEditor.get();
+    const { ok, data } = await authedFetch('/landmarks/new', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        name, category: newCategoryPicker.get(), lat: newCoordinate.lat, lon: newCoordinate.lon,
+        description: '', phone: newPhoneInput.value, hours: newHoursEditor.get(),
+        links: Object.keys(links).length ? links : undefined,
+        photos: photos.length ? photos : undefined,
+      }),
+    });
+    if (ok) {
+      newStatus.textContent = '新增成功！在上面「我認領的店家」就能看到與管理。';
+      newLandmarkCard.classList.add('hidden');
+      searchList.innerHTML = '';
+      searchEmpty.classList.add('hidden');
+      searchInput.value = '';
+      loadMine();
+    } else {
+      newSubmitBtn.disabled = false;
+      newStatus.textContent = data?.error === 'unauthorized' ? '登入已過期，請重新整理頁面登入。' : '新增失敗，請稍後再試。';
     }
   });
 </script>
