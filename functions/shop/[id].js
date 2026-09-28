@@ -7,6 +7,8 @@
 import { backendBase } from '../_lib/shareProxy.js';
 import { categoryLabel } from '../_lib/landmarkCategories.js';
 import { featureLabel } from '../_lib/landmarkFeatures.js';
+import { photoCategoryLabel } from '../_lib/landmarkPhotoCategories.js';
+import { LINK_LABEL, LINK_ORDER } from '../_lib/landmarkLinks.js';
 
 const esc = (v) =>
   String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -29,9 +31,27 @@ const STAR_SVG = (filled) =>
   `<svg viewBox="0 0 20 20" width="14" height="14" fill="${filled ? '#f5a623' : 'none'}" stroke="${filled ? '#f5a623' : 'currentColor'}" stroke-width="1.4"><path d="M10 1.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L10 14.8l-5.2 2.8 1-5.8L1.5 7.7l5.9-.9z"/></svg>`;
 const stars = (n) => Array.from({ length: 5 }, (_, i) => STAR_SVG(i < Math.round(n))).join('');
 
-function galleryHtml(photos) {
+// `photos` normally arrives as `{url, category}` objects (see transitgo-server's
+// normalizePhotos) — a bare string is still accepted defensively (an older cached upstream
+// response, or a landmark that only ever had the legacy single `photo` field).
+export function photoUrl(p) { return typeof p === 'string' ? p : p.url; }
+export function photoCategory(p) { return typeof p === 'string' ? null : p.category; }
+
+export function galleryHtml(photos) {
   if (!photos.length) return '';
-  return `<div class="gallery">${photos.map((p) => `<img src="${esc(p)}" alt="" loading="lazy">`).join('')}</div>`;
+  return `<div class="gallery">${photos.map((p) => {
+    const cat = photoCategory(p);
+    const badge = cat && cat !== 'other' ? `<span class="photo-cat">${esc(photoCategoryLabel(cat))}</span>` : '';
+    return `<div class="photo">${badge}<img src="${esc(photoUrl(p))}" alt="" loading="lazy"></div>`;
+  }).join('')}</div>`;
+}
+
+export function linksHtml(links) {
+  const entries = LINK_ORDER.filter((k) => links?.[k]);
+  if (!entries.length) return '';
+  return `<div class="links">${entries.map((k) =>
+    `<a class="link-btn" href="${esc(links[k])}" target="_blank" rel="noopener">${esc(LINK_LABEL[k])}</a>`
+  ).join('')}</div>`;
 }
 
 function hoursHtml(hours, todayKey) {
@@ -89,7 +109,7 @@ function page({ landmark, reviews, stats, origin }) {
 <meta property="og:site_name" content="交通即時查 TransitGo">
 <meta property="og:title" content="${esc(title)}">
 <meta property="og:description" content="${esc(desc)}">
-${photos[0] ? `<meta property="og:image" content="${esc(photos[0])}">` : ''}
+${photos[0] ? `<meta property="og:image" content="${esc(photoUrl(photos[0]))}">` : ''}
 <meta name="twitter:card" content="${photos[0] ? 'summary_large_image' : 'summary'}">
 <link rel="icon" type="image/png" href="/app-assets/app-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -107,7 +127,12 @@ main { position:relative; z-index:1; max-width: 560px; margin: 0 auto; padding: 
 .brand { display:flex; align-items:center; gap:10px; font-weight:800; font-size:17px; text-decoration:none; color:var(--text); margin-bottom: 18px; }
 .brand img { width:28px; height:28px; }
 .gallery { display:flex; gap:8px; overflow-x:auto; scroll-snap-type:x mandatory; margin: 0 0 16px; padding-bottom: 2px; -webkit-overflow-scrolling:touch; }
-.gallery img { width: 78%; max-width: 340px; aspect-ratio: 4/3; object-fit:cover; border-radius:16px; flex:none; scroll-snap-align:start; background:var(--line); }
+.photo { position:relative; width: 78%; max-width: 340px; flex:none; scroll-snap-align:start; }
+.gallery img { width: 100%; aspect-ratio: 4/3; object-fit:cover; border-radius:16px; background:var(--line); display:block; }
+.photo-cat { position:absolute; left:8px; bottom:8px; font-size:0.72rem; font-weight:700; padding:2px 9px; border-radius:999px; background:rgba(0,0,0,.55); color:#fff; }
+.price { font-size:0.95rem; font-weight:700; color:var(--accent2); margin: 0 0 10px; }
+.links { display:flex; flex-wrap:wrap; gap:8px; margin: 0 0 16px; }
+.link-btn { font-size:0.82rem; font-weight:700; padding:6px 13px; border-radius:999px; background:var(--accent-soft); color:var(--accent); text-decoration:none; }
 .card { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:22px 22px 26px; }
 h1 { font-size: 1.5rem; margin: 0 0 6px; }
 .category { font-size: 0.85rem; color: var(--muted); margin: 0 0 12px; }
@@ -148,11 +173,13 @@ footer a { color: var(--accent); }
     <p class="category">${esc(categoryLabel(landmark.category))}</p>
     ${statusText ? `<span class="status ${statusClass}">${statusText}</span>` : ''}
     ${features.length ? `<div class="chips">${features.map((f) => `<span class="chip">${esc(featureLabel(f))}</span>`).join('')}</div>` : ''}
+    ${landmark.priceRange ? `<p class="price">${esc('$'.repeat(Math.max(1, Math.min(4, landmark.priceRange))))}</p>` : ''}
     ${landmark.description ? `<p>${esc(landmark.description)}</p>` : ''}
+    ${linksHtml(landmark.links)}
     ${landmark.hours ? `<div class="row"><b>營業時間</b>${hoursHtml(landmark.hours, todayKey)}</div>`
       : landmark.businessHours ? `<div class="row"><b>營業時間</b><span>${esc(landmark.businessHours)}</span></div>` : ''}
     ${landmark.phone ? `<div class="row"><b>電話</b><a class="tel" href="tel:${esc(landmark.phone.replace(/[^0-9+]/g, ''))}">${esc(landmark.phone)}</a></div>` : ''}
-    <div class="row"><b>地圖</b><a class="map" href="${esc(mapsUrl)}" target="_blank" rel="noopener">在地圖中開啟 →</a></div>
+    <div class="row"><b>導航</b><a class="map" href="${esc(mapsUrl)}" target="_blank" rel="noopener">開啟地圖導航 →</a></div>
     ${!landmark.businessVerified ? '<p class="unverified">這個地標還沒有店家認領。如果是你的店，到 <a href="/app/business">商家後台</a> 認領它，就能顯示營業時間、電話、相簿與特色標籤。</p>' : ''}
   </div>
   <p class="section-title">評論</p>
