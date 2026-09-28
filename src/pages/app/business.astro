@@ -101,7 +101,17 @@ import AppDoc from '../../components/AppDoc.astro';
   import { supabase } from '../../lib/supabase';
 
   const API = '/app/api/business';
-  const $ = (sel: string, root: ParentNode = document) => root.querySelector(sel) as HTMLElement;
+  // Every call site in this file passes a bare element id ("login-send"), meaning
+  // "#login-send" — but querySelector treats an unprefixed string as a TAG name, so it was
+  // silently matching nothing and returning null for every one of them. That made the very
+  // first `$(...).addEventListener(...)` below throw (can't read addEventListener of null),
+  // which killed the whole script before it ever reached renderForSession() or wired up a
+  // single button — nothing on this page worked, not just "send verification email".
+  // Prepending "#" only when the caller hasn't already supplied a real selector (the couple
+  // of `$('#mine-template')`-style calls already work either way) fixes every call site at
+  // once instead of touching them all individually.
+  const $ = (sel: string, root: ParentNode = document) =>
+    root.querySelector(/^[#.[]/.test(sel) ? sel : `#${sel}`) as HTMLElement;
 
   async function authedFetch(path: string, opts: RequestInit = {}) {
     const { data } = await supabase.auth.getSession();
