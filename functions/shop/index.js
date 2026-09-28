@@ -32,12 +32,19 @@ function page({ businesses, total, offset, category, origin }) {
 
   const cards = businesses.length
     ? businesses.map((b) => {
-        const status = STATUS_LABEL[b.businessStatus] ?? '營業中';
+        // business_status（店家自己標的長期狀態）永遠優先於算出來的 openNow。
+        let status, statusClass;
+        if (b.businessStatus && b.businessStatus !== 'open') { status = STATUS_LABEL[b.businessStatus] ?? b.businessStatus; statusClass = 'closed'; }
+        else if (b.openNow) { status = b.openNow.open ? '營業中' : '休息中'; statusClass = b.openNow.open ? 'open' : 'closed'; }
+        else { status = '營業中'; statusClass = 'open'; }
         return `<a class="card" href="/shop/${b.id}">
-          <h2>${esc(b.name)}</h2>
-          <p class="meta"><span class="category">${esc(categoryLabel(b.category))}</span><span class="status ${b.businessStatus === 'open' || !b.businessStatus ? 'open' : 'closed'}">${esc(status)}</span></p>
-          ${b.description ? `<p class="desc">${esc(b.description)}</p>` : ''}
-          ${b.businessHours ? `<p class="hours">${esc(b.businessHours)}</p>` : ''}
+          ${b.coverPhoto ? `<img class="thumb" src="${esc(b.coverPhoto)}" alt="" loading="lazy">` : ''}
+          <div class="card-body">
+            <h2>${esc(b.name)}</h2>
+            <p class="meta"><span class="category">${esc(categoryLabel(b.category))}</span><span class="status ${statusClass}">${esc(status)}</span></p>
+            ${b.description ? `<p class="desc">${esc(b.description)}</p>` : ''}
+            ${b.businessHours && !b.openNow ? `<p class="hours">${esc(b.businessHours)}</p>` : ''}
+          </div>
         </a>`;
       }).join('')
     : `<p class="empty">${category ? '這個分類目前還沒有商家。' : '目前還沒有商家加入。'}</p>`;
@@ -70,7 +77,9 @@ h1 { font-size: 1.4rem; margin: 0 0 4px; }
 form.filter { margin: 0 0 20px; }
 form.filter select { font: inherit; padding: 8px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--text); width: 100%; max-width: 280px; }
 .grid { display: grid; gap: 12px; }
-.card { display: block; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; text-decoration: none; color: var(--text); transition: border-color .15s; }
+.card { display: flex; gap: 12px; align-items: flex-start; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 12px 16px; text-decoration: none; color: var(--text); transition: border-color .15s; }
+.card .thumb { width: 64px; height: 64px; border-radius: 10px; object-fit: cover; flex: none; background: var(--line); }
+.card .card-body { flex: 1; min-width: 0; }
 .card:hover { border-color: var(--accent); }
 .card h2 { font-size: 1.05rem; margin: 0 0 4px; }
 .meta { display: flex; gap: 8px; align-items: center; margin: 0 0 6px; font-size: 0.82rem; }

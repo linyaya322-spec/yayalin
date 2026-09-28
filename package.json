@@ -10,7 +10,7 @@
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
-    "test:functions": "node test/share-proxy.test.mjs && node test/business-proxy.test.mjs"
+    "test:functions": "node test/share-proxy.test.mjs && node test/business-proxy.test.mjs && node test/shop-place-key.test.mjs"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.3",
