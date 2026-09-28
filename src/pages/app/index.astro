@@ -3,6 +3,13 @@ import AppDoc from '../../components/AppDoc.astro';
 import Icon from '../../components/Icon.astro';
 import { APP_NAME, APP_STATUS_URL } from '../../lib/app';
 
+const closingLinks: { icon: Parameters<typeof Icon>[0]['name']; href: string; title: string; body: string }[] = [
+  { icon: 'bubble', href: '/app/support', title: '客服與意見回饋', body: '問題回報、功能建議、常見問題' },
+  { icon: 'box', href: '/app/business', title: '商家後台', body: '認領你的店家，管理營業時間與電話' },
+  { icon: 'clipboard', href: '/app/privacy', title: '隱私權政策', body: '會用到哪些資料、去了哪裡' },
+  { icon: 'paper', href: '/app/terms', title: '服務條款', body: '使用規範與免責聲明' },
+];
+
 const features: { icon: Parameters<typeof Icon>[0]['name']; title: string; body: string }[] = [
   { icon: 'pin', title: '附近', body: '公車站牌與到站時間、YouBike 可借還、測速與科技執法照相位置，一次顯示在地圖上。' },
   { icon: 'route', title: '路線規劃', body: '步行、公車、捷運、台鐵、高鐵、YouBike 自由組合，算出實際能搭到的路線。' },
@@ -21,7 +28,10 @@ const features: { icon: Parameters<typeof Icon>[0]['name']; title: string; body:
       把日常搭車會用到的事放在同一個 App：查附近站牌與到站時間、規劃多種運具的路線、開車或騎車導航、把行程分享給親友，
       以及用小工具和 Siri 快速看台鐵車站的班次。
     </p>
-    <a class="cta" href="/app/support">客服與意見回饋</a>
+    <div class="hero-ctas">
+      <a class="cta" href="/app/support">客服與意見回饋</a>
+      <a class="cta cta-ghost" href="/app/business">商家後台</a>
+    </div>
   </div>
 
   <h2 class="section-title">App 裡有什麼</h2>
@@ -49,15 +59,15 @@ const features: { icon: Parameters<typeof Icon>[0]['name']; title: string; body:
   </p>
 
   <h2 class="section-title">需要幫忙或想說些什麼</h2>
-  <p>
-    <a class="cta" href="/app/support">前往客服與線上意見回饋</a>
-  </p>
-  <ul class="link-list">
-    <li><a href="/app/business">商家後台（認領你的店家）</a></li>
-    <li><a href="/app/privacy">隱私權政策</a></li>
-    <li><a href="/app/terms">服務條款</a></li>
-    <li>信箱：<a href="mailto:app&#64;yayalin.com">app&#64;yayalin.com</a></li>
-  </ul>
+  <div class="closing-grid">
+    {closingLinks.map((l) => (
+      <a class="closing-card" href={l.href}>
+        <Icon name={l.icon} size={28} />
+        <div><strong>{l.title}</strong><span>{l.body}</span></div>
+      </a>
+    ))}
+  </div>
+  <p class="fine-print">或直接寄信：<a href="mailto:app&#64;yayalin.com">app&#64;yayalin.com</a></p>
 </AppDoc>
 
 <style>
@@ -66,6 +76,20 @@ const features: { icon: Parameters<typeof Icon>[0]['name']; title: string; body:
   }
   .hero .lead {
     max-width: 42em;
+  }
+  .hero-ctas {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.7rem;
+  }
+  .hero-ctas :global(.cta-ghost) {
+    background: transparent !important;
+    color: var(--accent) !important;
+    border: 1.5px solid var(--accent);
+    box-shadow: none !important;
+  }
+  .hero-ctas :global(.cta-ghost:hover) {
+    background: var(--accent-soft) !important;
   }
   .section-title {
     display: inline-block;
@@ -142,13 +166,41 @@ const features: { icon: Parameters<typeof Icon>[0]['name']; title: string; body:
   .fine-print {
     font-size: 0.85rem;
   }
-  .link-list {
-    list-style: none;
-    padding-left: 0;
+  .closing-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 10px;
+    margin: 1rem 0;
+  }
+  .closing-card {
     display: flex;
-    flex-wrap: wrap;
-    gap: 0.4rem 1.2rem;
-    margin-top: 0.6rem;
+    align-items: center;
+    gap: 12px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 14px 16px;
+    color: var(--text);
+    text-decoration: none;
+    transition: border-color .15s, transform .15s;
+  }
+  .closing-card:hover {
+    border-color: var(--accent);
+    transform: translateY(-2px);
+  }
+  .closing-card :global(svg) {
+    color: var(--accent);
+    flex: none;
+  }
+  .closing-card strong {
+    display: block;
+    font-size: 0.95rem;
+  }
+  .closing-card span {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin-top: 2px;
   }
 </style>
 
