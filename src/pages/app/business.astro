@@ -11,7 +11,7 @@ import AppDoc from '../../components/AppDoc.astro';
     <input type="email" id="login-email" placeholder="你的 Email" class="field" />
     <button id="login-send" class="btn primary">寄送驗證碼</button>
     <div id="login-code-row" class="hidden">
-      <input type="text" id="login-code" placeholder="信箱收到的 6 位數驗證碼" class="field" inputmode="numeric" maxlength="6" autocomplete="one-time-code" />
+      <input type="text" id="login-code" placeholder="信箱收到的驗證碼" class="field" inputmode="numeric" maxlength="10" autocomplete="one-time-code" />
       <button id="login-verify" class="btn primary">驗證並登入</button>
     </div>
     <p id="login-status" class="hint"></p>
@@ -151,7 +151,7 @@ import AppDoc from '../../components/AppDoc.astro';
       loginStatus.textContent = '寄送失敗，請確認 Email 是否正確。';
       return;
     }
-    loginStatus.textContent = `驗證碼已寄到 ${email}，請輸入信裡的 6 位數字（10 分鐘內有效，可能在垃圾信件夾）。`;
+    loginStatus.textContent = `驗證碼已寄到 ${email}，請輸入信裡的驗證碼（10 分鐘內有效，可能在垃圾信件夾）。`;
     loginCodeRow.classList.remove('hidden');
     loginCode.value = '';
     loginCode.focus();
@@ -166,7 +166,7 @@ import AppDoc from '../../components/AppDoc.astro';
   $('login-verify').addEventListener('click', async () => {
     const email = loginEmail.value.trim();
     const token = loginCode.value.trim();
-    if (token.length !== 6) { loginStatus.textContent = '請輸入 6 位數驗證碼。'; return; }
+    if (!token) { loginStatus.textContent = '請輸入驗證碼。'; return; }
     (($('login-verify') as HTMLButtonElement)).disabled = true;
     loginStatus.textContent = '驗證中…';
     const { error } = await supabase.auth.verifyOtp({ email, token, type: 'email' });
