@@ -9,7 +9,11 @@ import AppDoc from '../../components/AppDoc.astro';
 <div id="login-view">
   <div class="card">
     <input type="email" id="login-email" placeholder="你的 Email" class="field" />
-    <button id="login-send" class="btn primary">寄送登入連結</button>
+    <button id="login-send" class="btn primary">寄送驗證碼</button>
+    <div id="login-code-row" class="hidden">
+      <input type="text" id="login-code" placeholder="信箱收到的 6 位數驗證碼" class="field" inputmode="numeric" maxlength="6" autocomplete="one-time-code" />
+      <button id="login-verify" class="btn primary">驗證並登入</button>
+    </div>
     <p id="login-status" class="hint"></p>
   </div>
 </div>
@@ -121,11 +125,17 @@ import AppDoc from '../../components/AppDoc.astro';
     return { ok: res.ok, status: res.status, data: await res.json().catch(() => null) };
   }
 
-  /* ---------- 登入（Supabase Auth，magic link；第一次使用會自動建立帳號）---------- */
+  /* ---------- 登入（Supabase Auth，六碼驗證碼；第一次使用會自動建立帳號）----------
+     signInWithOtp 寄出的同一封信本來就含 6 位數 {{ .Token }}（跟點連結是同一支信、同一個
+     Supabase Auth 寄信管道，只是不用等使用者去點連結、直接在這頁輸入碼）——用
+     verifyOtp(email, token) 換成真正的 session，後面 authedFetch／封鎖商家帳號等既有機制
+     完全不用改。 */
   const loginView = $('login-view');
   const businessView = $('business-view');
   const loginEmail = $('login-email') as HTMLInputElement;
   const loginStatus = $('login-status');
+  const loginCodeRow = $('login-code-row');
+  const loginCode = $('login-code') as HTMLInputElement;
 
   $('login-send').addEventListener('click', async () => {
     const email = loginEmail.value.trim();
@@ -134,10 +144,39 @@ import AppDoc from '../../components/AppDoc.astro';
     loginStatus.textContent = '寄送中…';
     const { error } = await supabase.auth.signInWithOtp({
       email,
-      options: { shouldCreateUser: true, emailRedirectTo: window.location.origin + '/app/business' },
+      options: { shouldCreateUser: true },
     });
     (($('login-send') as HTMLButtonElement)).disabled = false;
-    loginStatus.textContent = error ? '寄送失敗，請確認 Email 是否正確。' : `登入連結已寄到 ${email}，請到信箱點連結（可能在垃圾信件夾）。`;
+    if (error) {
+      loginStatus.textContent = '寄送失敗，請確認 Email 是否正確。';
+      return;
+    }
+    loginStatus.textContent = `驗證碼已寄到 ${email}，請輸入信裡的 6 位數字（10 分鐘內有效，可能在垃圾信件夾）。`;
+    loginCodeRow.classList.remove('hidden');
+    loginCode.value = '';
+    loginCode.focus();
+  });
+
+  // 換信箱重寄一次就等於放棄剛剛那組碼——把輸入框跟碼列隱藏掉，逼使用者重新走一次寄送。
+  loginEmail.addEventListener('input', () => {
+    loginCodeRow.classList.add('hidden');
+    loginCode.value = '';
+  });
+
+  $('login-verify').addEventListener('click', async () => {
+    const email = loginEmail.value.trim();
+    const token = loginCode.value.trim();
+    if (token.length !== 6) { loginStatus.textContent = '請輸入 6 位數驗證碼。'; return; }
+    (($('login-verify') as HTMLButtonElement)).disabled = true;
+    loginStatus.textContent = '驗證中…';
+    const { error } = await supabase.auth.verifyOtp({ email, token, type: 'email' });
+    (($('login-verify') as HTMLButtonElement)).disabled = false;
+    if (error) {
+      loginStatus.textContent = '驗證碼不正確或已過期，請重新寄送。';
+      return;
+    }
+    loginStatus.textContent = '';
+    renderForSession();
   });
   $('logout-btn').addEventListener('click', async () => { await supabase.auth.signOut(); });
 
@@ -151,6 +190,8 @@ import AppDoc from '../../components/AppDoc.astro';
     } else {
       loginView.classList.remove('hidden');
       businessView.classList.add('hidden');
+      loginCodeRow.classList.add('hidden');
+      loginCode.value = '';
     }
   }
   supabase.auth.onAuthStateChange(() => renderForSession());
