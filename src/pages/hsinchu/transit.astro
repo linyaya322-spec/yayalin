@@ -7,6 +7,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
   fullTitle="新竹縣交通地圖｜公車、公路客運、YouBike 一次看｜yaya 林"
   description="新竹縣公車、公路客運路線與尖峰時段班距、YouBike 即時站點與使用記錄地圖——給議員與關心地方交通的人查詢的公開資料頁面。"
 >
+
   <section class="max-w-3xl mx-auto px-6 pt-16 pb-8">
     <p class="reveal inline-block bg-ink text-cream text-sm font-medium px-3 py-1 mb-6">新竹縣交通地圖</p>
     <h1 class="font-display text-4xl sm:text-5xl text-ink mb-6">
@@ -98,6 +99,24 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 </BaseLayout>
 
 <style>
+  /* 這頁要看地圖、操作表格，全站共用的自訂滑鼠光標（跟隨滑鼠的點狀特效）在這裡反而干擾操作。
+     Interactions.astro 的 script 是 Astro 預設打包成的 module，比這頁自己任何 script 執行得晚
+     （module script 一律延後到 HTML 解析完才跑）——用 JS 在載入時去移除 has-custom-cursor
+     class 會在它被加上去「之前」就先跑掉，等於沒用。改用純 CSS：不管那個 class 什麼時候被
+     加上，這條規則的優先權都蓋得過去，只影響這一頁（:global 是因為 <html>／#cursor-dot／
+     #cursor-ring 都在這個元件自己的模板之外）。 */
+  :global(html.has-custom-cursor) {
+    cursor: auto !important;
+  }
+  :global(html.has-custom-cursor a),
+  :global(html.has-custom-cursor button) {
+    cursor: pointer !important;
+  }
+  :global(#cursor-dot),
+  :global(#cursor-ring) {
+    display: none !important;
+  }
+
   .filter-btn {
     border: 2px solid var(--color-ink);
     background: var(--color-cream);
