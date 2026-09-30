@@ -63,14 +63,20 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     <div class="flex flex-wrap gap-4 mt-3 text-xs text-ink-light">
       <span><span class="inline-block w-3 h-3 rounded-full mr-1" style="background:#2f5bd0;"></span>縣市公車路線</span>
       <span><span class="inline-block w-3 h-3 rounded-full mr-1" style="background:#d63a3a;"></span>公路客運路線</span>
-      <span><span class="inline-block w-3 h-3 rounded-full mr-1" style="background:#0fb88a;"></span>YouBike 站點</span>
+      <span><span class="inline-block w-3 h-3 rounded-full mr-1" style="background:#0fb88a;"></span>YouBike 正常</span>
+      <span><span class="inline-block w-3 h-3 rounded-full mr-1" style="background:#d63a3a;"></span>YouBike 常態缺車</span>
+      <span><span class="inline-block w-3 h-3 rounded-full mr-1" style="background:#2f5bd0;"></span>YouBike 常態爆滿</span>
+      <span><span class="inline-block w-3 h-3 rounded-full mr-1" style="background:#9fb0c6;"></span>YouBike 資料不足</span>
       <span><span class="inline-block w-3 h-3 rounded-full mr-1" style="background:#f5a623;"></span>公車站牌（點大小依經過路線數）</span>
     </div>
     <p id="map-status" class="text-sm text-ink-light mt-2"></p>
   </section>
 
   <section class="max-w-5xl mx-auto px-6 pb-10">
-    <h2 class="font-display text-2xl text-ink mb-3">路線尖峰班距一覽</h2>
+    <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+      <h2 class="font-display text-2xl text-ink">路線尖峰班距一覽</h2>
+      <button type="button" id="download-routes-btn" class="filter-btn">⬇ 下載 CSV</button>
+    </div>
     <p class="text-ink-light text-sm mb-4">
       預設排序：尖峰時段班次最少的方向排在最前面。「班距」是那個時段內班次之間的平均間隔分鐘數；
       班次只有 0～1 班時算不出間隔，會直接寫「只有 N 班」。只計算平日（週一到週五）都有的班次，
@@ -101,7 +107,10 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
   </section>
 
   <section class="max-w-5xl mx-auto px-6 pb-10">
-    <h2 class="font-display text-2xl text-ink mb-3">單一站點的班次密集度</h2>
+    <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+      <h2 class="font-display text-2xl text-ink">單一站點的班次密集度</h2>
+      <button type="button" id="download-stops-btn" class="filter-btn">⬇ 下載 CSV</button>
+    </div>
     <p class="text-ink-light text-sm mb-4">
       同一個站牌常常有好幾條路線經過——這裡把經過同一站的所有路線合併計算，回答「這一站尖峰時段
       到底有多少班車經過」，不是只看單一路線自己的班距。「經過的路線都沒有時刻表資料」的站牌
@@ -143,6 +152,35 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       </p>
       <div id="bike-peak-summary" class="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <p class="text-ink-light text-sm col-span-3">載入中…</p>
+      </div>
+    </div>
+
+    <div class="card-pop p-6 mt-4">
+      <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+        <h3 class="font-display text-lg text-ink">單站熱點：常態缺車／常態爆滿</h3>
+        <button type="button" id="download-bike-btn" class="filter-btn">⬇ 下載 CSV</button>
+      </div>
+      <p class="text-ink-light text-sm mb-4">
+        用每一站累積到的快照，算出平均可借／可還車輛數佔總車位的比例——長期偏低的可借比例代表
+        「常常被借光」（該站需求高，建議增加調度或擴充站位），長期偏低的可還比例代表「常常沒地方
+        還車」（該站車位不足）。快照數太少（少於 12 筆）的站先標「資料不足」，不做判定。
+      </p>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm" id="bike-hotspot-table">
+          <thead>
+            <tr class="border-b-2 border-ink text-left">
+              <th class="p-2">站點</th>
+              <th class="p-2">平均可借</th>
+              <th class="p-2">平均可還</th>
+              <th class="p-2">總車位</th>
+              <th class="p-2">快照數</th>
+              <th class="p-2">判定</th>
+            </tr>
+          </thead>
+          <tbody id="bike-hotspot-table-body">
+            <tr><td class="p-3 text-ink-light" colspan="6">載入中…</td></tr>
+          </tbody>
+        </table>
       </div>
     </div>
   </section>
@@ -199,6 +237,10 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
   .bike-peak-stat { background: var(--color-cream-dark); border-radius: 12px; padding: 0.9rem 1rem; text-align: center; }
   .bike-peak-stat .num { font-family: var(--font-display); font-size: 1.6rem; color: var(--color-ink); }
   .bike-peak-stat .lbl { font-size: 0.78rem; color: var(--color-ink-light); margin-top: 2px; }
+  #bike-hotspot-table th, #bike-hotspot-table td { white-space: nowrap; }
+  #bike-hotspot-table tbody tr:nth-child(even) { background: var(--color-cream-dark); }
+  .hotspot-empty { color: var(--color-clay-dark); font-weight: 700; }
+  .hotspot-full { color: var(--color-sage-dark); font-weight: 700; }
 </style>
 
 <script>
@@ -220,6 +262,27 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
   }
 
   const $ = (id: string) => document.getElementById(id) as HTMLElement;
+
+  // ---- CSV 匯出：純前端產生，不用另外打後端 ----
+  function toCsv(headers: string[], rows: (string | number)[][]): string {
+    const esc = (v: string | number) => {
+      const s = String(v ?? '');
+      return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    return [headers, ...rows].map((r) => r.map(esc).join(',')).join('\n');
+  }
+  function downloadCsv(filename: string, csv: string) {
+    // 開頭加 BOM，不然 Excel 開繁體中文 CSV 常常會亂碼。
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
 
   function headwayText(peak: Peak | null): string {
     if (!peak) return '無資料';
@@ -258,6 +321,53 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     return stop.peak.morning.tripCount + stop.peak.evening.tripCount;
   }
 
+  interface StationStat {
+    uid: string; name: string; capacity: number | null;
+    avgRent: number; avgRet: number; sampleCount: number;
+    status: 'empty' | 'full' | 'normal' | 'insufficient';
+  }
+  const MIN_HOTSPOT_SAMPLES = 12;
+  // 平均可借／可還車輛數佔總車位的比例，長期低於這個門檻才判定成熱點——單一次快照空了很正常
+  // （剛好有人借走），要看的是「長期平均」是不是持續偏低。
+  const HOTSPOT_RATIO_THRESHOLD = 0.15;
+  function computeBikeHotspots(bikeHistory: BikeHistoryRow[], bikeStations: BikeStation[]): StationStat[] {
+    const capacityByUid = new Map(bikeStations.map((s) => [s.uid, s.capacity]));
+    const nameByUid = new Map(bikeStations.map((s) => [s.uid, s.name]));
+    const byStation = new Map<string, BikeHistoryRow[]>();
+    for (const r of bikeHistory) {
+      if (!byStation.has(r.stationUID)) byStation.set(r.stationUID, []);
+      byStation.get(r.stationUID)!.push(r);
+    }
+    const out: StationStat[] = [];
+    for (const [uid, rows] of byStation) {
+      const avgRent = rows.reduce((s, r) => s + r.rent, 0) / rows.length;
+      const avgRet = rows.reduce((s, r) => s + r.ret, 0) / rows.length;
+      const capacity = capacityByUid.get(uid) ?? null;
+      let status: StationStat['status'] = 'normal';
+      if (rows.length < MIN_HOTSPOT_SAMPLES) {
+        status = 'insufficient';
+      } else if (capacity && capacity > 0) {
+        if (avgRent / capacity < HOTSPOT_RATIO_THRESHOLD) status = 'empty';
+        else if (avgRet / capacity < HOTSPOT_RATIO_THRESHOLD) status = 'full';
+      }
+      out.push({ uid, name: nameByUid.get(uid) ?? rows[0].name, capacity, avgRent, avgRet, sampleCount: rows.length, status });
+    }
+    return out;
+  }
+  function hotspotLabel(status: StationStat['status']): string {
+    if (status === 'empty') return '常態缺車';
+    if (status === 'full') return '常態爆滿';
+    if (status === 'insufficient') return '資料不足';
+    return '正常';
+  }
+  function hotspotClass(status: StationStat['status']): string {
+    return status === 'empty' ? 'hotspot-empty' : status === 'full' ? 'hotspot-full' : '';
+  }
+  // 排序：異常站優先（缺車／爆滿），資料不足跟正常的排後面。
+  function hotspotSortRank(status: StationStat['status']): number {
+    return status === 'empty' || status === 'full' ? 0 : status === 'normal' ? 1 : 2;
+  }
+
   async function main() {
     let data: Overview;
     try {
@@ -273,6 +383,9 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       return;
     }
     const stops = data.stops ?? [];
+    const bikeStats = computeBikeHotspots(data.bikeHistory, data.bikeStations);
+    const bikeStatByUid = new Map(bikeStats.map((s) => [s.uid, s]));
+    const HOTSPOT_COLOR: Record<StationStat['status'], string> = { empty: '#d63a3a', full: '#2f5bd0', normal: '#0fb88a', insufficient: '#9fb0c6' };
 
     // ---- 統計卡片 ----
     const allRoutes = [...data.countyBuses, ...data.intercityBuses];
@@ -308,8 +421,10 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       }
       for (const s of data.bikeStations) {
         if (s.lat == null || s.lon == null) continue;
-        L.circleMarker([s.lat, s.lon], { radius: 5, color: '#0fb88a', fillColor: '#0fb88a', fillOpacity: 0.8, weight: 1 })
-          .bindPopup(`<b>${s.name}</b><br>可借：${s.rent}・可還：${s.ret}${s.capacity != null ? `（總車位 ${s.capacity}）` : ''}`)
+        const stat = bikeStatByUid.get(s.uid);
+        const color = stat ? HOTSPOT_COLOR[stat.status] : HOTSPOT_COLOR.insufficient;
+        L.circleMarker([s.lat, s.lon], { radius: 5, color, fillColor: color, fillOpacity: 0.8, weight: 1 })
+          .bindPopup(`<b>${s.name}</b><br>可借：${s.rent}・可還：${s.ret}${s.capacity != null ? `（總車位 ${s.capacity}）` : ''}${stat ? `<br>累積判定：${hotspotLabel(stat.status)}（${stat.sampleCount} 筆快照）` : ''}`)
           .addTo(map);
       }
       for (const s of stops) {
@@ -427,6 +542,58 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
         peakSummary.insertAdjacentHTML('beforeend', '<p class="text-ink-light text-xs col-span-3 mt-1">資料量還少（部分時段快照數 &lt; 24 筆），比較僅供初步參考，會隨時間累積愈來愈準確。</p>');
       }
     }
+
+    // ---- YouBike 單站熱點表格 ----
+    const hotspotRows = [...bikeStats].sort((a, b) => {
+      const rankDiff = hotspotSortRank(a.status) - hotspotSortRank(b.status);
+      if (rankDiff !== 0) return rankDiff;
+      return a.avgRent - b.avgRent;   // 同一組裡，可借車輛數愈少的愈前面
+    });
+    const hotspotBody = $('bike-hotspot-table-body');
+    if (hotspotRows.length === 0) {
+      hotspotBody.innerHTML = '<tr><td class="p-3 text-ink-light" colspan="6">目前還沒有累積到足夠的快照。</td></tr>';
+    } else {
+      hotspotBody.innerHTML = hotspotRows.map((s) => `
+        <tr class="border-b border-ink/10">
+          <td class="p-2 font-semibold">${s.name}</td>
+          <td class="p-2">${s.avgRent.toFixed(1)}</td>
+          <td class="p-2">${s.avgRet.toFixed(1)}</td>
+          <td class="p-2">${s.capacity ?? '—'}</td>
+          <td class="p-2">${s.sampleCount}</td>
+          <td class="p-2 ${hotspotClass(s.status)}">${hotspotLabel(s.status)}</td>
+        </tr>
+      `).join('');
+    }
+
+    // ---- CSV 下載 ----
+    $('download-routes-btn').addEventListener('click', () => {
+      const rows = allSubRoutes.map(({ route, sub }) => [
+        route.name, sub.headsign, route.kind === 'county' ? '縣市公車' : '公路客運',
+        sub.peak?.morning.tripCount ?? '', sub.peak?.morning.avgHeadwayMin ?? '',
+        sub.peak?.evening.tripCount ?? '', sub.peak?.evening.avgHeadwayMin ?? '',
+      ]);
+      downloadCsv('新竹縣交通地圖_路線班距.csv', toCsv(
+        ['路線', '方向', '類型', '早上尖峰班次數', '早上尖峰平均班距(分)', '下午尖峰班次數', '下午尖峰平均班距(分)'], rows,
+      ));
+    });
+    $('download-stops-btn').addEventListener('click', () => {
+      const rows = stops.map((s) => [
+        s.name, s.routeCount, s.routes.map((r) => r.routeName).join('/'),
+        s.hasScheduleData ? (s.peak?.morning.tripCount ?? '') : '無時刻表資料',
+        s.hasScheduleData ? (s.peak?.morning.avgHeadwayMin ?? '') : '',
+        s.hasScheduleData ? (s.peak?.evening.tripCount ?? '') : '無時刻表資料',
+        s.hasScheduleData ? (s.peak?.evening.avgHeadwayMin ?? '') : '',
+      ]);
+      downloadCsv('新竹縣交通地圖_站點密集度.csv', toCsv(
+        ['站牌', '經過路線數', '經過路線', '早上尖峰班次數', '早上尖峰平均班距(分)', '下午尖峰班次數', '下午尖峰平均班距(分)'], rows,
+      ));
+    });
+    $('download-bike-btn').addEventListener('click', () => {
+      const rows = hotspotRows.map((s) => [s.name, s.avgRent.toFixed(1), s.avgRet.toFixed(1), s.capacity ?? '', s.sampleCount, hotspotLabel(s.status)]);
+      downloadCsv('新竹縣交通地圖_YouBike熱點.csv', toCsv(
+        ['站點', '平均可借', '平均可還', '總車位', '快照數', '判定'], rows,
+      ));
+    });
   }
 
   main();
