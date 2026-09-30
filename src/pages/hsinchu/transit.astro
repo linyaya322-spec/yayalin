@@ -5,7 +5,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 <BaseLayout
   title="新竹縣交通地圖"
   fullTitle="新竹縣交通地圖｜公車、公路客運、YouBike 一次看｜yaya 林"
-  description="新竹縣公車、公路客運路線與尖峰時段班距、YouBike 即時站點與使用記錄地圖——給議員與關心地方交通的人查詢的公開資料頁面。"
+  description="新竹縣公車、公路客運路線、單一站點班次密集度、尖峰時段班距、YouBike 即時站點與尖峰離峰使用記錄地圖——給議員與關心地方交通的人查詢的公開資料頁面。"
 >
 
   <section class="max-w-3xl mx-auto px-6 pt-16 pb-8">
@@ -14,9 +14,9 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       <span data-text-reveal>新竹縣的公車、公路客運跟 YouBike，都在這裡</span>
     </h1>
     <p class="reveal text-ink-light leading-relaxed text-lg max-w-2xl" style="animation-delay: 0.2s;">
-      資料直接來自交通部 TDX 運輸資料流通服務平台，每天自動更新一次。每條路線平日尖峰時段（早上 7-9
-      點、下午 4-6 點）的實際班距都算給你看——不是我主觀判斷「夠不夠密」，數字都可以自己查證，也歡迎
-      議員辦公室直接引用。
+      資料直接來自交通部 TDX 運輸資料流通服務平台，每天自動更新一次。每條路線、每個站點平日尖峰時段
+      （早上 7-9 點、下午 4-6 點）的實際班次跟班距都算給你看——不是我主觀判斷「夠不夠密」，數字都可以
+      自己查證，也歡迎議員辦公室直接引用。
     </p>
   </section>
 
@@ -38,16 +38,33 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
         <p class="font-display text-3xl text-ink" id="stat-sparse">—</p>
         <p class="text-xs text-ink-light mt-1">尖峰時段班次 ≤ 2 班的方向數</p>
       </div>
+      <div class="card-pop bg-butter-light p-4 text-center">
+        <p class="font-display text-3xl text-ink" id="stat-stops">—</p>
+        <p class="text-xs text-ink-light mt-1">公車站牌數（不重複計算）</p>
+      </div>
+      <div class="card-pop bg-clay-light p-4 text-center">
+        <p class="font-display text-3xl text-ink" id="stat-hub-stops">—</p>
+        <p class="text-xs text-ink-light mt-1">3 條以上路線經過的轉乘站</p>
+      </div>
+      <div class="card-pop bg-sage-light p-4 text-center">
+        <p class="font-display text-3xl text-ink" id="stat-no-schedule-stops">—</p>
+        <p class="text-xs text-ink-light mt-1">經過的路線都沒有時刻表資料的站牌</p>
+      </div>
+      <div class="card-pop bg-butter-light p-4 text-center">
+        <p class="font-display text-3xl text-ink" id="stat-bike-samples">—</p>
+        <p class="text-xs text-ink-light mt-1">YouBike 累積快照筆數</p>
+      </div>
     </div>
     <p id="cache-note" class="text-xs text-ink-light mb-2"></p>
   </section>
 
   <section class="max-w-5xl mx-auto px-6 pb-10">
-    <div id="map" class="card-pop" style="height: 520px; width: 100%; background: var(--color-cream-dark);"></div>
+    <div id="map" class="card-pop" style="height: 560px; width: 100%; background: var(--color-cream-dark);"></div>
     <div class="flex flex-wrap gap-4 mt-3 text-xs text-ink-light">
-      <span><span class="inline-block w-3 h-3 rounded-full mr-1" style="background:#2f5bd0;"></span>縣市公車</span>
-      <span><span class="inline-block w-3 h-3 rounded-full mr-1" style="background:#d63a3a;"></span>公路客運</span>
+      <span><span class="inline-block w-3 h-3 rounded-full mr-1" style="background:#2f5bd0;"></span>縣市公車路線</span>
+      <span><span class="inline-block w-3 h-3 rounded-full mr-1" style="background:#d63a3a;"></span>公路客運路線</span>
       <span><span class="inline-block w-3 h-3 rounded-full mr-1" style="background:#0fb88a;"></span>YouBike 站點</span>
+      <span><span class="inline-block w-3 h-3 rounded-full mr-1" style="background:#f5a623;"></span>公車站牌（點大小依經過路線數）</span>
     </div>
     <p id="map-status" class="text-sm text-ink-light mt-2"></p>
   </section>
@@ -83,17 +100,57 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     </div>
   </section>
 
+  <section class="max-w-5xl mx-auto px-6 pb-10">
+    <h2 class="font-display text-2xl text-ink mb-3">單一站點的班次密集度</h2>
+    <p class="text-ink-light text-sm mb-4">
+      同一個站牌常常有好幾條路線經過——這裡把經過同一站的所有路線合併計算，回答「這一站尖峰時段
+      到底有多少班車經過」，不是只看單一路線自己的班距。「經過的路線都沒有時刻表資料」的站牌
+      （通常是只有公路客運經過），沒辦法算出真正的密集度，會另外標示，不會顯示成「無班次」。
+    </p>
+    <div class="flex flex-wrap gap-2 mb-4" id="stop-filter-row">
+      <button type="button" class="filter-btn active" data-stopfilter="sparsest">最少班次優先</button>
+      <button type="button" class="filter-btn" data-stopfilter="busiest">最多班次優先</button>
+      <button type="button" class="filter-btn" data-stopfilter="hub">轉乘站（≥3 條路線）</button>
+    </div>
+    <div class="overflow-x-auto card-pop">
+      <table class="w-full text-sm" id="stop-table">
+        <thead>
+          <tr class="border-b-2 border-ink text-left">
+            <th class="p-2">站牌</th>
+            <th class="p-2">經過路線數</th>
+            <th class="p-2">早上尖峰（合計）</th>
+            <th class="p-2">下午尖峰（合計）</th>
+          </tr>
+        </thead>
+        <tbody id="stop-table-body">
+          <tr><td class="p-3 text-ink-light" colspan="4">載入中…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
   <section class="max-w-5xl mx-auto px-6 pb-24">
     <h2 class="font-display text-2xl text-ink mb-3">YouBike 使用記錄</h2>
-    <div class="card-pop bg-sage-light p-6">
+    <div class="card-pop bg-sage-light p-6 mb-4">
       <p class="text-ink leading-relaxed" id="bike-history-note">載入中…</p>
+    </div>
+    <div class="card-pop p-6" id="bike-peak-card">
+      <h3 class="font-display text-lg text-ink mb-2">尖峰／離峰的騎乘型態</h3>
+      <p class="text-ink-light text-sm mb-4">
+        用累積到的每小時站點快照，比較「平均可借車輛數」在早上尖峰、下午尖峰、離峰時段的差異——
+        可借車輛數愈低，代表那個時段被借走的人愈多（需求愈高），可以用來判斷各時段是否需要調整
+        調度（例如尖峰前多補車、離峰時段適度移車）。
+      </p>
+      <div id="bike-peak-summary" class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <p class="text-ink-light text-sm col-span-3">載入中…</p>
+      </div>
     </div>
   </section>
 
   <section class="max-w-5xl mx-auto px-6 pb-24">
     <div class="card-pop bg-butter-light p-6 text-sm text-ink-light leading-relaxed">
       <p class="font-semibold text-ink mb-2">資料來源與方法說明</p>
-      <p>公車、公路客運路線與班表：交通部 TDX 運輸資料流通服務平台（縣市公車用「HsinchuCounty」縣市代碼、公路客運用停靠站牌的縣市代碼篩出有經過新竹縣的路線），每天自動重新抓取一次。YouBike 即時站點同樣來自 TDX；長期使用記錄則是這個網站從 2026 年 9 月底開始，每小時自動記錄一次站點空滿狀態累積出來的——查過政府資料開放平臺跟新竹縣政府開放資料專區，都沒有新竹縣（不同於新竹市）YouBike 的長期使用量統計，所以沒辦法呈現更早的資料。</p>
+      <p>公車、公路客運路線與班表：交通部 TDX 運輸資料流通服務平台（縣市公車用「HsinchuCounty」縣市代碼、公路客運用停靠站牌的縣市代碼篩出有經過新竹縣的路線），每天自動重新抓取一次。單一站點的密集度是把經過同一個實體站牌的所有路線、各自在「那一站」（不是起站）的到站時刻合併計算出來的。YouBike 即時站點同樣來自 TDX；長期使用記錄則是這個網站從 2026 年 9 月底開始，每小時自動記錄一次站點空滿狀態累積出來的——查過政府資料開放平臺跟新竹縣政府開放資料專區，都沒有新竹縣（不同於新竹市）YouBike 的長期使用量統計，所以沒辦法呈現更早的資料，尖峰/離峰的騎乘型態分析也會隨資料累積愈來愈準確。</p>
     </div>
   </section>
 </BaseLayout>
@@ -131,14 +188,17 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     background: var(--color-ink);
     color: var(--color-cream);
   }
-  #route-table th, #route-table td {
+  #route-table th, #route-table td, #stop-table th, #stop-table td {
     white-space: nowrap;
   }
-  #route-table tbody tr:nth-child(even) {
+  #route-table tbody tr:nth-child(even), #stop-table tbody tr:nth-child(even) {
     background: var(--color-cream-dark);
   }
   .headway-tight { color: var(--color-sage-dark); font-weight: 700; }
   .headway-loose { color: var(--color-clay-dark); font-weight: 700; }
+  .bike-peak-stat { background: var(--color-cream-dark); border-radius: 12px; padding: 0.9rem 1rem; text-align: center; }
+  .bike-peak-stat .num { font-family: var(--font-display); font-size: 1.6rem; color: var(--color-ink); }
+  .bike-peak-stat .lbl { font-size: 0.78rem; color: var(--color-ink-light); margin-top: 2px; }
 </style>
 
 <script>
@@ -146,11 +206,17 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
   interface SubRoute { subRouteUID: string; direction: number; headsign: string; stops: { uid: string; name: string; lat: number | null; lon: number | null }[]; path: [number, number][]; peak: { morning: Peak; evening: Peak } | null }
   interface RouteEntry { routeUID: string; name: string; operator: string | null; kind: 'county' | 'intercity'; subRoutes: SubRoute[] }
   interface BikeStation { uid: string; name: string; lat: number; lon: number; capacity: number | null; rent: number; ret: number; status: number }
+  interface StopEntry {
+    uid: string; name: string; lat: number | null; lon: number | null;
+    routeCount: number; routes: { routeName: string; subRouteUID: string; headsign: string; kind: string }[];
+    hasScheduleData: boolean; peak: { morning: Peak; evening: Peak } | null;
+  }
+  interface BikeHistoryRow { stationUID: string; name: string; rent: number; ret: number; recordedAt: string }
   interface Overview {
-    countyBuses: RouteEntry[]; intercityBuses: RouteEntry[];
+    countyBuses: RouteEntry[]; intercityBuses: RouteEntry[]; stops: StopEntry[];
     busDataCachedAt: string | null; busDataErrors: string[];
     bikeStations: BikeStation[]; bikeStationsUpdatedAt: string | null;
-    bikeHistory: { stationUID: string; name: string; rent: number; ret: number; recordedAt: string }[];
+    bikeHistory: BikeHistoryRow[];
   }
 
   const $ = (id: string) => document.getElementById(id) as HTMLElement;
@@ -166,7 +232,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     return peak.avgHeadwayMin <= 20 ? 'headway-tight' : peak.avgHeadwayMin >= 45 ? 'headway-loose' : '';
   }
   // 排序用的「這個方向尖峰有多稀疏」分數：班距愈大（或班次愈少）分數愈高，讓最少班次的排最前面。
-  function sparsityScore(sub: SubRoute): number {
+  function subSparsityScore(sub: SubRoute): number {
     if (!sub.peak) return 9999;
     const scores = [sub.peak.morning, sub.peak.evening].map((p) => {
       if (p.tripCount === 0) return 9999;
@@ -178,6 +244,19 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
   function isSparse(sub: SubRoute): boolean {
     return (sub.peak?.morning.tripCount ?? 0) <= 2 || (sub.peak?.evening.tripCount ?? 0) <= 2;
   }
+  function stopSparsityScore(stop: StopEntry): number {
+    if (!stop.peak) return 9999;
+    const scores = [stop.peak.morning, stop.peak.evening].map((p) => {
+      if (p.tripCount === 0) return 9999;
+      if (p.avgHeadwayMin == null) return 500 - p.tripCount * 10;
+      return p.avgHeadwayMin;
+    });
+    return Math.max(...scores);
+  }
+  function stopCombinedTripCount(stop: StopEntry): number {
+    if (!stop.peak) return -1;
+    return stop.peak.morning.tripCount + stop.peak.evening.tripCount;
+  }
 
   async function main() {
     let data: Overview;
@@ -188,9 +267,12 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     } catch {
       $('map-status').textContent = '資料讀取失敗，請稍後重新整理頁面再試一次。';
       $('route-table-body').innerHTML = '<tr><td class="p-3 text-ink-light" colspan="5">資料讀取失敗。</td></tr>';
+      $('stop-table-body').innerHTML = '<tr><td class="p-3 text-ink-light" colspan="4">資料讀取失敗。</td></tr>';
       $('bike-history-note').textContent = '資料讀取失敗。';
+      $('bike-peak-summary').innerHTML = '<p class="text-ink-light text-sm col-span-3">資料讀取失敗。</p>';
       return;
     }
+    const stops = data.stops ?? [];
 
     // ---- 統計卡片 ----
     const allRoutes = [...data.countyBuses, ...data.intercityBuses];
@@ -199,12 +281,16 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     $('stat-intercity').textContent = String(data.intercityBuses.length);
     $('stat-bike').textContent = String(data.bikeStations.length);
     $('stat-sparse').textContent = String(allSubRoutes.filter((x) => isSparse(x.sub)).length);
+    $('stat-stops').textContent = String(stops.length);
+    $('stat-hub-stops').textContent = String(stops.filter((s) => s.routeCount >= 3).length);
+    $('stat-no-schedule-stops').textContent = String(stops.filter((s) => !s.hasScheduleData).length);
+    $('stat-bike-samples').textContent = String(data.bikeHistory.length);
     $('cache-note').textContent = data.busDataCachedAt
       ? `公車資料更新時間：${new Date(data.busDataCachedAt).toLocaleString('zh-TW', { hour12: false })}`
       : '公車資料尚未產生（後端排程還沒跑過第一次）。';
 
     // ---- 地圖 ----
-    if (allRoutes.length === 0 && data.bikeStations.length === 0) {
+    if (allRoutes.length === 0 && data.bikeStations.length === 0 && stops.length === 0) {
       $('map-status').textContent = '目前沒有資料可以顯示地圖。';
     } else {
       const L = (window as any).L;
@@ -226,23 +312,32 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
           .bindPopup(`<b>${s.name}</b><br>可借：${s.rent}・可還：${s.ret}${s.capacity != null ? `（總車位 ${s.capacity}）` : ''}`)
           .addTo(map);
       }
-      $('map-status').textContent = `地圖上顯示 ${allSubRoutes.filter((x) => x.sub.path.length >= 2).length} 條路線線型、${data.bikeStations.length} 個 YouBike 站點（點圖上的線/點看詳細資訊）。`;
+      for (const s of stops) {
+        if (s.lat == null || s.lon == null) continue;
+        const radius = Math.min(10, 3 + s.routeCount);
+        L.circleMarker([s.lat, s.lon], { radius, color: '#f5a623', fillColor: '#f5a623', fillOpacity: 0.55, weight: 1 })
+          .bindPopup(`<b>${s.name}</b><br>經過路線：${s.routes.map((r) => r.routeName).join('、')}${s.hasScheduleData
+            ? `<br>早上尖峰：${headwayText(s.peak?.morning ?? null)}<br>下午尖峰：${headwayText(s.peak?.evening ?? null)}`
+            : '<br>經過的路線目前沒有時刻表資料可查'}`)
+          .addTo(map);
+      }
+      $('map-status').textContent = `地圖上顯示 ${allSubRoutes.filter((x) => x.sub.path.length >= 2).length} 條路線線型、${stops.length} 個公車站牌、${data.bikeStations.length} 個 YouBike 站點（點圖上的線/點看詳細資訊）。`;
     }
 
     // ---- 路線表格 ----
-    const tbody = $('route-table-body');
+    const routeTbody = $('route-table-body');
     let currentFilter = 'all';
-    function renderTable() {
+    function renderRouteTable() {
       let rows = allSubRoutes;
       if (currentFilter === 'county') rows = rows.filter((x) => x.route.kind === 'county');
       else if (currentFilter === 'intercity') rows = rows.filter((x) => x.route.kind === 'intercity');
       else if (currentFilter === 'sparse') rows = rows.filter((x) => isSparse(x.sub));
-      rows = [...rows].sort((a, b) => sparsityScore(b.sub) - sparsityScore(a.sub));
+      rows = [...rows].sort((a, b) => subSparsityScore(b.sub) - subSparsityScore(a.sub));
       if (rows.length === 0) {
-        tbody.innerHTML = '<tr><td class="p-3 text-ink-light" colspan="5">沒有符合的路線。</td></tr>';
+        routeTbody.innerHTML = '<tr><td class="p-3 text-ink-light" colspan="5">沒有符合的路線。</td></tr>';
         return;
       }
-      tbody.innerHTML = rows.map(({ route, sub }) => `
+      routeTbody.innerHTML = rows.map(({ route, sub }) => `
         <tr class="border-b border-ink/10">
           <td class="p-2 font-semibold">${route.name}</td>
           <td class="p-2 text-ink-light">${sub.headsign}</td>
@@ -252,13 +347,48 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
         </tr>
       `).join('');
     }
-    renderTable();
-    for (const btn of Array.from(document.querySelectorAll('.filter-btn'))) {
+    renderRouteTable();
+    for (const btn of Array.from(document.querySelectorAll('.filter-btn[data-filter]'))) {
       btn.addEventListener('click', () => {
-        document.querySelectorAll('.filter-btn').forEach((b) => b.classList.remove('active'));
+        document.querySelectorAll('.filter-btn[data-filter]').forEach((b) => b.classList.remove('active'));
         btn.classList.add('active');
         currentFilter = (btn as HTMLElement).dataset.filter ?? 'all';
-        renderTable();
+        renderRouteTable();
+      });
+    }
+
+    // ---- 站點密集度表格 ----
+    const stopTbody = $('stop-table-body');
+    let currentStopFilter = 'sparsest';
+    function renderStopTable() {
+      let rows = stops;
+      if (currentStopFilter === 'hub') rows = rows.filter((s) => s.routeCount >= 3);
+      if (currentStopFilter === 'busiest') {
+        rows = [...rows].sort((a, b) => stopCombinedTripCount(b) - stopCombinedTripCount(a));
+      } else {
+        rows = [...rows].sort((a, b) => stopSparsityScore(b) - stopSparsityScore(a));
+      }
+      rows = rows.slice(0, 100);   // 全縣站牌可能上千個，表格只列前 100 筆，避免整頁塞不下
+      if (rows.length === 0) {
+        stopTbody.innerHTML = '<tr><td class="p-3 text-ink-light" colspan="4">沒有符合的站牌。</td></tr>';
+        return;
+      }
+      stopTbody.innerHTML = rows.map((s) => `
+        <tr class="border-b border-ink/10">
+          <td class="p-2 font-semibold">${s.name || '（未命名站牌）'}</td>
+          <td class="p-2">${s.routeCount}</td>
+          <td class="p-2 ${headwayClass(s.peak?.morning ?? null)}">${s.hasScheduleData ? headwayText(s.peak?.morning ?? null) : '無時刻表資料'}</td>
+          <td class="p-2 ${headwayClass(s.peak?.evening ?? null)}">${s.hasScheduleData ? headwayText(s.peak?.evening ?? null) : '無時刻表資料'}</td>
+        </tr>
+      `).join('');
+    }
+    renderStopTable();
+    for (const btn of Array.from(document.querySelectorAll('.filter-btn[data-stopfilter]'))) {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.filter-btn[data-stopfilter]').forEach((b) => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentStopFilter = (btn as HTMLElement).dataset.stopfilter ?? 'sparsest';
+        renderStopTable();
       });
     }
 
@@ -269,7 +399,33 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     } else {
       const earliest = data.bikeHistory.reduce((min, r) => (r.recordedAt < min ? r.recordedAt : min), data.bikeHistory[0].recordedAt);
       const days = Math.max(1, Math.round((Date.now() - new Date(earliest).getTime()) / 86400000));
-      historyNote.textContent = `已經累積 ${days} 天、共 ${data.bikeHistory.length} 筆站點快照記錄（從 ${new Date(earliest).toLocaleDateString('zh-TW')} 開始，每小時記錄一次）。資料量還不夠長期趨勢分析，時間累積夠了之後這裡會更新成圖表。`;
+      historyNote.textContent = `已經累積 ${days} 天、共 ${data.bikeHistory.length} 筆站點快照記錄（從 ${new Date(earliest).toLocaleDateString('zh-TW')} 開始，每小時記錄一次）。`;
+    }
+
+    // ---- YouBike 尖峰／離峰騎乘型態（用累積的快照，依台北時區的小時分桶）----
+    const peakSummary = $('bike-peak-summary');
+    if (data.bikeHistory.length === 0) {
+      peakSummary.innerHTML = '<p class="text-ink-light text-sm col-span-3">目前還沒有累積到快照，暫時無法比較尖峰／離峰的差異。</p>';
+    } else {
+      const hourFmt = new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Taipei', hour: '2-digit', hour12: false });
+      const buckets: Record<'morning' | 'evening' | 'offpeak', BikeHistoryRow[]> = { morning: [], evening: [], offpeak: [] };
+      for (const r of data.bikeHistory) {
+        const hour = Number(hourFmt.format(new Date(r.recordedAt)));
+        if (hour >= 7 && hour < 9) buckets.morning.push(r);
+        else if (hour >= 16 && hour < 18) buckets.evening.push(r);
+        else buckets.offpeak.push(r);
+      }
+      const avgRent = (rows: BikeHistoryRow[]) => (rows.length === 0 ? null : rows.reduce((s, r) => s + r.rent, 0) / rows.length);
+      const stat = (label: string, rows: BikeHistoryRow[]) => {
+        const avg = avgRent(rows);
+        return `<div class="bike-peak-stat"><p class="num">${avg == null ? '—' : avg.toFixed(1)}</p><p class="lbl">${label}平均可借車輛數（${rows.length} 筆快照）</p></div>`;
+      };
+      peakSummary.innerHTML =
+        stat('早上尖峰', buckets.morning) + stat('下午尖峰', buckets.evening) + stat('離峰', buckets.offpeak);
+      const minSamples = Math.min(buckets.morning.length, buckets.evening.length, buckets.offpeak.length);
+      if (minSamples < 24) {
+        peakSummary.insertAdjacentHTML('beforeend', '<p class="text-ink-light text-xs col-span-3 mt-1">資料量還少（部分時段快照數 &lt; 24 筆），比較僅供初步參考，會隨時間累積愈來愈準確。</p>');
+      }
     }
   }
 
