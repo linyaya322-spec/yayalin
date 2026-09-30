@@ -1,0 +1,261 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+---
+
+<BaseLayout
+  title="新竹縣交通地圖"
+  fullTitle="新竹縣交通地圖｜公車、公路客運、YouBike 一次看｜yaya 林"
+  description="新竹縣公車、公路客運路線與尖峰時段班距、YouBike 即時站點與使用記錄地圖——給議員與關心地方交通的人查詢的公開資料頁面。"
+>
+  <section class="max-w-3xl mx-auto px-6 pt-16 pb-8">
+    <p class="reveal inline-block bg-ink text-cream text-sm font-medium px-3 py-1 mb-6">新竹縣交通地圖</p>
+    <h1 class="font-display text-4xl sm:text-5xl text-ink mb-6">
+      <span data-text-reveal>新竹縣的公車、公路客運跟 YouBike，都在這裡</span>
+    </h1>
+    <p class="reveal text-ink-light leading-relaxed text-lg max-w-2xl" style="animation-delay: 0.2s;">
+      資料直接來自交通部 TDX 運輸資料流通服務平台，每天自動更新一次。每條路線平日尖峰時段（早上 7-9
+      點、下午 4-6 點）的實際班距都算給你看——不是我主觀判斷「夠不夠密」，數字都可以自己查證，也歡迎
+      議員辦公室直接引用。
+    </p>
+  </section>
+
+  <section class="max-w-5xl mx-auto px-6 pb-8">
+    <div id="summary-cards" class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+      <div class="card-pop bg-sage-light p-4 text-center">
+        <p class="font-display text-3xl text-ink" id="stat-county">—</p>
+        <p class="text-xs text-ink-light mt-1">縣市公車路線</p>
+      </div>
+      <div class="card-pop bg-butter-light p-4 text-center">
+        <p class="font-display text-3xl text-ink" id="stat-intercity">—</p>
+        <p class="text-xs text-ink-light mt-1">停靠新竹縣的公路客運</p>
+      </div>
+      <div class="card-pop bg-clay-light p-4 text-center">
+        <p class="font-display text-3xl text-ink" id="stat-bike">—</p>
+        <p class="text-xs text-ink-light mt-1">YouBike 站點</p>
+      </div>
+      <div class="card-pop bg-sage-light p-4 text-center">
+        <p class="font-display text-3xl text-ink" id="stat-sparse">—</p>
+        <p class="text-xs text-ink-light mt-1">尖峰時段班次 ≤ 2 班的方向數</p>
+      </div>
+    </div>
+    <p id="cache-note" class="text-xs text-ink-light mb-2"></p>
+  </section>
+
+  <section class="max-w-5xl mx-auto px-6 pb-10">
+    <div id="map" class="card-pop" style="height: 520px; width: 100%; background: var(--color-cream-dark);"></div>
+    <div class="flex flex-wrap gap-4 mt-3 text-xs text-ink-light">
+      <span><span class="inline-block w-3 h-3 rounded-full mr-1" style="background:#2f5bd0;"></span>縣市公車</span>
+      <span><span class="inline-block w-3 h-3 rounded-full mr-1" style="background:#d63a3a;"></span>公路客運</span>
+      <span><span class="inline-block w-3 h-3 rounded-full mr-1" style="background:#0fb88a;"></span>YouBike 站點</span>
+    </div>
+    <p id="map-status" class="text-sm text-ink-light mt-2"></p>
+  </section>
+
+  <section class="max-w-5xl mx-auto px-6 pb-10">
+    <h2 class="font-display text-2xl text-ink mb-3">路線尖峰班距一覽</h2>
+    <p class="text-ink-light text-sm mb-4">
+      預設排序：尖峰時段班次最少的方向排在最前面。「班距」是那個時段內班次之間的平均間隔分鐘數；
+      班次只有 0～1 班時算不出間隔，會直接寫「只有 N 班」。只計算平日（週一到週五）都有的班次，
+      不含只有假日才跑的加班車。
+    </p>
+    <div class="flex flex-wrap gap-2 mb-4" id="filter-row">
+      <button type="button" class="filter-btn active" data-filter="all">全部</button>
+      <button type="button" class="filter-btn" data-filter="county">縣市公車</button>
+      <button type="button" class="filter-btn" data-filter="intercity">公路客運</button>
+      <button type="button" class="filter-btn" data-filter="sparse">尖峰 ≤ 2 班</button>
+    </div>
+    <div class="overflow-x-auto card-pop">
+      <table class="w-full text-sm" id="route-table">
+        <thead>
+          <tr class="border-b-2 border-ink text-left">
+            <th class="p-2">路線</th>
+            <th class="p-2">方向</th>
+            <th class="p-2">類型</th>
+            <th class="p-2">早上尖峰</th>
+            <th class="p-2">下午尖峰</th>
+          </tr>
+        </thead>
+        <tbody id="route-table-body">
+          <tr><td class="p-3 text-ink-light" colspan="5">載入中…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="max-w-5xl mx-auto px-6 pb-24">
+    <h2 class="font-display text-2xl text-ink mb-3">YouBike 使用記錄</h2>
+    <div class="card-pop bg-sage-light p-6">
+      <p class="text-ink leading-relaxed" id="bike-history-note">載入中…</p>
+    </div>
+  </section>
+
+  <section class="max-w-5xl mx-auto px-6 pb-24">
+    <div class="card-pop bg-butter-light p-6 text-sm text-ink-light leading-relaxed">
+      <p class="font-semibold text-ink mb-2">資料來源與方法說明</p>
+      <p>公車、公路客運路線與班表：交通部 TDX 運輸資料流通服務平台（縣市公車用「HsinchuCounty」縣市代碼、公路客運用停靠站牌的縣市代碼篩出有經過新竹縣的路線），每天自動重新抓取一次。YouBike 即時站點同樣來自 TDX；長期使用記錄則是這個網站從 2026 年 9 月底開始，每小時自動記錄一次站點空滿狀態累積出來的——查過政府資料開放平臺跟新竹縣政府開放資料專區，都沒有新竹縣（不同於新竹市）YouBike 的長期使用量統計，所以沒辦法呈現更早的資料。</p>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .filter-btn {
+    border: 2px solid var(--color-ink);
+    background: var(--color-cream);
+    color: var(--color-ink);
+    padding: 0.3rem 0.9rem;
+    font-size: 0.82rem;
+    font-weight: 600;
+    border-radius: 999px;
+    cursor: pointer;
+  }
+  .filter-btn.active {
+    background: var(--color-ink);
+    color: var(--color-cream);
+  }
+  #route-table th, #route-table td {
+    white-space: nowrap;
+  }
+  #route-table tbody tr:nth-child(even) {
+    background: var(--color-cream-dark);
+  }
+  .headway-tight { color: var(--color-sage-dark); font-weight: 700; }
+  .headway-loose { color: var(--color-clay-dark); font-weight: 700; }
+</style>
+
+<script>
+  interface Peak { tripCount: number; avgHeadwayMin: number | null }
+  interface SubRoute { subRouteUID: string; direction: number; headsign: string; stops: { uid: string; name: string; lat: number | null; lon: number | null }[]; path: [number, number][]; peak: { morning: Peak; evening: Peak } | null }
+  interface RouteEntry { routeUID: string; name: string; operator: string | null; kind: 'county' | 'intercity'; subRoutes: SubRoute[] }
+  interface BikeStation { uid: string; name: string; lat: number; lon: number; capacity: number | null; rent: number; ret: number; status: number }
+  interface Overview {
+    countyBuses: RouteEntry[]; intercityBuses: RouteEntry[];
+    busDataCachedAt: string | null; busDataErrors: string[];
+    bikeStations: BikeStation[]; bikeStationsUpdatedAt: string | null;
+    bikeHistory: { stationUID: string; name: string; rent: number; ret: number; recordedAt: string }[];
+  }
+
+  const $ = (id: string) => document.getElementById(id) as HTMLElement;
+
+  function headwayText(peak: Peak | null): string {
+    if (!peak) return '無資料';
+    if (peak.tripCount === 0) return '無班次';
+    if (peak.avgHeadwayMin == null) return `只有 ${peak.tripCount} 班`;
+    return `${peak.tripCount} 班・約 ${peak.avgHeadwayMin} 分一班`;
+  }
+  function headwayClass(peak: Peak | null): string {
+    if (!peak || peak.avgHeadwayMin == null) return '';
+    return peak.avgHeadwayMin <= 20 ? 'headway-tight' : peak.avgHeadwayMin >= 45 ? 'headway-loose' : '';
+  }
+  // 排序用的「這個方向尖峰有多稀疏」分數：班距愈大（或班次愈少）分數愈高，讓最少班次的排最前面。
+  function sparsityScore(sub: SubRoute): number {
+    if (!sub.peak) return 9999;
+    const scores = [sub.peak.morning, sub.peak.evening].map((p) => {
+      if (p.tripCount === 0) return 9999;
+      if (p.avgHeadwayMin == null) return 500 - p.tripCount * 10;   // 1 班的分數比 0 班低、比 2 班以上高
+      return p.avgHeadwayMin;
+    });
+    return Math.max(...scores);
+  }
+  function isSparse(sub: SubRoute): boolean {
+    return (sub.peak?.morning.tripCount ?? 0) <= 2 || (sub.peak?.evening.tripCount ?? 0) <= 2;
+  }
+
+  async function main() {
+    let data: Overview;
+    try {
+      const res = await fetch('/app/api/hsinchu-transit-overview');
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      data = await res.json();
+    } catch {
+      $('map-status').textContent = '資料讀取失敗，請稍後重新整理頁面再試一次。';
+      $('route-table-body').innerHTML = '<tr><td class="p-3 text-ink-light" colspan="5">資料讀取失敗。</td></tr>';
+      $('bike-history-note').textContent = '資料讀取失敗。';
+      return;
+    }
+
+    // ---- 統計卡片 ----
+    const allRoutes = [...data.countyBuses, ...data.intercityBuses];
+    const allSubRoutes = allRoutes.flatMap((r) => r.subRoutes.map((s) => ({ route: r, sub: s })));
+    $('stat-county').textContent = String(data.countyBuses.length);
+    $('stat-intercity').textContent = String(data.intercityBuses.length);
+    $('stat-bike').textContent = String(data.bikeStations.length);
+    $('stat-sparse').textContent = String(allSubRoutes.filter((x) => isSparse(x.sub)).length);
+    $('cache-note').textContent = data.busDataCachedAt
+      ? `公車資料更新時間：${new Date(data.busDataCachedAt).toLocaleString('zh-TW', { hour12: false })}`
+      : '公車資料尚未產生（後端排程還沒跑過第一次）。';
+
+    // ---- 地圖 ----
+    if (allRoutes.length === 0 && data.bikeStations.length === 0) {
+      $('map-status').textContent = '目前沒有資料可以顯示地圖。';
+    } else {
+      const L = (window as any).L;
+      const map = L.map('map').setView([24.79, 121.14], 11);   // 新竹縣大致中心
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors',
+        maxZoom: 18,
+      }).addTo(map);
+
+      for (const { route, sub } of allSubRoutes) {
+        if (sub.path.length < 2) continue;
+        L.polyline(sub.path, { color: route.kind === 'county' ? '#2f5bd0' : '#d63a3a', weight: 3, opacity: 0.65 })
+          .bindPopup(`<b>${route.name}</b><br>${sub.headsign}<br>早上尖峰：${headwayText(sub.peak?.morning ?? null)}<br>下午尖峰：${headwayText(sub.peak?.evening ?? null)}`)
+          .addTo(map);
+      }
+      for (const s of data.bikeStations) {
+        if (s.lat == null || s.lon == null) continue;
+        L.circleMarker([s.lat, s.lon], { radius: 5, color: '#0fb88a', fillColor: '#0fb88a', fillOpacity: 0.8, weight: 1 })
+          .bindPopup(`<b>${s.name}</b><br>可借：${s.rent}・可還：${s.ret}${s.capacity != null ? `（總車位 ${s.capacity}）` : ''}`)
+          .addTo(map);
+      }
+      $('map-status').textContent = `地圖上顯示 ${allSubRoutes.filter((x) => x.sub.path.length >= 2).length} 條路線線型、${data.bikeStations.length} 個 YouBike 站點（點圖上的線/點看詳細資訊）。`;
+    }
+
+    // ---- 路線表格 ----
+    const tbody = $('route-table-body');
+    let currentFilter = 'all';
+    function renderTable() {
+      let rows = allSubRoutes;
+      if (currentFilter === 'county') rows = rows.filter((x) => x.route.kind === 'county');
+      else if (currentFilter === 'intercity') rows = rows.filter((x) => x.route.kind === 'intercity');
+      else if (currentFilter === 'sparse') rows = rows.filter((x) => isSparse(x.sub));
+      rows = [...rows].sort((a, b) => sparsityScore(b.sub) - sparsityScore(a.sub));
+      if (rows.length === 0) {
+        tbody.innerHTML = '<tr><td class="p-3 text-ink-light" colspan="5">沒有符合的路線。</td></tr>';
+        return;
+      }
+      tbody.innerHTML = rows.map(({ route, sub }) => `
+        <tr class="border-b border-ink/10">
+          <td class="p-2 font-semibold">${route.name}</td>
+          <td class="p-2 text-ink-light">${sub.headsign}</td>
+          <td class="p-2">${route.kind === 'county' ? '縣市公車' : '公路客運'}</td>
+          <td class="p-2 ${headwayClass(sub.peak?.morning ?? null)}">${headwayText(sub.peak?.morning ?? null)}</td>
+          <td class="p-2 ${headwayClass(sub.peak?.evening ?? null)}">${headwayText(sub.peak?.evening ?? null)}</td>
+        </tr>
+      `).join('');
+    }
+    renderTable();
+    for (const btn of Array.from(document.querySelectorAll('.filter-btn'))) {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.filter-btn').forEach((b) => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentFilter = (btn as HTMLElement).dataset.filter ?? 'all';
+        renderTable();
+      });
+    }
+
+    // ---- YouBike 歷史記錄說明 ----
+    const historyNote = $('bike-history-note');
+    if (data.bikeHistory.length === 0) {
+      historyNote.textContent = '目前還沒有累積到使用記錄——這個網站從 2026 年 9 月底開始每小時記錄一次新竹縣 YouBike 站點的空滿狀態，資料量會隨時間慢慢累積，之後這裡會更新成實際的使用趨勢圖。';
+    } else {
+      const earliest = data.bikeHistory.reduce((min, r) => (r.recordedAt < min ? r.recordedAt : min), data.bikeHistory[0].recordedAt);
+      const days = Math.max(1, Math.round((Date.now() - new Date(earliest).getTime()) / 86400000));
+      historyNote.textContent = `已經累積 ${days} 天、共 ${data.bikeHistory.length} 筆站點快照記錄（從 ${new Date(earliest).toLocaleDateString('zh-TW')} 開始，每小時記錄一次）。資料量還不夠長期趨勢分析，時間累積夠了之後這裡會更新成圖表。`;
+    }
+  }
+
+  main();
+</script>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" is:inline></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
