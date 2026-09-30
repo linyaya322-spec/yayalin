@@ -11,9 +11,16 @@ import { requireBusinessUser } from './businessAuth.js';
 const json = (status, body) =>
   new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } });
 
-const MAX_BODY = 4000;
+// Most calls through here (edit hours/phone/status, claim) are tiny — but the landmark
+// create/edit routes can now carry up to 6 photos as data: URIs, so this has to be sized for
+// that, not for the common case. Matches transitgo-server's own 8mb JSON body limit (see
+// index.mjs's express.json({ limit: "8mb" })) so this proxy is never the tighter bottleneck.
+const MAX_BODY = 8_000_000;
 
-export async function proxyBusiness({ request, env, path, methods, fetchImpl = fetch }) {
+/** `extraBody` merges in AFTER the client's own body (and after `email`), so a caller can pin
+ * down fields the client must never control — e.g. forcing isBusinessClaim: true on the "new
+ * landmark" route, the same way `email` itself is always overwritten below. */
+export async function proxyBusiness({ request, env, path, methods, extraBody, fetchImpl = fetch }) {
   if (!methods.includes(request.method)) return json(405, { error: 'method_not_allowed' });
 
   const user = await requireBusinessUser(request, fetchImpl);
@@ -28,6 +35,7 @@ export async function proxyBusiness({ request, env, path, methods, fetchImpl = f
     if (typeof body !== 'object' || body === null || Array.isArray(body)) return json(400, { error: 'invalid_json' });
   }
   body.email = user.email;   // always the verified one, never what the client sent
+  if (extraBody) Object.assign(body, extraBody);
 
   let upstream;
   try {
