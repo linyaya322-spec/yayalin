@@ -103,6 +103,14 @@ const articleJsonLd = {
 <script>
   const shareStatus = document.querySelector<HTMLElement>('[data-share-status]');
 
+  // 等待 Noto Sans TC 字體就緒，確保 Canvas 能正確渲染中文字
+  // （Noto Sans TC 依 Unicode range 分割成多個 woff2 區塊；用 document.fonts.load() 觸發載入）
+  const fontsReady = Promise.all([
+    document.fonts.load('400 28px "Noto Sans TC"', '生活兒少議題新竹在地文章yaya林'),
+    document.fonts.load('500 28px "Noto Sans TC"', '生活兒少議題新竹在地文章yaya林'),
+    document.fonts.load('700 28px "Noto Sans TC"', '生活兒少議題新竹在地文章yaya林'),
+  ]).catch(() => null);
+
   function roundedRect(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, radius: number) {
     ctx.beginPath();
     ctx.roundRect(x, y, width, height, radius);
@@ -136,6 +144,9 @@ const articleJsonLd = {
   }
 
   async function createStoryImage(button: HTMLButtonElement): Promise<File> {
+    // 等待字體就緒，確保 Canvas 能用 Noto Sans TC 渲染中文
+    await fontsReady;
+
     const canvas = document.createElement('canvas');
     canvas.width = 1080;
     canvas.height = 1920;
@@ -148,58 +159,68 @@ const articleJsonLd = {
     ctx.fillStyle = background;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    ctx.fillStyle = 'rgba(255,255,255,0.42)';
+    // 裝飾圓
+    ctx.fillStyle = 'rgba(255,255,255,0.38)';
     ctx.beginPath();
-    ctx.arc(940, 210, 250, 0, Math.PI * 2);
+    ctx.arc(980, 180, 240, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = '#d9694b';
     ctx.beginPath();
-    ctx.arc(112, 1490, 190, 0, Math.PI * 2);
+    ctx.arc(80, 1560, 160, 0, Math.PI * 2);
     ctx.fill();
 
+    // ── 頂部品牌列（小巧，不搶標題） ──
     ctx.fillStyle = '#18243a';
-    ctx.font = '700 48px "Noto Sans TC", sans-serif';
-    ctx.fillText('yaya 林', 92, 150);
-    ctx.font = '500 28px "Noto Sans TC", sans-serif';
+    ctx.font = '700 38px "Noto Sans TC", sans-serif';
+    ctx.fillText('yaya 林', 92, 120);
     ctx.fillStyle = '#536075';
-    ctx.fillText('生活・兒少議題・新竹在地', 92, 204);
+    ctx.font = '400 24px "Noto Sans TC", sans-serif';
+    ctx.fillText('yayalin.com', 92, 160);
 
-    roundedRect(ctx, 92, 330, 896, 1110, 40);
+    // ── 主卡片 ──
+    roundedRect(ctx, 72, 210, 936, 1480, 40);
     ctx.fillStyle = '#fffdf8';
     ctx.fill();
     ctx.strokeStyle = '#18243a';
     ctx.lineWidth = 5;
     ctx.stroke();
 
-    roundedRect(ctx, 142, 390, 270, 72, 22);
+    // 分類標籤
+    const category = button.dataset.category || '文章';
+    roundedRect(ctx, 122, 268, 300, 64, 20);
     ctx.fillStyle = '#f3d16b';
     ctx.fill();
     ctx.fillStyle = '#18243a';
-    ctx.font = '700 28px "Noto Sans TC", sans-serif';
-    ctx.fillText(button.dataset.category || '文章', 170, 438, 215);
+    ctx.font = '700 26px "Noto Sans TC", sans-serif';
+    ctx.fillText(category, 148, 312, 250);
 
+    // ── 標題（單一大標題）──
     ctx.fillStyle = '#18243a';
-    ctx.font = '700 66px "Noto Sans TC", sans-serif';
-    const titleBottom = drawWrappedText(ctx, button.dataset.title || document.title, 142, 590, 796, 102, 5);
+    ctx.font = '700 62px "Noto Sans TC", sans-serif';
+    const titleBottom = drawWrappedText(ctx, button.dataset.title || document.title, 122, 490, 836, 96, 5);
 
-    ctx.fillStyle = '#536075';
-    ctx.font = '400 36px "Noto Sans TC", sans-serif';
-    const descriptionBottom = drawWrappedText(ctx, button.dataset.description || '到 yaya 林的網站閱讀完整文章。', 142, Math.min(titleBottom + 60, 1110), 796, 60, 3);
-
+    // 分隔線：讓下方區塊視覺上明確是「內容」而非第二個標題
+    const dividerY = Math.min(titleBottom + 40, 1040);
     ctx.fillStyle = '#d9694b';
-    ctx.font = '700 32px "Noto Sans TC", sans-serif';
-    ctx.fillText('完整文章連結見限動「連結」貼圖', 142, Math.max(1300, Math.min(descriptionBottom + 75, 1370)), 796);
+    ctx.fillRect(122, dividerY, 80, 6);
+
+    // ── 內容（文章摘要）──
+    const contentStartY = dividerY + 56;
+    ctx.fillStyle = '#536075';
+    ctx.font = '400 34px "Noto Sans TC", sans-serif';
+    const excerpt = button.dataset.description?.trim() || '到 yaya 林的網站閱讀完整文章。';
+    drawWrappedText(ctx, excerpt, 122, Math.min(contentStartY, 1120), 836, 58, 5);
+
+    // ── 底部 CTA ──
+    ctx.fillStyle = '#d9694b';
+    ctx.font = '700 28px "Noto Sans TC", sans-serif';
+    ctx.fillText('完整文章見限動「連結」貼圖', 122, 1580, 836);
 
     ctx.fillStyle = '#18243a';
-    ctx.font = '700 38px "Noto Sans TC", sans-serif';
-    ctx.fillText('yayalin.com', 92, 1665);
+    ctx.fillRect(122, 1620, 836, 4);
+    ctx.font = '500 22px "Noto Sans TC", sans-serif';
     ctx.fillStyle = '#536075';
-    ctx.font = '400 27px "Noto Sans TC", sans-serif';
-    ctx.fillText('分享後，在限動加入文章連結貼圖', 92, 1718, 896);
-    ctx.fillStyle = '#18243a';
-    ctx.fillRect(92, 1780, 896, 5);
-    ctx.font = '500 24px "Noto Sans TC", sans-serif';
-    ctx.fillText(new URL(button.dataset.url || window.location.href).pathname, 92, 1830, 896);
+    ctx.fillText(new URL(button.dataset.url || window.location.href).pathname, 122, 1664, 836);
 
     const blob = await new Promise<Blob>((resolve, reject) => {
       canvas.toBlob((result) => result ? resolve(result) : reject(new Error('圖片輸出失敗')), 'image/png');
