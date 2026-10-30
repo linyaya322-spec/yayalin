@@ -25,9 +25,26 @@ const formatDate = (date: string) =>
   new Date(date).toLocaleDateString('zh-Hant-TW', { year: 'numeric', month: 'long', day: 'numeric' });
 
 const bodyHtml = await marked.parse(post.body);
+const description = post.seo_description?.trim() || post.excerpt?.trim() || `${post.title}｜yaya 林的${post.category}文章。`;
+const articleKeywords = [...new Set([...(post.tags ?? []), ...(post.seo_keywords ?? [])])];
+const articleUrl = new URL(`/blog/${post.id}`, Astro.site ?? 'https://yayalin.com').toString();
+const articleJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'BlogPosting',
+  '@id': `${articleUrl}#article`,
+  headline: post.title,
+  description,
+  datePublished: new Date(post.date).toISOString(),
+  mainEntityOfPage: articleUrl,
+  author: { '@id': 'https://yayalin.com/#person' },
+  publisher: { '@id': 'https://yayalin.com/#person' },
+  ...(post.cover_image ? { image: new URL(post.cover_image, Astro.site ?? 'https://yayalin.com').toString() } : {}),
+  articleSection: post.category,
+  ...(articleKeywords.length ? { keywords: articleKeywords } : {}),
+};
 ---
 
-<BaseLayout title={post.title} description={post.excerpt}>
+<BaseLayout title={post.title} fullTitle={post.seo_title || undefined} description={description} keywords={articleKeywords} ogType="article" ogImage={post.cover_image ?? undefined} structuredData={articleJsonLd}>
   <article class="max-w-2xl mx-auto px-6 pt-16 pb-24">
     <a href="/blog" data-magnetic class="reveal inline-block text-sm font-semibold text-clay hover:text-ink transition-colors">← 回部落格列表</a>
 
@@ -35,7 +52,7 @@ const bodyHtml = await marked.parse(post.body);
       <span class={`text-xs font-semibold text-cream px-3 py-1 ${categoryColor[post.category] ?? 'bg-ink'}`}>
         {post.category}
       </span>
-      <time class="text-sm text-ink-light">{formatDate(post.date)}</time>
+      <time class="text-sm text-ink-light" datetime={new Date(post.date).toISOString()}>{formatDate(post.date)}</time>
     </div>
 
     <h1 class="font-display text-3xl sm:text-4xl text-ink mb-8">
@@ -43,7 +60,7 @@ const bodyHtml = await marked.parse(post.body);
     </h1>
 
     {post.cover_image && (
-      <img src={post.cover_image} alt="" class="reveal w-full max-h-96 object-cover border-2 border-ink mb-8" style="animation-delay: 0.15s;" />
+      <img src={post.cover_image} alt={post.cover_image_alt || post.title} class="reveal w-full max-h-96 object-cover border-2 border-ink mb-8" style="animation-delay: 0.15s;" />
     )}
 
     <div class="reveal prose-blog" style="animation-delay: 0.2s;" set:html={bodyHtml} />

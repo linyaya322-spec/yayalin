@@ -18,14 +18,19 @@ interface Props {
   // 給定時取代「{title} · yaya 林」，用在首頁等需要完整標題的頁面
   fullTitle?: string;
   description?: string;
+  keywords?: string[];
+  ogImage?: string;
+  ogType?: 'website' | 'article';
+  structuredData?: Record<string, unknown> | Record<string, unknown>[];
   noindex?: boolean;
 }
 
-const { title, fullTitle, description = DEFAULT_DESCRIPTION, noindex = false } = Astro.props;
+const { title, fullTitle, description = DEFAULT_DESCRIPTION, keywords = KEYWORDS, ogImage, ogType = 'website', structuredData, noindex = false } = Astro.props;
 const pageTitle = fullTitle ?? `${title} · ${PERSON_NAME}`;
 
-const ogImageUrl = new URL('/og-image.png', Astro.site ?? 'https://yayalin.com').toString();
+const ogImageUrl = new URL(ogImage ?? '/og-image.png', Astro.site ?? 'https://yayalin.com').toString();
 const canonicalUrl = new URL(Astro.url.pathname, Astro.site ?? 'https://yayalin.com').toString();
+const jsonLd = (value: unknown) => JSON.stringify(value).replace(/</g, '\\u003c');
 
 const personJsonLd = {
   '@context': 'https://schema.org',
@@ -56,6 +61,18 @@ const websiteJsonLd = {
   inLanguage: 'zh-Hant',
   about: { '@id': `${SITE_URL}/#person` },
 };
+
+const webPageJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'WebPage',
+  '@id': `${canonicalUrl}#webpage`,
+  url: canonicalUrl,
+  name: pageTitle,
+  description,
+  inLanguage: 'zh-Hant',
+  isPartOf: { '@id': `${SITE_URL}/#website` },
+  about: { '@id': `${SITE_URL}/#person` },
+};
 ---
 
 <!doctype html>
@@ -66,23 +83,32 @@ const websiteJsonLd = {
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/avatar.png" />
     <meta name="description" content={description} />
-    <meta name="keywords" content={KEYWORDS.join(',')} />
-    {noindex && <meta name="robots" content="noindex, nofollow" />}
+    <meta name="author" content={PERSON_NAME} />
+    <meta name="keywords" content={keywords.join(',')} />
+    <meta name="robots" content={noindex ? 'noindex, nofollow' : 'index, follow, max-image-preview:large'} />
     <link rel="canonical" href={canonicalUrl} />
     <title>{pageTitle}</title>
 
-    <script type="application/ld+json" set:html={JSON.stringify(personJsonLd)} />
-    <script type="application/ld+json" set:html={JSON.stringify(websiteJsonLd)} />
+    <script type="application/ld+json" set:html={jsonLd(personJsonLd)} />
+    <script type="application/ld+json" set:html={jsonLd(websiteJsonLd)} />
+    <script type="application/ld+json" set:html={jsonLd(webPageJsonLd)} />
+    {structuredData && (Array.isArray(structuredData)
+      ? structuredData.map((item) => <script type="application/ld+json" set:html={jsonLd(item)} />)
+      : <script type="application/ld+json" set:html={jsonLd(structuredData)} />)}
 
-    <meta property="og:type" content="website" />
+    <meta property="og:type" content={ogType} />
+    <meta property="og:locale" content="zh_TW" />
+    <meta property="og:url" content={canonicalUrl} />
     <meta property="og:site_name" content="yaya 林" />
     <meta property="og:title" content={pageTitle} />
     <meta property="og:description" content={description} />
     <meta property="og:image" content={ogImageUrl} />
+    <meta property="og:image:alt" content={pageTitle} />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={pageTitle} />
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={ogImageUrl} />
+    <meta name="twitter:image:alt" content={pageTitle} />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
