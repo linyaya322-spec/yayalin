@@ -3,6 +3,7 @@ import Nav from '../components/Nav.astro';
 import Footer from '../components/Footer.astro';
 import Interactions from '../components/Interactions.astro';
 import '../styles/global.css';
+import { supabase } from '../lib/supabase';
 import {
   SITE_URL,
   PERSON_NAME,
@@ -26,11 +27,40 @@ interface Props {
 }
 
 const { title, fullTitle, description = DEFAULT_DESCRIPTION, keywords = KEYWORDS, ogImage, ogType = 'website', structuredData, noindex = false } = Astro.props;
-const pageTitle = fullTitle ?? `${title} · ${PERSON_NAME}`;
-
-const ogImageUrl = new URL(ogImage ?? '/og-image.png', Astro.site ?? 'https://yayalin.com').toString();
-const canonicalUrl = new URL(Astro.url.pathname, Astro.site ?? 'https://yayalin.com').toString();
+const canonicalPath = Astro.url.pathname.replace(/\/+$/, '') || '/';
+const canonicalUrl = new URL(canonicalPath, Astro.site ?? 'https://yayalin.com').toString();
+const { data: pageSeo } = await supabase
+  .from('page_seo')
+  .select('title, description, keywords, og_image, geo_summary, geo_faq')
+  .eq('path', canonicalPath)
+  .maybeSingle();
+const pageTitle = pageSeo?.title?.trim() || fullTitle || `${title} · ${PERSON_NAME}`;
+const resolvedDescription = pageSeo?.description?.trim() || description;
+const resolvedKeywords = pageSeo?.keywords?.length ? pageSeo.keywords : keywords;
+const resolvedOgImage = pageSeo?.og_image?.trim() || ogImage || '/og-image.png';
+const ogImageUrl = new URL(resolvedOgImage, Astro.site ?? 'https://yayalin.com').toString();
 const jsonLd = (value: unknown) => JSON.stringify(value).replace(/</g, '\\u003c');
+
+interface GeoFaqItem {
+  question: string;
+  answer: string;
+}
+const geoFaq: GeoFaqItem[] = Array.isArray(pageSeo?.geo_faq)
+  ? pageSeo.geo_faq.filter((item: unknown): item is GeoFaqItem =>
+      !!item && typeof item === 'object' && 'question' in item && typeof item.question === 'string'
+      && 'answer' in item && typeof item.answer === 'string' && item.question.trim() && item.answer.trim())
+  : [];
+const geoFaqJsonLd = geoFaq.length
+  ? {
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      mainEntity: geoFaq.map(({ question, answer }) => ({
+        '@type': 'Question',
+        name: question,
+        acceptedAnswer: { '@type': 'Answer', text: answer },
+      })),
+    }
+  : null;
 
 const personJsonLd = {
   '@context': 'https://schema.org',
@@ -68,7 +98,7 @@ const webPageJsonLd = {
   '@id': `${canonicalUrl}#webpage`,
   url: canonicalUrl,
   name: pageTitle,
-  description,
+  description: resolvedDescription,
   inLanguage: 'zh-Hant',
   isPartOf: { '@id': `${SITE_URL}/#website` },
   about: { '@id': `${SITE_URL}/#person` },
@@ -82,9 +112,9 @@ const webPageJsonLd = {
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/avatar.png" />
-    <meta name="description" content={description} />
+    <meta name="description" content={resolvedDescription} />
     <meta name="author" content={PERSON_NAME} />
-    <meta name="keywords" content={keywords.join(',')} />
+    <meta name="keywords" content={resolvedKeywords.join(',')} />
     <meta name="robots" content={noindex ? 'noindex, nofollow' : 'index, follow, max-image-preview:large'} />
     <link rel="canonical" href={canonicalUrl} />
     <title>{pageTitle}</title>
@@ -95,18 +125,19 @@ const webPageJsonLd = {
     {structuredData && (Array.isArray(structuredData)
       ? structuredData.map((item) => <script type="application/ld+json" set:html={jsonLd(item)} />)
       : <script type="application/ld+json" set:html={jsonLd(structuredData)} />)}
+    {geoFaqJsonLd && <script type="application/ld+json" set:html={jsonLd(geoFaqJsonLd)} />}
 
     <meta property="og:type" content={ogType} />
     <meta property="og:locale" content="zh_TW" />
     <meta property="og:url" content={canonicalUrl} />
     <meta property="og:site_name" content="yaya 林" />
     <meta property="og:title" content={pageTitle} />
-    <meta property="og:description" content={description} />
+    <meta property="og:description" content={resolvedDescription} />
     <meta property="og:image" content={ogImageUrl} />
     <meta property="og:image:alt" content={pageTitle} />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={pageTitle} />
-    <meta name="twitter:description" content={description} />
+    <meta name="twitter:description" content={resolvedDescription} />
     <meta name="twitter:image" content={ogImageUrl} />
     <meta name="twitter:image:alt" content={pageTitle} />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -121,6 +152,29 @@ const webPageJsonLd = {
     <Nav />
     <main class="relative z-10 flex-1 w-full">
       <slot />
+      {(pageSeo?.geo_summary || geoFaq.length > 0) && (
+        <section class="seo-page-context max-w-3xl mx-auto px-6 pb-12" aria-label="補充資訊">
+          {pageSeo?.geo_summary && (
+            <div class="mb-5 border-l-4 border-clay bg-butter-light px-5 py-4">
+              <h2 class="font-display text-xl text-ink mb-2">頁面摘要</h2>
+              <p class="text-ink-light leading-relaxed">{pageSeo.geo_summary}</p>
+            </div>
+          )}
+          {geoFaq.length > 0 && (
+            <section aria-label="常見問題">
+              <h2 class="font-display text-xl text-ink mb-3">常見問題</h2>
+              <div class="grid gap-3">
+                {geoFaq.map(({ question, answer }) => (
+                  <details class="border-2 border-ink bg-white p-4">
+                    <summary class="cursor-pointer font-semibold text-ink">{question}</summary>
+                    <p class="mt-2 text-ink-light leading-relaxed">{answer}</p>
+                  </details>
+                ))}
+              </div>
+            </section>
+          )}
+        </section>
+      )}
     </main>
     <Footer />
   </body>

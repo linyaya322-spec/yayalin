@@ -1,0 +1,335 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="全站 SEO／GEO 設定" description="站長專用：管理網站每個頁面的 SEO 與 GEO metadata" noindex>
+  <section class="max-w-4xl mx-auto px-6 pt-12 pb-24">
+    <div id="login-view">
+      <p class="inline-block bg-ink text-cream text-sm font-medium px-3 py-1 mb-6">全站 SEO／GEO</p>
+      <h1 class="font-display text-3xl text-ink mb-6">登入管理後台</h1>
+      <form id="login-form" class="grid gap-3 max-w-sm">
+        <input type="email" id="login-email" required placeholder="站長 Email" class="border-2 border-ink bg-cream px-4 py-2.5 focus:outline-none" />
+        <button type="submit" class="px-6 py-2.5 bg-clay text-cream text-sm font-semibold hover:bg-ink transition-colors">寄送登入連結</button>
+        <p id="login-status" class="text-sm min-h-5 text-ink-light" role="status"></p>
+      </form>
+    </div>
+
+    <div id="admin-view" class="hidden">
+      <div class="flex flex-wrap items-center justify-between gap-3 mb-8">
+        <div>
+          <a href="/write" class="text-sm font-semibold text-clay underline">← 回主控台</a>
+          <h1 class="font-display text-3xl text-ink mt-2">全站 SEO／GEO 設定</h1>
+        </div>
+        <button id="logout-btn" class="px-4 py-1.5 border-2 border-ink text-sm font-semibold hover:bg-ink hover:text-cream transition-colors">登出</button>
+      </div>
+
+      <p class="bg-butter-light border-2 border-ink p-4 text-sm text-ink-light leading-relaxed mb-6">
+        選一個既有頁面或輸入其他網站路徑，可設定搜尋標題、摘要、關鍵字、社群預覽圖片與給 AI 搜尋閱讀的摘要／問答。摘要與問答會顯示在該頁下方，不會只藏在結構化資料裡。這是靜態網站，儲存設定後需重新建置／部署才會更新到公開頁面；這裡只設定 metadata，不會建立新的網頁路由。
+      </p>
+
+      <form id="seo-form" class="grid gap-4 bg-sage-light border-2 border-ink p-5 sm:p-7">
+        <label class="grid gap-1 text-sm font-semibold text-ink">
+          常用頁面
+          <select id="path-preset" class="border-2 border-ink bg-cream px-3 py-2 font-normal">
+            <option value="">選擇頁面或在下方輸入路徑</option>
+            <option value="/">首頁　/</option>
+            <option value="/about">關於我　/about</option>
+            <option value="/committee">兒少代表專區　/committee</option>
+            <option value="/blog">部落格　/blog</option>
+            <option value="/contact">聯絡　/contact</option>
+            <option value="/hsinchu/transit">新竹縣交通地圖　/hsinchu/transit</option>
+            <option value="/app">TransitGo　/app</option>
+            <option value="/app/business">商家後台　/app/business</option>
+            <option value="/app/support">客服與意見回饋　/app/support</option>
+            <option value="/app/privacy">App 隱私權政策　/app/privacy</option>
+            <option value="/app/terms">App 服務條款　/app/terms</option>
+            <option value="/privacy">網站隱私權政策　/privacy</option>
+            <option value="/terms">網站服務條款　/terms</option>
+          </select>
+        </label>
+        <label class="grid gap-1 text-sm font-semibold text-ink">
+          頁面路徑
+          <input id="seo-path" required placeholder="例如 / 或 /committee；不要加網域、?query 或 #fragment" class="border-2 border-ink bg-cream px-3 py-2 font-normal" />
+        </label>
+        <div class="grid sm:grid-cols-2 gap-3">
+          <label class="grid gap-1 text-sm font-semibold text-ink">
+            搜尋／分享標題
+            <input id="seo-title" maxlength="150" placeholder="留空則使用網站原本標題" class="border-2 border-ink bg-cream px-3 py-2 font-normal" />
+          </label>
+          <label class="grid gap-1 text-sm font-semibold text-ink">
+            搜尋關鍵字（逗號分隔）
+            <input id="seo-keywords" placeholder="例如：新竹縣兒少代表,學生權益" class="border-2 border-ink bg-cream px-3 py-2 font-normal" />
+          </label>
+        </div>
+        <label class="grid gap-1 text-sm font-semibold text-ink">
+          搜尋摘要
+          <textarea id="seo-description" maxlength="300" rows="3" placeholder="留空則使用網站原本摘要" class="border-2 border-ink bg-cream px-3 py-2 font-normal resize-y"></textarea>
+        </label>
+        <div class="grid gap-2 border-2 border-ink bg-cream p-4">
+          <label for="seo-og-image" class="text-sm font-semibold text-ink">社群預覽圖片（OG image，可貼網址或上傳圖片）</label>
+          <input id="seo-og-image" placeholder="https://... 或 /images/share.jpg" class="border-2 border-ink bg-white px-3 py-2 text-sm font-normal" />
+          <img id="seo-og-preview" alt="社群預覽圖片" class="hidden max-h-40 w-fit border border-ink object-contain" />
+          <div class="flex flex-wrap items-center gap-3">
+            <input id="seo-og-file" type="file" accept="image/png,image/jpeg,image/webp,image/gif" class="text-sm" />
+            <p id="seo-upload-status" class="text-xs text-ink-light" role="status"></p>
+          </div>
+        </div>
+        <label class="grid gap-1 text-sm font-semibold text-ink">
+          GEO／AI 搜尋摘要（會顯示在頁面內容下方）
+          <textarea id="geo-summary" maxlength="1500" rows="4" placeholder="用簡潔、可查證的文字說明這頁提供什麼資訊、適合回答哪些問題。" class="border-2 border-ink bg-cream px-3 py-2 font-normal resize-y"></textarea>
+        </label>
+        <label class="grid gap-1 text-sm font-semibold text-ink">
+          GEO 常見問答（每行一組：問題 | 答案；會顯示在頁面並產生 FAQ 結構化資料）
+          <textarea id="geo-faq" rows="6" placeholder="新竹縣兒少代表是誰？ | yaya 林是新竹縣兒少代表。&#10;這個頁面提供什麼？ | 這裡整理公開的提案與參與紀錄。" class="border-2 border-ink bg-cream px-3 py-2 font-normal resize-y"></textarea>
+        </label>
+        <div class="flex flex-wrap gap-3">
+          <button type="submit" class="px-6 py-2.5 bg-clay text-cream text-sm font-semibold hover:bg-ink transition-colors">儲存這個頁面</button>
+          <button type="button" id="seo-delete" class="hidden px-6 py-2.5 border-2 border-clay text-clay text-sm font-semibold hover:bg-clay hover:text-cream transition-colors">移除此頁自訂設定</button>
+          <button type="button" id="seo-reset" class="px-6 py-2.5 border-2 border-ink text-sm font-semibold hover:bg-ink hover:text-cream transition-colors">清空表單</button>
+        </div>
+        <p id="seo-status" class="text-sm min-h-5" role="status" aria-live="polite"></p>
+      </form>
+
+      <section class="mt-12">
+        <h2 class="font-display text-2xl text-ink mb-3">已設定的頁面</h2>
+        <ul id="seo-list" class="grid gap-2"></ul>
+      </section>
+    </div>
+  </section>
+</BaseLayout>
+
+<script>
+  import { supabase } from '../../lib/supabase';
+
+  const ADMIN_EMAIL = 'yayalin322@gmail.com';
+  const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
+  const loginView = $('login-view');
+  const adminView = $('admin-view');
+  const loginStatus = $('login-status');
+  const seoStatus = $('seo-status');
+  const seoForm = $('seo-form') as HTMLFormElement;
+  const seoList = $('seo-list');
+  const pathInput = $('seo-path') as HTMLInputElement;
+  const pathPreset = $('path-preset') as HTMLSelectElement;
+  const titleInput = $('seo-title') as HTMLInputElement;
+  const descriptionInput = $('seo-description') as HTMLTextAreaElement;
+  const keywordsInput = $('seo-keywords') as HTMLInputElement;
+  const imageInput = $('seo-og-image') as HTMLInputElement;
+  const imageFileInput = $('seo-og-file') as HTMLInputElement;
+  const imagePreview = $('seo-og-preview') as HTMLImageElement;
+  const uploadStatus = $('seo-upload-status');
+  const summaryInput = $('geo-summary') as HTMLTextAreaElement;
+  const faqInput = $('geo-faq') as HTMLTextAreaElement;
+  const deleteButton = $('seo-delete') as HTMLButtonElement;
+  let records: any[] = [];
+
+  $('login-form').addEventListener('submit', async (event) => {
+    event.preventDefault();
+    loginStatus.textContent = '寄送中...';
+    const email = ($('login-email') as HTMLInputElement).value.trim();
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: { shouldCreateUser: false, emailRedirectTo: `${window.location.origin}/write/seo` },
+    });
+    loginStatus.textContent = error ? '寄送失敗，請確認 Email 是否正確。' : '登入連結已寄出，請到信箱點連結。';
+  });
+
+  $('logout-btn').addEventListener('click', async () => { await supabase.auth.signOut(); });
+
+  async function renderForSession() {
+    const { data } = await supabase.auth.getSession();
+    if (data.session?.user.email === ADMIN_EMAIL) {
+      loginView.classList.add('hidden');
+      adminView.classList.remove('hidden');
+      await loadRecords();
+    } else {
+      loginView.classList.remove('hidden');
+      adminView.classList.add('hidden');
+    }
+  }
+  supabase.auth.onAuthStateChange(() => { void renderForSession(); });
+  void renderForSession();
+
+  pathPreset.addEventListener('change', () => {
+    if (pathPreset.value) {
+      pathInput.value = pathPreset.value;
+      selectRecord(pathPreset.value);
+    }
+  });
+
+  imageInput.addEventListener('input', () => {
+    const url = imageInput.value.trim();
+    if (url) {
+      imagePreview.src = url;
+      imagePreview.classList.remove('hidden');
+    } else {
+      imagePreview.removeAttribute('src');
+      imagePreview.classList.add('hidden');
+    }
+  });
+
+  imageFileInput.addEventListener('change', async () => {
+    const file = imageFileInput.files?.[0];
+    if (!file) return;
+    if (!['image/png', 'image/jpeg', 'image/webp', 'image/gif'].includes(file.type) || file.size > 5 * 1024 * 1024) {
+      alert('請選擇 JPG、PNG、WebP 或 GIF，且小於 5MB 的圖片。');
+      imageFileInput.value = '';
+      return;
+    }
+    uploadStatus.textContent = '上傳中...';
+    const ext = file.type === 'image/png' ? 'png' : file.type === 'image/webp' ? 'webp' : file.type === 'image/gif' ? 'gif' : 'jpg';
+    const storagePath = `seo-${crypto.randomUUID()}.${ext}`;
+    const { error } = await supabase.storage.from('post-images').upload(storagePath, file, { contentType: file.type });
+    if (error) {
+      uploadStatus.textContent = `上傳失敗：${error.message}`;
+      return;
+    }
+    const { data } = supabase.storage.from('post-images').getPublicUrl(storagePath);
+    imageInput.value = data.publicUrl;
+    imagePreview.src = data.publicUrl;
+    imagePreview.classList.remove('hidden');
+    uploadStatus.textContent = '上傳完成。記得儲存頁面設定。';
+    imageFileInput.value = '';
+  });
+
+  function normalizedPath(value: string) {
+    const path = value.trim();
+    if (!path.startsWith('/') || path.includes('?') || path.includes('#') || path.includes('\\') || /\s/.test(path)) return null;
+    return path.length > 1 ? path.replace(/\/+$/, '') : '/';
+  }
+
+  function clearForm(keepPath = false) {
+    if (!keepPath) {
+      pathInput.value = '';
+      pathPreset.value = '';
+    }
+    titleInput.value = '';
+    descriptionInput.value = '';
+    keywordsInput.value = '';
+    imageInput.value = '';
+    imagePreview.removeAttribute('src');
+    imagePreview.classList.add('hidden');
+    imageFileInput.value = '';
+    uploadStatus.textContent = '';
+    summaryInput.value = '';
+    faqInput.value = '';
+    deleteButton.classList.add('hidden');
+    seoStatus.textContent = '';
+  }
+
+  function selectRecord(path: string) {
+    const normalized = normalizedPath(path);
+    if (!normalized) return;
+    pathInput.value = normalized;
+    pathPreset.value = normalized;
+    const record = records.find((item) => item.path === normalized);
+    clearForm(true);
+    pathInput.value = normalized;
+    pathPreset.value = normalized;
+    if (!record) return;
+    titleInput.value = record.title ?? '';
+    descriptionInput.value = record.description ?? '';
+    keywordsInput.value = (record.keywords ?? []).join(', ');
+    imageInput.value = record.og_image ?? '';
+    if (record.og_image) {
+      imagePreview.src = record.og_image;
+      imagePreview.classList.remove('hidden');
+    }
+    summaryInput.value = record.geo_summary ?? '';
+    faqInput.value = (record.geo_faq ?? []).map((item: { question: string; answer: string }) => `${item.question} | ${item.answer}`).join('\n');
+    deleteButton.classList.remove('hidden');
+  }
+
+  async function loadRecords() {
+    const { data, error } = await supabase.from('page_seo').select('*').order('path');
+    if (error) {
+      seoStatus.textContent = `讀取失敗：${error.message}。若尚未建立資料表，請先執行 supabase/add_page_seo.sql。`;
+      return;
+    }
+    records = data ?? [];
+    seoList.replaceChildren();
+    records.forEach((record) => {
+      const li = document.createElement('li');
+      li.className = 'flex flex-wrap items-center justify-between gap-3 border-2 border-ink bg-cream p-3';
+      const label = document.createElement('span');
+      label.className = 'text-sm text-ink';
+      label.textContent = `${record.path} · ${record.title || '沿用原標題'}`;
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'border-2 border-ink px-3 py-1 text-xs font-semibold hover:bg-ink hover:text-cream';
+      button.textContent = '編輯';
+      button.addEventListener('click', () => selectRecord(record.path));
+      li.append(label, button);
+      seoList.appendChild(li);
+    });
+  }
+
+  function parseFaqs(raw: string) {
+    const lines = raw.split('\n').map((line) => line.trim()).filter(Boolean);
+    const faq = lines.map((line) => {
+      const separator = line.indexOf('|');
+      if (separator < 1 || separator === line.length - 1) return null;
+      return { question: line.slice(0, separator).trim(), answer: line.slice(separator + 1).trim() };
+    });
+    return faq.some((item) => !item?.question || !item.answer) ? null : faq;
+  }
+
+  seoForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const path = normalizedPath(pathInput.value);
+    if (!path) {
+      seoStatus.textContent = '路徑需以 / 開頭，且不能包含空白、? 或 #。';
+      return;
+    }
+    const geoFaq = parseFaqs(faqInput.value);
+    if (!geoFaq) {
+      seoStatus.textContent = '問答格式有誤。每行請填「問題 | 答案」，或移除空白行。';
+      return;
+    }
+    const ogImage = imageInput.value.trim();
+    if (ogImage) {
+      try {
+        const parsedImage = new URL(ogImage, window.location.origin);
+        if (!['http:', 'https:'].includes(parsedImage.protocol)) throw new Error('Unsupported protocol');
+      } catch {
+        seoStatus.textContent = '社群圖片請使用有效的 http 或 https 網址。';
+        return;
+      }
+    }
+    const payload = {
+      path,
+      title: titleInput.value.trim() || null,
+      description: descriptionInput.value.trim() || null,
+      keywords: keywordsInput.value.split(',').map((value) => value.trim()).filter(Boolean),
+      og_image: ogImage || null,
+      geo_summary: summaryInput.value.trim() || null,
+      geo_faq: geoFaq,
+      updated_at: new Date().toISOString(),
+    };
+    seoStatus.textContent = '儲存中...';
+    const { error } = await supabase.from('page_seo').upsert(payload, { onConflict: 'path' });
+    if (error) {
+      seoStatus.textContent = `儲存失敗：${error.message}。請確認資料表已建立，且目前登入的是站長帳號。`;
+      return;
+    }
+    await loadRecords();
+    selectRecord(path);
+    seoStatus.textContent = '已儲存。請重新建置／部署網站，公開頁面才會更新。';
+  });
+
+  deleteButton.addEventListener('click', async () => {
+    const path = normalizedPath(pathInput.value);
+    if (!path || !confirm(`確定移除 ${path} 的自訂 SEO/GEO 設定嗎？`)) return;
+    const { error } = await supabase.from('page_seo').delete().eq('path', path);
+    if (error) {
+      seoStatus.textContent = `移除失敗：${error.message}`;
+      return;
+    }
+    clearForm(true);
+    pathInput.value = path;
+    await loadRecords();
+    seoStatus.textContent = '已移除設定，該頁將恢復使用程式中的預設 metadata。';
+  });
+
+  $('seo-reset').addEventListener('click', () => clearForm());
+</script>

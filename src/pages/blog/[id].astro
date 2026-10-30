@@ -64,10 +64,10 @@ const articleJsonLd = {
         分享文章
       </button>
       <button type="button" class="share-button share-button-secondary" data-share-story data-url={articleUrl}>
-        分享到 Instagram 限時動態
+        複製限動連結
       </button>
       <p class="share-status" data-share-status role="status" aria-live="polite"></p>
-      <p class="share-hint">限時動態會先複製文章連結；開啟 Instagram 後，請在限動加入「連結」貼圖並貼上。</p>
+      <p class="share-hint">網站無法直接替你發布 Instagram 限時動態。複製連結後，請在 Instagram 限動加入「連結」貼圖並貼上；也可試用「分享文章」的手機分享面板。</p>
     </div>
 
     {post.cover_image && (
@@ -133,12 +133,11 @@ const articleJsonLd = {
   document.querySelector<HTMLButtonElement>('[data-share-story]')?.addEventListener('click', async (event) => {
     const button = event.currentTarget as HTMLButtonElement;
     const url = button.dataset.url ?? window.location.href;
-    window.open('https://www.instagram.com/', '_blank', 'noopener,noreferrer');
     const copied = await copyShareUrl(url);
     if (shareStatus) {
       shareStatus.textContent = copied
-        ? '文章連結已複製。到 Instagram 限時動態加入「連結」貼圖，再貼上網址。'
-        : '請複製文章網址，再到 Instagram 限時動態加入「連結」貼圖。';
+        ? '文章連結已複製；請切換到 Instagram 限時動態，加入「連結」貼圖並貼上。'
+        : '無法自動複製，請手動複製網址列連結，再到 Instagram 限時動態加入「連結」貼圖。';
     }
   });
 </script>
