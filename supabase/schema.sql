@@ -10,8 +10,12 @@ create table if not exists blog_posts (
   date timestamptz not null default now(),
   category text not null check (category in ('生活隨筆', '兒少議題', '興趣分享', '茶葉蛋')),
   excerpt text not null,
+  seo_title text,
+  seo_description text,
+  seo_keywords text[] not null default '{}'::text[],
   body text not null,
   cover_image text,
+  cover_image_alt text,
   tags text[] not null default '{}'::text[],
   created_at timestamptz not null default now()
 );

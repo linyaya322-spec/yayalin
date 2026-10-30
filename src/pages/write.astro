@@ -64,10 +64,19 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 
           <input type="text" id="post-tags" placeholder="標籤，用逗號分隔（例如：兒少權益,新竹在地生活）" class="border-2 border-ink bg-cream px-4 py-2 focus:outline-none" />
 
+          <details class="grid gap-3 bg-butter-light border-2 border-ink p-4">
+            <summary class="cursor-pointer font-semibold text-ink">搜尋與 AI 摘要設定（SEO／GEO，選填）</summary>
+            <p class="text-xs text-ink-light">留空會使用文章標題與摘要。關鍵字請填真正描述文章的詞；清楚、可靠的文章內容比堆疊關鍵字更重要。</p>
+            <input type="text" id="post-seo-title" maxlength="100" placeholder="搜尋結果標題（留空＝文章標題）" class="border-2 border-ink bg-cream px-4 py-2 focus:outline-none" />
+            <textarea id="post-seo-description" maxlength="300" placeholder="搜尋結果摘要／AI 摘要（留空＝文章摘要）" rows="3" class="border-2 border-ink bg-cream px-4 py-2 focus:outline-none resize-y"></textarea>
+            <input type="text" id="post-seo-keywords" placeholder="主題關鍵字，用逗號分隔（例如：兒少參與,新竹縣）" class="border-2 border-ink bg-cream px-4 py-2 focus:outline-none" />
+          </details>
+
           <div class="grid gap-2 bg-cream border-2 border-ink p-3">
             <label class="text-xs font-semibold text-ink-light">封面圖片（顯示在文章卡片與內頁最上方，選填）</label>
             <input type="hidden" id="post-cover-image" />
             <img id="post-cover-preview" class="hidden max-h-32 object-cover border-2 border-ink" alt="封面預覽" />
+            <input type="text" id="post-cover-alt" maxlength="200" placeholder="圖片替代文字（描述圖片內容，利於無障礙與圖片搜尋）" class="border-2 border-ink bg-cream px-3 py-2 text-sm focus:outline-none" />
             <div class="flex flex-wrap items-center gap-3">
               <input type="file" id="post-cover-input" accept="image/png,image/jpeg,image/webp,image/gif" class="text-sm max-w-full" />
               <button type="button" id="post-cover-remove" class="hidden text-xs font-semibold text-clay underline">移除封面</button>
@@ -76,9 +85,19 @@ import BaseLayout from '../layouts/BaseLayout.astro';
           </div>
 
           <div class="grid gap-2 bg-cream border-2 border-ink p-3">
-            <label class="text-xs font-semibold text-ink-light">插入圖片到內容（上傳後會把圖片網址加到下面內容欄位游標位置）</label>
+            <label class="text-xs font-semibold text-ink-light">插入文章圖片（上傳後會插入游標位置；請寫一句圖片描述）</label>
+            <input type="text" id="post-inline-image-alt" maxlength="200" placeholder="圖片替代文字，例如：新竹縣公車站牌旁的行人穿越道" class="border-2 border-ink bg-cream px-3 py-2 text-sm focus:outline-none" />
             <input type="file" id="post-inline-image-input" accept="image/png,image/jpeg,image/webp,image/gif" class="text-sm max-w-full" />
             <p id="post-inline-image-status" class="text-xs text-ink-light min-h-4"></p>
+          </div>
+
+          <div class="grid gap-2 bg-cream border-2 border-ink p-3">
+            <label class="text-xs font-semibold text-ink-light">插入文字連結（顯示文字要能說明連結內容）</label>
+            <div class="grid sm:grid-cols-2 gap-2">
+              <input type="text" id="post-link-text" placeholder="連結顯示文字，例如：查看官方公車時刻表" class="border-2 border-ink bg-cream px-3 py-2 text-sm focus:outline-none" />
+              <input type="url" id="post-link-url" placeholder="https://..." class="border-2 border-ink bg-cream px-3 py-2 text-sm focus:outline-none" />
+            </div>
+            <button type="button" id="post-insert-link" class="justify-self-start px-3 py-1.5 text-xs font-semibold border-2 border-ink hover:bg-ink hover:text-cream transition-colors">插入連結到文章</button>
           </div>
 
           <textarea id="post-body" required placeholder="內容（可以用 Markdown，例如 **粗體**、- 條列）" rows="10" class="border-2 border-ink bg-cream px-4 py-2 focus:outline-none"></textarea>
@@ -336,14 +355,22 @@ import BaseLayout from '../layouts/BaseLayout.astro';
   const postCategory = document.getElementById('post-category') as HTMLSelectElement;
   const postExcerpt = document.getElementById('post-excerpt') as HTMLTextAreaElement;
   const postTags = document.getElementById('post-tags') as HTMLInputElement;
+  const postSeoTitle = document.getElementById('post-seo-title') as HTMLInputElement;
+  const postSeoDescription = document.getElementById('post-seo-description') as HTMLTextAreaElement;
+  const postSeoKeywords = document.getElementById('post-seo-keywords') as HTMLInputElement;
   const postBody = document.getElementById('post-body') as HTMLTextAreaElement;
   const postCoverImage = document.getElementById('post-cover-image') as HTMLInputElement;
+  const postCoverAlt = document.getElementById('post-cover-alt') as HTMLInputElement;
   const postCoverPreview = document.getElementById('post-cover-preview') as HTMLImageElement;
   const postCoverInput = document.getElementById('post-cover-input') as HTMLInputElement;
   const postCoverRemove = document.getElementById('post-cover-remove')!;
   const postCoverStatus = document.getElementById('post-cover-status')!;
   const postInlineImageInput = document.getElementById('post-inline-image-input') as HTMLInputElement;
+  const postInlineImageAlt = document.getElementById('post-inline-image-alt') as HTMLInputElement;
   const postInlineImageStatus = document.getElementById('post-inline-image-status')!;
+  const postLinkText = document.getElementById('post-link-text') as HTMLInputElement;
+  const postLinkUrl = document.getElementById('post-link-url') as HTMLInputElement;
+  const postInsertLink = document.getElementById('post-insert-link')!;
   const postCancel = document.getElementById('post-cancel')!;
   const postStatus = document.getElementById('post-status')!;
   const postList = document.getElementById('post-list')!;
@@ -381,13 +408,39 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     const url = await uploadImage(file);
     postInlineImageStatus.textContent = url ? '已插入到內容裡！' : '';
     if (url) {
-      const markdown = `![](${url})`;
+      const altText = postInlineImageAlt.value.trim().replaceAll('\\', '\\\\').replaceAll(']', '\\]');
+      const markdown = `![${altText}](${url})`;
       const start = postBody.selectionStart ?? postBody.value.length;
       const end = postBody.selectionEnd ?? postBody.value.length;
       postBody.value = postBody.value.slice(0, start) + markdown + postBody.value.slice(end);
       postBody.focus();
+      postInlineImageAlt.value = '';
       postInlineImageInput.value = '';
     }
+  });
+
+  postInsertLink.addEventListener('click', () => {
+    const label = postLinkText.value.trim();
+    const href = postLinkUrl.value.trim();
+    if (!label || !href) {
+      alert('請填寫連結顯示文字和網址。');
+      return;
+    }
+    try {
+      const parsedUrl = new URL(href);
+      if (!['http:', 'https:'].includes(parsedUrl.protocol)) throw new Error('Unsupported protocol');
+    } catch {
+      alert('請輸入有效的 http 或 https 網址。');
+      return;
+    }
+    const safeLabel = label.replaceAll('\\', '\\\\').replaceAll(']', '\\]');
+    const markdown = `[${safeLabel}](<${parsedUrl.href}>)`;
+    const start = postBody.selectionStart ?? postBody.value.length;
+    const end = postBody.selectionEnd ?? postBody.value.length;
+    postBody.value = postBody.value.slice(0, start) + markdown + postBody.value.slice(end);
+    postBody.focus();
+    postLinkText.value = '';
+    postLinkUrl.value = '';
   });
 
   function resetPostForm() {
@@ -406,8 +459,12 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       date: postDate.value,
       category: postCategory.value,
       excerpt: postExcerpt.value.trim(),
+      seo_title: postSeoTitle.value.trim() || null,
+      seo_description: postSeoDescription.value.trim() || null,
+      seo_keywords: postSeoKeywords.value.split(',').map((keyword) => keyword.trim()).filter(Boolean),
       body: postBody.value.trim(),
       cover_image: postCoverImage.value || null,
+      cover_image_alt: postCoverAlt.value.trim() || null,
       tags: postTags.value
         .split(',')
         .map((t) => t.trim())
@@ -446,8 +503,12 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         postDate.value = post.date.slice(0, 10);
         postCategory.value = post.category;
         postExcerpt.value = post.excerpt;
+        postSeoTitle.value = post.seo_title ?? '';
+        postSeoDescription.value = post.seo_description ?? '';
+        postSeoKeywords.value = (post.seo_keywords ?? []).join(', ');
         postTags.value = (post.tags ?? []).join(', ');
         postBody.value = post.body;
+        postCoverAlt.value = post.cover_image_alt ?? '';
         if (post.cover_image) {
           setCoverImage(post.cover_image);
         } else {

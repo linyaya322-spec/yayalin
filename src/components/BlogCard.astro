@@ -29,7 +29,7 @@ const formatDate = (date: string) =>
   data-search={`${post.title} ${post.excerpt}`.toLowerCase()}
 >
   {post.cover_image ? (
-    <img src={post.cover_image} alt="" class="w-full h-40 object-cover border-b-2 border-ink" loading="lazy" />
+    <img src={post.cover_image} alt={post.cover_image_alt || post.title} class="w-full h-40 object-cover border-b-2 border-ink" loading="lazy" />
   ) : (
     <div class={`h-2 ${categoryColor[post.category] ?? 'bg-ink'}`}></div>
   )}

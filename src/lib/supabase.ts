@@ -11,8 +11,12 @@ export interface BlogPost {
   date: string;
   category: '生活隨筆' | '兒少議題' | '興趣分享' | '茶葉蛋';
   excerpt: string;
+  seo_title?: string | null;
+  seo_description?: string | null;
+  seo_keywords?: string[];
   body: string;
   cover_image: string | null;
+  cover_image_alt?: string | null;
   tags: string[];
   created_at: string;
 }
