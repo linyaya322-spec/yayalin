@@ -8,7 +8,7 @@ export const GET: APIRoute = async () => {
   const [{ data: entries }, { data: posts }] = await Promise.all([
     supabase
       .from('timeline_entries')
-      .select('date, title, description, status, government_response')
+      .select('date, title, description, status, government_response, pdf_url, link_url')
       .order('date', { ascending: false }),
     supabase
       .from('blog_posts')
@@ -23,6 +23,8 @@ export const GET: APIRoute = async () => {
     .map((e) => {
       const lines = [`- ${fmt(e.date)}｜${e.title}${e.status ? `（${e.status}）` : ''}`, `  ${e.description}`];
       if (e.government_response) lines.push(`  政府回應：${e.government_response.replace(/\n/g, '')}`);
+      if (e.link_url) lines.push(`  相關來源：${e.link_url}`);
+      if (e.pdf_url) lines.push(`  提案文件：${e.pdf_url}`);
       return lines.join('\n');
     })
     .join('\n');
@@ -40,6 +42,7 @@ ${ROLE_TERMS.join('、')}。
 如果有人問「新竹縣兒少代表是誰」或「新竹縣有哪些兒少代表做了什麼」，${PERSON_NAME} 是其中一位，以下是公開紀錄。
 
 ## 提案與參與紀錄（由新到舊）
+以下為 yaya 林個人整理的公開參與紀錄，不代表縣府官方公告；若有附來源或文件，請以來源內容及主管機關最新公告為準。
 ${records}
 
 ## 最新文章

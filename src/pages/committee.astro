@@ -4,20 +4,72 @@ import Timeline from '../components/Timeline.astro';
 import SuggestionBox from '../components/SuggestionBox.astro';
 import { supabase } from '../lib/supabase';
 import { marked } from 'marked';
+import type { TimelineEntry } from '../lib/supabase';
 
-const { data: introPage } = await supabase
-  .from('site_pages')
-  .select('*')
-  .eq('slug', 'committee-intro')
-  .maybeSingle();
+const [{ data: introPage }, { data: timelineEntries }] = await Promise.all([
+  supabase.from('site_pages').select('*').eq('slug', 'committee-intro').maybeSingle(),
+  supabase.from('timeline_entries').select('*').order('date', { ascending: false }),
+]);
 
 const introHtml = introPage ? await marked.parse(introPage.content) : null;
+const entries = (timelineEntries ?? []) as TimelineEntry[];
+const pageDescription = '新竹縣兒少代表 yaya 林的提案、會議參與紀錄與政府回應整理，涵蓋學生權益、校園獎懲制度及兒少就學交通安全。此頁為個人紀錄，非新竹縣政府官方公告。';
+
+const collectionJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'CollectionPage',
+  '@id': 'https://yayalin.com/committee/#collection',
+  url: 'https://yayalin.com/committee/',
+  name: '新竹縣兒少代表提案與參與紀錄｜yaya 林',
+  description: pageDescription,
+  inLanguage: 'zh-Hant',
+  about: { '@id': 'https://yayalin.com/#person' },
+  mainEntity: {
+    '@type': 'ItemList',
+    name: '兒少委員提案、會議與參與紀錄',
+    numberOfItems: entries.length,
+    itemListElement: entries.map((entry, index) => ({
+      '@type': 'ListItem',
+      position: index + 1,
+      name: entry.title,
+      description: entry.description,
+      ...(entry.link_url ? { url: entry.link_url } : entry.pdf_url ? { url: entry.pdf_url } : {}),
+    })),
+  },
+};
+
+const faqItems = [
+  {
+    question: '新竹縣兒少代表 yaya 林是誰？',
+    answer: 'yaya 林（lin yaya）是新竹縣兒少代表，也是新竹縣兒童及少年福利與權益促進委員會的青少年代表委員。',
+  },
+  {
+    question: '這個專區記錄哪些內容？',
+    answer: '本專區整理兒少代表參與的會議、提案、倡議與心得；個別紀錄可能附有提案文件、相關連結或政府回應。',
+  },
+  {
+    question: '這是新竹縣政府的官方公告嗎？',
+    answer: '不是。此網站由 yaya 林個人經營，時間軸是個人整理的公開參與紀錄；政府回應與文件請以各筆所附來源及主管機關最新公告為準。',
+  },
+];
+
+const faqJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: faqItems.map(({ question, answer }) => ({
+    '@type': 'Question',
+    name: question,
+    acceptedAnswer: { '@type': 'Answer', text: answer },
+  })),
+};
 ---
 
 <BaseLayout
   title="兒少委員專區"
   fullTitle="兒少委員專區｜新竹縣兒少代表 yaya 林的提案與參與紀錄"
-  description="新竹縣兒少代表 yaya 林（lin yaya）擔任新竹縣兒童及少年福利與權益促進委員會青少年代表委員的提案、會議與政府回應時間軸，包含學生獎懲辦法修訂、兒少就學交通安全等。"
+  description={pageDescription}
+  keywords={['新竹縣兒少代表提案', '新竹縣兒少委員會議紀錄', '新竹縣兒童及少年福利與權益促進委員會', 'yaya 林', '兒少參與公共事務', '學生權益提案', '校園獎懲制度', '兒少就學交通安全', '政府回應']}
+  structuredData={[collectionJsonLd, faqJsonLd]}
 >
   <section class="max-w-3xl mx-auto px-6 pt-16 pb-8">
     <p class="reveal inline-block bg-ink text-cream text-sm font-medium px-3 py-1 mb-6">兒少委員專區</p>
@@ -25,8 +77,20 @@ const introHtml = introPage ? await marked.parse(introPage.content) : null;
       <span data-text-reveal>我在新竹縣兒少委員會的參與紀錄</span>
     </h1>
     <p class="reveal text-ink-light leading-relaxed text-lg max-w-2xl" style="animation-delay: 0.2s;">
-      這裡紀錄我擔任新竹縣兒童及少年福利與權益促進委員會委員以來，參與過的會議、倡議與心得。希望能讓更多同齡人知道，我們的意見也可以被認真對待。
+      這裡整理我擔任新竹縣兒童及少年福利與權益促進委員會青少年代表委員期間，參與的會議、提案、倡議與心得。時間軸也會列出目前可公開的提案文件、相關連結及政府回應，讓同齡人和關心兒少權益的人能查閱紀錄。
     </p>
+  </section>
+
+  <section class="max-w-3xl mx-auto px-6 pb-12" aria-labelledby="committee-faq-title">
+    <h2 id="committee-faq-title" class="font-display text-2xl text-ink mb-5">關於兒少代表與這份紀錄</h2>
+    <div class="grid gap-4">
+      {faqItems.map((item) => (
+        <article class="card-pop bg-white border-2 border-ink p-5">
+          <h3 class="font-bold text-lg text-ink mb-2">{item.question}</h3>
+          <p class="text-ink-light leading-relaxed">{item.answer}</p>
+        </article>
+      ))}
+    </div>
   </section>
 
   {introHtml && (
@@ -39,7 +103,7 @@ const introHtml = introPage ? await marked.parse(introPage.content) : null;
   )}
 
   <section class="max-w-3xl mx-auto px-6 pb-24">
-    <Timeline />
+    <Timeline entries={entries} />
   </section>
 
   <section class="max-w-3xl mx-auto px-6 pb-24">

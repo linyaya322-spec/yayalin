@@ -59,6 +59,17 @@ const articleJsonLd = {
       <span data-text-reveal>{post.title}</span>
     </h1>
 
+    <div class="share-actions reveal" aria-label="分享文章">
+      <button type="button" class="share-button" data-share-article data-title={post.title} data-url={articleUrl}>
+        分享文章
+      </button>
+      <button type="button" class="share-button share-button-secondary" data-share-story data-url={articleUrl}>
+        分享到 Instagram 限時動態
+      </button>
+      <p class="share-status" data-share-status role="status" aria-live="polite"></p>
+      <p class="share-hint">限時動態會先複製文章連結；開啟 Instagram 後，請在限動加入「連結」貼圖並貼上。</p>
+    </div>
+
     {post.cover_image && (
       <img src={post.cover_image} alt={post.cover_image_alt || post.title} class="reveal w-full max-h-96 object-cover border-2 border-ink mb-8" style="animation-delay: 0.15s;" />
     )}
@@ -81,7 +92,81 @@ const articleJsonLd = {
   </article>
 </BaseLayout>
 
+<script>
+  const shareStatus = document.querySelector<HTMLElement>('[data-share-status]');
+
+  async function copyShareUrl(url: string) {
+    try {
+      await navigator.clipboard.writeText(url);
+      return true;
+    } catch {
+      const input = document.createElement('textarea');
+      input.value = url;
+      input.setAttribute('readonly', '');
+      input.style.position = 'fixed';
+      input.style.opacity = '0';
+      document.body.append(input);
+      input.select();
+      const copied = document.execCommand('copy');
+      input.remove();
+      return copied;
+    }
+  }
+
+  document.querySelector<HTMLButtonElement>('[data-share-article]')?.addEventListener('click', async (event) => {
+    const button = event.currentTarget as HTMLButtonElement;
+    const url = button.dataset.url ?? window.location.href;
+    const title = button.dataset.title ?? document.title;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title, text: title, url });
+        if (shareStatus) shareStatus.textContent = '分享面板已開啟。';
+        return;
+      } catch (error) {
+        if (error instanceof DOMException && error.name === 'AbortError') return;
+      }
+    }
+    const copied = await copyShareUrl(url);
+    if (shareStatus) shareStatus.textContent = copied ? '文章連結已複製，可以貼到社群或訊息。' : '無法自動複製，請手動複製網址列的連結。';
+  });
+
+  document.querySelector<HTMLButtonElement>('[data-share-story]')?.addEventListener('click', async (event) => {
+    const button = event.currentTarget as HTMLButtonElement;
+    const url = button.dataset.url ?? window.location.href;
+    window.open('https://www.instagram.com/', '_blank', 'noopener,noreferrer');
+    const copied = await copyShareUrl(url);
+    if (shareStatus) {
+      shareStatus.textContent = copied
+        ? '文章連結已複製。到 Instagram 限時動態加入「連結」貼圖，再貼上網址。'
+        : '請複製文章網址，再到 Instagram 限時動態加入「連結」貼圖。';
+    }
+  });
+</script>
+
 <style>
+  .share-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.65rem;
+    margin: -1rem 0 2rem;
+  }
+  .share-button {
+    border: 2px solid var(--color-ink);
+    background: var(--color-ink);
+    color: var(--color-cream);
+    padding: 0.55rem 1rem;
+    font: inherit;
+    font-size: 0.875rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background-color 0.15s, color 0.15s, transform 0.15s;
+  }
+  .share-button:hover { background: var(--color-clay); border-color: var(--color-clay); transform: translateY(-2px); }
+  .share-button-secondary { background: transparent; color: var(--color-ink); }
+  .share-status, .share-hint { flex-basis: 100%; margin: 0; color: var(--color-ink-light); font-size: 0.85rem; }
+  .share-hint { font-size: 0.78rem; }
+
   .prose-blog :global(p) {
     color: var(--color-ink-light);
     line-height: 1.9;
