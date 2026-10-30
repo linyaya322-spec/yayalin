@@ -63,11 +63,19 @@ const articleJsonLd = {
       <button type="button" class="share-button" data-share-article data-title={post.title} data-url={articleUrl}>
         分享文章
       </button>
-      <button type="button" class="share-button share-button-secondary" data-share-story data-url={articleUrl}>
-        複製限動連結
+      <button
+        type="button"
+        class="share-button share-button-secondary"
+        data-share-story
+        data-title={post.title}
+        data-description={post.excerpt}
+        data-category={post.category}
+        data-url={articleUrl}
+      >
+        製作限動分享圖並分享
       </button>
       <p class="share-status" data-share-status role="status" aria-live="polite"></p>
-      <p class="share-hint">網站無法直接替你發布 Instagram 限時動態。複製連結後，請在 Instagram 限動加入「連結」貼圖並貼上；也可試用「分享文章」的手機分享面板。</p>
+      <p class="share-hint">會製作 9:16 限動圖片並開啟手機分享選單；若 Instagram 出現在選單，請選它並加入「連結」貼圖（文章網址會先複製）。若沒有 Instagram，圖片會下載到手機，再手動於限動上傳。</p>
     </div>
 
     {post.cover_image && (
@@ -94,6 +102,127 @@ const articleJsonLd = {
 
 <script>
   const shareStatus = document.querySelector<HTMLElement>('[data-share-status]');
+
+  function roundedRect(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, radius: number) {
+    ctx.beginPath();
+    ctx.roundRect(x, y, width, height, radius);
+  }
+
+  function drawWrappedText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, maxWidth: number, lineHeight: number, maxLines: number) {
+    const characters = [...text];
+    let line = '';
+    let lineCount = 0;
+    for (const character of characters) {
+      const candidate = line + character;
+      if (ctx.measureText(candidate).width > maxWidth && line) {
+        ctx.fillText(line, x, y + lineCount * lineHeight);
+        line = character;
+        lineCount += 1;
+        if (lineCount >= maxLines) {
+          let lastLine = line;
+          while (ctx.measureText(`${lastLine}…`).width > maxWidth && lastLine.length > 1) lastLine = lastLine.slice(0, -1);
+          ctx.fillText(`${lastLine}…`, x, y + (maxLines - 1) * lineHeight);
+          return y + maxLines * lineHeight;
+        }
+      } else {
+        line = candidate;
+      }
+    }
+    if (line && lineCount < maxLines) {
+      ctx.fillText(line, x, y + lineCount * lineHeight);
+      lineCount += 1;
+    }
+    return y + lineCount * lineHeight;
+  }
+
+  async function createStoryImage(button: HTMLButtonElement): Promise<File> {
+    const canvas = document.createElement('canvas');
+    canvas.width = 1080;
+    canvas.height = 1920;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('無法製作分享圖片');
+
+    const background = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+    background.addColorStop(0, '#f7e9c9');
+    background.addColorStop(1, '#e6f0e2');
+    ctx.fillStyle = background;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.fillStyle = 'rgba(255,255,255,0.42)';
+    ctx.beginPath();
+    ctx.arc(940, 210, 250, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#d9694b';
+    ctx.beginPath();
+    ctx.arc(112, 1490, 190, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#18243a';
+    ctx.font = '700 48px "Noto Sans TC", sans-serif';
+    ctx.fillText('yaya 林', 92, 150);
+    ctx.font = '500 28px "Noto Sans TC", sans-serif';
+    ctx.fillStyle = '#536075';
+    ctx.fillText('生活・兒少議題・新竹在地', 92, 204);
+
+    roundedRect(ctx, 92, 330, 896, 1110, 40);
+    ctx.fillStyle = '#fffdf8';
+    ctx.fill();
+    ctx.strokeStyle = '#18243a';
+    ctx.lineWidth = 5;
+    ctx.stroke();
+
+    roundedRect(ctx, 142, 390, 270, 72, 22);
+    ctx.fillStyle = '#f3d16b';
+    ctx.fill();
+    ctx.fillStyle = '#18243a';
+    ctx.font = '700 28px "Noto Sans TC", sans-serif';
+    ctx.fillText(button.dataset.category || '文章', 170, 438, 215);
+
+    ctx.fillStyle = '#18243a';
+    ctx.font = '700 66px "Noto Sans TC", sans-serif';
+    const titleBottom = drawWrappedText(ctx, button.dataset.title || document.title, 142, 590, 796, 102, 5);
+
+    ctx.fillStyle = '#536075';
+    ctx.font = '400 36px "Noto Sans TC", sans-serif';
+    const descriptionBottom = drawWrappedText(ctx, button.dataset.description || '到 yaya 林的網站閱讀完整文章。', 142, Math.min(titleBottom + 60, 1110), 796, 60, 3);
+
+    ctx.fillStyle = '#d9694b';
+    ctx.font = '700 32px "Noto Sans TC", sans-serif';
+    ctx.fillText('完整文章連結見限動「連結」貼圖', 142, Math.max(1300, Math.min(descriptionBottom + 75, 1370)), 796);
+
+    ctx.fillStyle = '#18243a';
+    ctx.font = '700 38px "Noto Sans TC", sans-serif';
+    ctx.fillText('yayalin.com', 92, 1665);
+    ctx.fillStyle = '#536075';
+    ctx.font = '400 27px "Noto Sans TC", sans-serif';
+    ctx.fillText('分享後，在限動加入文章連結貼圖', 92, 1718, 896);
+    ctx.fillStyle = '#18243a';
+    ctx.fillRect(92, 1780, 896, 5);
+    ctx.font = '500 24px "Noto Sans TC", sans-serif';
+    ctx.fillText(new URL(button.dataset.url || window.location.href).pathname, 92, 1830, 896);
+
+    const blob = await new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob((result) => result ? resolve(result) : reject(new Error('圖片輸出失敗')), 'image/png');
+    });
+    return new File([blob], 'yaya-blog-story.png', { type: 'image/png' });
+  }
+
+  function downloadStoryImage(file: File) {
+    const objectUrl = URL.createObjectURL(file);
+    const link = document.createElement('a');
+    link.href = objectUrl;
+    link.download = file.name;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
+  }
+
+  const storyButton = document.querySelector<HTMLButtonElement>('[data-share-story]');
+  let preparedStoryFile: File | null = null;
+  const storyFileReady = storyButton
+    ? createStoryImage(storyButton).then((file) => { preparedStoryFile = file; return file; }).catch(() => null)
+    : Promise.resolve(null);
 
   async function copyShareUrl(url: string) {
     try {
@@ -133,12 +262,58 @@ const articleJsonLd = {
   document.querySelector<HTMLButtonElement>('[data-share-story]')?.addEventListener('click', async (event) => {
     const button = event.currentTarget as HTMLButtonElement;
     const url = button.dataset.url ?? window.location.href;
-    const copied = await copyShareUrl(url);
-    if (shareStatus) {
-      shareStatus.textContent = copied
-        ? '文章連結已複製；請切換到 Instagram 限時動態，加入「連結」貼圖並貼上。'
-        : '無法自動複製，請手動複製網址列連結，再到 Instagram 限時動態加入「連結」貼圖。';
+    const title = button.dataset.title ?? document.title;
+    if (shareStatus) shareStatus.textContent = '正在製作限動圖片並準備分享…';
+    const copiedPromise = copyShareUrl(url);
+    const canShareStoryFile = (file: File | null): file is File =>
+      !!file && !!navigator.share && !!navigator.canShare?.({ files: [file] });
+
+    // Call Web Share directly in the click's user gesture; awaiting clipboard or image work first can make iOS reject it.
+    if (canShareStoryFile(preparedStoryFile)) {
+      try {
+        const sharePromise = navigator.share({ files: [preparedStoryFile], title, text: `${title}\n${url}` });
+        await sharePromise;
+        const copied = await copiedPromise;
+        if (shareStatus) shareStatus.textContent = copied
+          ? '分享圖片已送到手機分享選單。選 Instagram／限時動態後，再加入「連結」貼圖；文章網址已複製。'
+          : '分享圖片已送到手機分享選單。選 Instagram／限時動態後，再加入「連結」貼圖。';
+        return;
+      } catch (error) {
+        if (error instanceof DOMException && error.name === 'AbortError') {
+          await copiedPromise;
+          if (shareStatus) shareStatus.textContent = '分享已取消；可再次分享，或下載圖片後在 Instagram 限動上傳。';
+          return;
+        }
+      }
     }
+
+    if (!preparedStoryFile && navigator.share) {
+      try {
+        const sharePromise = navigator.share({ title, text: `${title}\n${url}`, url });
+        await sharePromise;
+        const copied = await copiedPromise;
+        if (shareStatus) shareStatus.textContent = copied
+          ? '分享選單已開啟，文章網址已複製。限動分享圖片仍在準備；若選 Instagram，請於限動加入「連結」貼圖。'
+          : '分享選單已開啟。限動分享圖片仍在準備；請在 Instagram 限動加入「連結」貼圖。';
+        return;
+      } catch (error) {
+        if (error instanceof DOMException && error.name === 'AbortError') {
+          await copiedPromise;
+          return;
+        }
+      }
+    }
+
+    const file = preparedStoryFile ?? await storyFileReady;
+    const copied = await copiedPromise;
+    if (!file) {
+      if (shareStatus) shareStatus.textContent = `限動圖片製作失敗。${copied ? '文章連結已複製，可在 Instagram 限動加入「連結」貼圖。' : '請手動複製文章網址。'}`;
+      return;
+    }
+    downloadStoryImage(file);
+    if (shareStatus) shareStatus.textContent = copied
+      ? '此瀏覽器未能直接分享圖片，限動圖片已下載、文章網址已複製。請在 Instagram 限動上傳圖片並加入「連結」貼圖。'
+      : '限動圖片已下載。請在 Instagram 限動上傳圖片並加入「連結」貼圖。';
   });
 </script>
 
