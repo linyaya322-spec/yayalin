@@ -25,6 +25,14 @@ const formatDate = (date: string) =>
   new Date(date).toLocaleDateString('zh-Hant-TW', { year: 'numeric', month: 'long', day: 'numeric' });
 
 const bodyHtml = await marked.parse(post.body);
+const cleanBodyText = post.body
+  .replace(/!\[.*?\]\(.*?\)/g, '')
+  .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+  .replace(/#{1,6}\s+/g, '')
+  .replace(/[*_~`]/g, '')
+  .replace(/[ \t]+/g, ' ')
+  .trim();
+const pageTitleText = post.seo_title?.trim() || `${post.title} · yaya 林`;
 const description = post.seo_description?.trim() || post.excerpt?.trim() || `${post.title}｜yaya 林的${post.category}文章。`;
 const articleKeywords = [...new Set([...(post.tags ?? []), ...(post.seo_keywords ?? [])])];
 const articleUrl = new URL(`/blog/${post.id}`, Astro.site ?? 'https://yayalin.com').toString();
@@ -60,15 +68,15 @@ const articleJsonLd = {
     </h1>
 
     <div class="share-actions reveal" aria-label="分享文章">
-      <button type="button" class="share-button" data-share-article data-title={post.title} data-url={articleUrl}>
+      <button type="button" class="share-button" data-share-article data-title={pageTitleText} data-url={articleUrl}>
         分享文章
       </button>
       <button
         type="button"
         class="share-button share-button-secondary"
         data-share-story
-        data-title={post.title}
-        data-description={post.excerpt}
+        data-page-title={pageTitleText}
+        data-content={cleanBodyText}
         data-category={post.category}
         data-url={articleUrl}
       >
@@ -104,7 +112,6 @@ const articleJsonLd = {
   const shareStatus = document.querySelector<HTMLElement>('[data-share-status]');
 
   // 等待 Noto Sans TC 字體就緒，確保 Canvas 能正確渲染中文字
-  // （Noto Sans TC 依 Unicode range 分割成多個 woff2 區塊；用 document.fonts.load() 觸發載入）
   const fontsReady = Promise.all([
     document.fonts.load('400 28px "Noto Sans TC"', '生活兒少議題新竹在地文章yaya林'),
     document.fonts.load('500 28px "Noto Sans TC"', '生活兒少議題新竹在地文章yaya林'),
@@ -120,7 +127,17 @@ const articleJsonLd = {
     const characters = [...text];
     let line = '';
     let lineCount = 0;
-    for (const character of characters) {
+    for (let i = 0; i < characters.length; i++) {
+      const character = characters[i];
+      if (character === '\n') {
+        if (line) {
+          ctx.fillText(line, x, y + lineCount * lineHeight);
+          line = '';
+          lineCount += 1;
+          if (lineCount >= maxLines) return y + maxLines * lineHeight;
+        }
+        continue;
+      }
       const candidate = line + character;
       if (ctx.measureText(candidate).width > maxWidth && line) {
         ctx.fillText(line, x, y + lineCount * lineHeight);
@@ -154,31 +171,23 @@ const articleJsonLd = {
     if (!ctx) throw new Error('無法製作分享圖片');
 
     const background = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-    background.addColorStop(0, '#f7e9c9');
-    background.addColorStop(1, '#e6f0e2');
+    background.addColorStop(0, '#fbf6eb');
+    background.addColorStop(1, '#eaf2e7');
     ctx.fillStyle = background;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // 裝飾圓
-    ctx.fillStyle = 'rgba(255,255,255,0.38)';
+    // 裝飾幾何圓
+    ctx.fillStyle = 'rgba(255,255,255,0.45)';
     ctx.beginPath();
-    ctx.arc(980, 180, 240, 0, Math.PI * 2);
+    ctx.arc(960, 200, 220, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = '#d9694b';
+    ctx.fillStyle = 'rgba(217,105,75,0.12)';
     ctx.beginPath();
-    ctx.arc(80, 1560, 160, 0, Math.PI * 2);
+    ctx.arc(100, 1620, 180, 0, Math.PI * 2);
     ctx.fill();
-
-    // ── 頂部品牌列（小巧，不搶標題） ──
-    ctx.fillStyle = '#18243a';
-    ctx.font = '700 38px "Noto Sans TC", sans-serif';
-    ctx.fillText('yaya 林', 92, 120);
-    ctx.fillStyle = '#536075';
-    ctx.font = '400 24px "Noto Sans TC", sans-serif';
-    ctx.fillText('yayalin.com', 92, 160);
 
     // ── 主卡片 ──
-    roundedRect(ctx, 72, 210, 936, 1480, 40);
+    roundedRect(ctx, 72, 120, 936, 1680, 44);
     ctx.fillStyle = '#fffdf8';
     ctx.fill();
     ctx.strokeStyle = '#18243a';
@@ -187,40 +196,44 @@ const articleJsonLd = {
 
     // 分類標籤
     const category = button.dataset.category || '文章';
-    roundedRect(ctx, 122, 268, 300, 64, 20);
+    roundedRect(ctx, 122, 176, 260, 56, 16);
     ctx.fillStyle = '#f3d16b';
     ctx.fill();
     ctx.fillStyle = '#18243a';
-    ctx.font = '700 26px "Noto Sans TC", sans-serif';
-    ctx.fillText(category, 148, 312, 250);
+    ctx.font = '700 24px "Noto Sans TC", sans-serif';
+    ctx.fillText(category, 142, 214, 220);
 
-    // ── 標題（單一大標題）──
+    // ── 網頁標題 ──
+    const pageTitle = button.dataset.pageTitle || document.title || '文章分享';
     ctx.fillStyle = '#18243a';
-    ctx.font = '700 62px "Noto Sans TC", sans-serif';
-    const titleBottom = drawWrappedText(ctx, button.dataset.title || document.title, 122, 490, 836, 96, 5);
+    ctx.font = '700 58px "Noto Sans TC", sans-serif';
+    const titleBottom = drawWrappedText(ctx, pageTitle, 122, 316, 836, 80, 3);
 
-    // 分隔線：讓下方區塊視覺上明確是「內容」而非第二個標題
-    const dividerY = Math.min(titleBottom + 40, 1040);
+    // 分隔線
+    const dividerY = titleBottom + 30;
     ctx.fillStyle = '#d9694b';
-    ctx.fillRect(122, dividerY, 80, 6);
+    ctx.fillRect(122, dividerY, 84, 5);
 
-    // ── 內容（文章摘要）──
-    const contentStartY = dividerY + 56;
-    ctx.fillStyle = '#536075';
-    ctx.font = '400 34px "Noto Sans TC", sans-serif';
-    const excerpt = button.dataset.description?.trim() || '到 yaya 林的網站閱讀完整文章。';
-    drawWrappedText(ctx, excerpt, 122, Math.min(contentStartY, 1120), 836, 58, 5);
+    // ── 文章內容 ──
+    const content = button.dataset.content?.trim() || '完整文章請點選限動連結閱讀。';
+    ctx.fillStyle = '#324054';
+    ctx.font = '400 36px "Noto Sans TC", sans-serif';
+    const contentStartY = dividerY + 54;
+    // 多行展示實際文章內容
+    drawWrappedText(ctx, content, 122, contentStartY, 836, 60, 14);
 
-    // ── 底部 CTA ──
+    // ── 底部 CTA 與連結 ──
     ctx.fillStyle = '#d9694b';
     ctx.font = '700 28px "Noto Sans TC", sans-serif';
-    ctx.fillText('完整文章見限動「連結」貼圖', 122, 1580, 836);
+    ctx.fillText('完整文章見限動「連結」貼圖', 122, 1680, 836);
 
     ctx.fillStyle = '#18243a';
-    ctx.fillRect(122, 1620, 836, 4);
+    ctx.fillRect(122, 1715, 836, 4);
+
     ctx.font = '500 22px "Noto Sans TC", sans-serif';
     ctx.fillStyle = '#536075';
-    ctx.fillText(new URL(button.dataset.url || window.location.href).pathname, 122, 1664, 836);
+    const urlObj = new URL(button.dataset.url || window.location.href);
+    ctx.fillText(`yayalin.com${urlObj.pathname}`, 122, 1756, 836);
 
     const blob = await new Promise<Blob>((resolve, reject) => {
       canvas.toBlob((result) => result ? resolve(result) : reject(new Error('圖片輸出失敗')), 'image/png');
@@ -283,7 +296,7 @@ const articleJsonLd = {
   document.querySelector<HTMLButtonElement>('[data-share-story]')?.addEventListener('click', async (event) => {
     const button = event.currentTarget as HTMLButtonElement;
     const url = button.dataset.url ?? window.location.href;
-    const title = button.dataset.title ?? document.title;
+    const title = button.dataset.pageTitle ?? button.dataset.title ?? document.title;
     if (shareStatus) shareStatus.textContent = '正在製作限動圖片並準備分享…';
     const copiedPromise = copyShareUrl(url);
     const canShareStoryFile = (file: File | null): file is File =>
