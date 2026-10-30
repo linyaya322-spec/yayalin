@@ -117,6 +117,31 @@ create policy "only admin can write site_pages"
   using (auth.jwt() ->> 'email' = 'yayalin322@gmail.com')
   with check (auth.jwt() ->> 'email' = 'yayalin322@gmail.com');
 
+-- ---------- 全站 SEO／GEO metadata ----------
+create table if not exists public.page_seo (
+  path text primary key check (path like '/%' and path !~ '[?#]'),
+  title text,
+  description text,
+  keywords text[] not null default '{}'::text[],
+  og_image text,
+  geo_summary text,
+  geo_faq jsonb not null default '[]'::jsonb check (jsonb_typeof(geo_faq) = 'array'),
+  updated_at timestamptz not null default now()
+);
+
+alter table public.page_seo enable row level security;
+grant select on public.page_seo to anon, authenticated;
+grant insert, update, delete on public.page_seo to authenticated;
+
+create policy "page_seo is publicly readable"
+  on public.page_seo for select
+  using (true);
+
+create policy "only admin can manage page_seo"
+  on public.page_seo for all to authenticated
+  using (auth.jwt() ->> 'email' = 'yayalin322@gmail.com')
+  with check (auth.jwt() ->> 'email' = 'yayalin322@gmail.com');
+
 -- ---------- 種子資料：把目前網站上的範例內容搬進來 ----------
 
 insert into blog_posts (title, date, category, excerpt, body) values
